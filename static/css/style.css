@@ -1,0 +1,675 @@
+.lucide {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+/* Kritischer Reset für Mobile */
+html {
+    width: 100%;
+}
+
+body {
+    margin: 0;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* Globales Box-Sizing */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* App-Container beschränken */
+#app {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Sidebar auf Mobile ausblenden */
+@media (max-width: 768px) {
+    aside.sidebar {
+        transform: translateX(-100%);
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        z-index: 40;
+        box-shadow: none !important;
+    }
+
+    aside.sidebar[aria-hidden="false"] {
+        transform: translateX(0);
+    }
+
+    body {
+        padding: 0.75rem !important;
+    }
+
+    .overflow-x-auto {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow-x: auto;
+    }
+
+    .card {
+        width: 100%;
+        margin: 0.75rem 0;
+        padding: 0.75rem;
+    }
+
+    main>div:first-child {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    /* NEUES LAYOUT FÜR CARD HEADER AUF MOBILE */
+    .card>header.flex.justify-between.items-center.mb-4 {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.75rem !important;
+        text-align: left !important;
+    }
+
+    /* Klassenname volle Breite */
+    .card>header.flex.justify-between.items-center.mb-4 h2 {
+        width: 100% !important;
+        margin-bottom: 0 !important;
+        font-size: 1.25rem !important;
+    }
+
+    /* Button-Container: volle Breite, Buttons nebeneinander */
+    .card>header.flex.justify-between.items-center.mb-4>div.flex.gap-2 {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 0.75rem !important;
+        margin: 0 !important;
+    }
+
+    /* Jeder Button nimmt exakt 50% der Breite */
+    .card>header.flex.justify-between.items-center.mb-4>div.flex.gap-2 button {
+        flex: 1 !important;
+        min-width: 0 !important;
+        font-size: 0.875rem !important;
+        padding-left: 0.6rem !important;
+        padding-right: 0.6rem !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    /* Optional: Bei sehr kleinen Screens Text kürzen */
+    @media (max-width: 360px) {
+        .card>header.flex.justify-between.items-center.mb-4>div.flex.gap-2 button span {
+            display: none;
+        }
+
+        .card>header.flex.justify-between.items-center.mb-4>div.flex.gap-2 button svg {
+            margin: 0 auto !important;
+        }
+    }
+}
+
+
+/* ========== TUTORIAL STYLES ========== */
+
+/* Tutorial Container - höchster z-index */
+.tutorial-container,
+.tutorial-prompt {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    pointer-events: none;
+}
+
+/* Tutorial Overlay - dunkler Hintergrund */
+.tutorial-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    pointer-events: none; /* Klicks durchlassen */
+}
+
+/* Hervorgehobenes Element - MUSS klickbar sein */
+.tutorial-spotlight,
+button.tutorial-spotlight,
+[data-add-grade].tutorial-spotlight,
+[data-edit-grade].tutorial-spotlight,
+#manage-categories.tutorial-spotlight,
+#add-category.tutorial-spotlight,
+#add-student.tutorial-spotlight,
+#tab-percentage.tutorial-spotlight,
+#tab-categories.tutorial-spotlight,
+#tab-plusminus.tutorial-spotlight,
+#tab-grade-direct.tutorial-spotlight,
+#tab-grade-percent.tutorial-spotlight,
+[role="tab"].tutorial-spotlight {
+    position: relative !important;
+    z-index: 10001 !important;
+    border-radius: 8px !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    outline: 4px solid #3b82f6 !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 40px rgba(59, 130, 246, 0.5), 0 0 60px rgba(59, 130, 246, 0.3) !important;
+    animation: tutorial-pulse 1s ease-in-out infinite !important;
+}
+
+/* Pulsierende Animation für Spotlight */
+@keyframes tutorial-pulse {
+    0%, 100% {
+        outline-width: 4px;
+        outline-color: #3b82f6;
+    }
+    50% {
+        outline-width: 6px;
+        outline-color: #60a5fa;
+    }
+}
+
+/* Dialoge während Tutorial müssen auch klickbar sein */
+dialog[open] {
+    z-index: 10001 !important;
+}
+
+/* Tutorial Dialog (für Prompt) */
+.tutorial-dialog {
+    z-index: 10002;
+    background: var(--card, #1e1e2e);
+    border: 1px solid var(--border, #2d2d3d);
+    border-radius: 12px;
+    padding: 1.5rem;
+    max-width: 380px;
+    width: calc(100vw - 2rem);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+}
+
+/* Tutorial Floating Box - schwebt über allem, blockiert aber nichts */
+.tutorial-floating-box {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 99999;
+    max-width: 400px;
+    width: calc(100vw - 3rem);
+    pointer-events: none;
+}
+
+.tutorial-floating-box .tutorial-dialog-content {
+    pointer-events: auto;
+    background: var(--card, #1e1e2e);
+    border: 2px solid #3b82f6;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(59, 130, 246, 0.2);
+}
+
+/* Legacy: Natives Tutorial Dialog (falls noch verwendet) */
+.tutorial-native-dialog {
+    position: fixed;
+    top: auto;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    left: auto;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    max-width: 400px;
+    width: calc(100vw - 3rem);
+}
+
+.tutorial-native-dialog::backdrop {
+    background: transparent;
+    pointer-events: none;
+}
+
+.tutorial-native-dialog {
+    pointer-events: none;
+}
+
+.tutorial-native-dialog .tutorial-dialog-content {
+    pointer-events: auto;
+}
+
+.tutorial-native-dialog .tutorial-dialog-content {
+    background: var(--card, #1e1e2e);
+    border: 2px solid #3b82f6;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(59, 130, 246, 0.2);
+}
+
+/* Während Tutorial aktiv: Alle anderen Dialog-Backdrops transparent machen */
+body.tutorial-active dialog:not(.tutorial-native-dialog)::backdrop {
+    background: transparent !important;
+}
+
+.tutorial-step-dialog {
+    z-index: 10002;
+    pointer-events: auto;
+}
+
+/* Tutorial Progress Dots */
+.tutorial-progress {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tutorial-progress-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: oklch(.708 0 0 / 0.3);
+    transition: background 0.2s ease;
+}
+
+.tutorial-progress-dot.active {
+    background: #3b82f6;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+.tutorial-progress-dot.completed {
+    background: #22c55e;
+}
+
+/* Dialoge während des Tutorials - mit .show() statt .showModal() geöffnet */
+dialog.tutorial-open {
+    display: block;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10001;
+    margin: 0;
+    border: 1px solid var(--border, #2d2d3d);
+    border-radius: 12px;
+    background: var(--card, #1e1e2e);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* Mobile Anpassungen */
+@media (max-width: 768px) {
+    .tutorial-dialog {
+        max-width: calc(100vw - 2rem);
+        left: 1rem !important;
+        right: 1rem !important;
+    }
+
+    .tutorial-native-dialog,
+    .tutorial-floating-box {
+        bottom: 1rem;
+        right: 1rem;
+        left: 1rem;
+        width: auto;
+        max-width: none;
+    }
+
+    .tutorial-spotlight {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.6) !important;
+    }
+
+    dialog.tutorial-open {
+        width: calc(100vw - 2rem);
+        max-width: none;
+    }
+}
+
+/* ========== GRADE COLOR BADGES ========== */
+
+/* Base grade badge styling */
+.grade-badge {
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+}
+
+/* Note 1 - Sehr Gut - Grün */
+.grade-1 {
+    background-color: rgba(34, 197, 94, 0.15) !important;
+    color: #22c55e !important;
+    border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+.grade-1:hover {
+    background-color: rgba(34, 197, 94, 0.25) !important;
+}
+
+/* Note 2 - Gut - Smaragdgrün */
+.grade-2 {
+    background-color: rgba(52, 211, 153, 0.12) !important;
+    color: #34d399 !important;
+    border-color: rgba(52, 211, 153, 0.25) !important;
+}
+
+.grade-2:hover {
+    background-color: rgba(52, 211, 153, 0.22) !important;
+}
+
+/* Note 3 - Befriedigend - Gelb */
+.grade-3 {
+    background-color: rgba(234, 179, 8, 0.12) !important;
+    color: #eab308 !important;
+    border-color: rgba(234, 179, 8, 0.25) !important;
+}
+
+.grade-3:hover {
+    background-color: rgba(234, 179, 8, 0.22) !important;
+}
+
+/* Note 4 - Genügend - Orange */
+.grade-4 {
+    background-color: rgba(249, 115, 22, 0.15) !important;
+    color: #f97316 !important;
+    border-color: rgba(249, 115, 22, 0.3) !important;
+}
+
+.grade-4:hover {
+    background-color: rgba(249, 115, 22, 0.25) !important;
+}
+
+/* Note 5 - Nicht Genügend - Rot */
+.grade-5 {
+    background-color: rgba(239, 68, 68, 0.18) !important;
+    color: #ef4444 !important;
+    border-color: rgba(239, 68, 68, 0.35) !important;
+}
+
+.grade-5:hover {
+    background-color: rgba(239, 68, 68, 0.28) !important;
+}
+
+/* Plus - Grün */
+.grade-plus {
+    background-color: rgba(34, 197, 94, 0.15) !important;
+    color: #22c55e !important;
+    border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+.grade-plus:hover {
+    background-color: rgba(34, 197, 94, 0.25) !important;
+}
+
+/* Minus - Rot */
+.grade-minus {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    color: #ef4444 !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.grade-minus:hover {
+    background-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+/* Light Mode Anpassungen */
+html:not(.dark) .grade-1 {
+    color: #16a34a !important;
+}
+
+html:not(.dark) .grade-2 {
+    color: #059669 !important;
+}
+
+html:not(.dark) .grade-3 {
+    color: #ca8a04 !important;
+}
+
+html:not(.dark) .grade-4 {
+    color: #ea580c !important;
+}
+
+html:not(.dark) .grade-5 {
+    color: #dc2626 !important;
+}
+
+html:not(.dark) .grade-plus {
+    color: #16a34a !important;
+}
+
+html:not(.dark) .grade-minus {
+    color: #dc2626 !important;
+}
+
+/* ========== VIEW TRANSITION ANIMATIONS ========== */
+
+/* Basis-Animation für Views */
+#home-view,
+#class-view {
+    animation: viewFadeIn 0.3s ease-out;
+}
+
+@keyframes viewFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Animation beim Ausblenden (wird via JS hinzugefügt) */
+.view-fade-out {
+    animation: viewFadeOut 0.2s ease-in forwards;
+}
+
+@keyframes viewFadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
+/* ========== TAB PANEL ANIMATIONS ========== */
+
+/* Tab Panel Basis */
+[role="tabpanel"] {
+    animation: tabFadeIn 0.2s ease-out;
+}
+
+[role="tabpanel"]:not([hidden]) {
+    animation: tabFadeIn 0.2s ease-out;
+}
+
+@keyframes tabFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Tab-Button Übergang */
+[role="tab"] {
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+[role="tab"][aria-selected="true"] {
+    transition: all 0.2s ease;
+}
+
+/* Tab-Indikator Animation */
+.tabs nav {
+    position: relative;
+}
+
+/* Sanfter Hover-Effekt für Tabs */
+[role="tab"]:hover:not([aria-selected="true"]) {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+html:not(.dark) [role="tab"]:hover:not([aria-selected="true"]) {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Tab aktiv Animation */
+[role="tab"][aria-selected="true"]::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: currentColor;
+    animation: tabIndicator 0.2s ease-out;
+}
+
+@keyframes tabIndicator {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+
+/* ========== DIALOG ANIMATIONS ========== */
+
+/* Dialog öffnen Animation */
+dialog[open] {
+    animation: dialogOpen 0.25s ease-out;
+}
+
+dialog[open]::backdrop {
+    animation: backdropFadeIn 0.25s ease-out;
+}
+
+@keyframes dialogOpen {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes backdropFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* ========== CARD & LIST ANIMATIONS ========== */
+
+/* Klassen-Liste Animation */
+#class-list > div {
+    animation: listItemFadeIn 0.2s ease-out;
+    animation-fill-mode: both;
+}
+
+#class-list > div:nth-child(1) { animation-delay: 0.02s; }
+#class-list > div:nth-child(2) { animation-delay: 0.04s; }
+#class-list > div:nth-child(3) { animation-delay: 0.06s; }
+#class-list > div:nth-child(4) { animation-delay: 0.08s; }
+#class-list > div:nth-child(5) { animation-delay: 0.1s; }
+
+@keyframes listItemFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Tabellen-Zeilen Animation */
+#students-table tr {
+    animation: tableRowFadeIn 0.2s ease-out;
+    animation-fill-mode: both;
+}
+
+#students-table tr:nth-child(1) { animation-delay: 0.02s; }
+#students-table tr:nth-child(2) { animation-delay: 0.04s; }
+#students-table tr:nth-child(3) { animation-delay: 0.06s; }
+#students-table tr:nth-child(4) { animation-delay: 0.08s; }
+#students-table tr:nth-child(5) { animation-delay: 0.1s; }
+#students-table tr:nth-child(6) { animation-delay: 0.12s; }
+#students-table tr:nth-child(7) { animation-delay: 0.14s; }
+#students-table tr:nth-child(8) { animation-delay: 0.16s; }
+#students-table tr:nth-child(9) { animation-delay: 0.18s; }
+#students-table tr:nth-child(10) { animation-delay: 0.2s; }
+
+@keyframes tableRowFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Grade Badge Animation */
+.grade-badge {
+    transition: all 0.15s ease;
+}
+
+.grade-badge:hover {
+    transform: scale(1.05);
+}
+
+/* Button Hover Animationen */
+.btn-primary,
+.btn-secondary,
+.btn-outline,
+.btn-destructive,
+.btn-icon {
+    transition: all 0.15s ease;
+}
+
+.btn-primary:hover,
+.btn-secondary:hover,
+.btn-outline:hover,
+.btn-destructive:hover {
+    transform: translateY(-1px);
+}
+
+.btn-icon:hover {
+    transform: scale(1.1);
+}
+
+/* Card Hover Animation */
+[data-goto-class] {
+    transition: all 0.2s ease;
+}
+
+[data-goto-class]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ========== REDUCED MOTION ========== */
+/* Respektiere Benutzer-Präferenz für reduzierte Bewegung */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

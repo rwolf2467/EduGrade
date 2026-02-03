@@ -1,0 +1,38 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background rounded square with gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9333ea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect x="10" y="10" width="180" height="180" rx="35" fill="url(#bgGradient)"/>
+  
+  <!-- Clipboard top clip (simplified) -->
+  <rect x="80" y="40" width="40" height="10" rx="5" fill="#ffffff"/>
+  
+  <!-- Clipboard board -->
+  <rect x="65" y="48" width="70" height="100" rx="8" fill="#ffffff"/>
+  
+  <!-- User list items (simplified, thicker) -->
+  <circle cx="80" cy="70" r="5" fill="none" stroke="#9333ea" stroke-width="3"/>
+  <line x1="80" y1="70" x2="82" y2="72" stroke="#9333ea" stroke-width="3" stroke-linecap="round"/>
+  <line x1="82" y1="72" x2="85" y2="67" stroke="#9333ea" stroke-width="3" stroke-linecap="round"/>
+  <line x1="93" y1="70" x2="120" y2="70" stroke="#9333ea" stroke-width="3" stroke-linecap="round"/>
+  
+  <circle cx="80" cy="92" r="5" fill="none" stroke="#ec4899" stroke-width="3"/>
+  <line x1="93" y1="92" x2="120" y2="92" stroke="#ec4899" stroke-width="3" stroke-linecap="round"/>
+  
+  <circle cx="80" cy="114" r="5" fill="none" stroke="#9333ea" stroke-width="3"/>
+  <line x1="93" y1="114" x2="120" y2="114" stroke="#9333ea" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Grade/Note (bigger) -->
+  <text x="100" y="140" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#eab308" text-anchor="middle">A+</text>
+  
+  <!-- Pen (thicker, simpler) -->
+  <g transform="translate(115, 125) rotate(40)">
+    <rect x="0" y="0" width="10" height="30" rx="2" fill="#ec4899"/>
+    <polygon points="0,30 10,30 5,38" fill="#9333ea"/>
+  </g>
+</svg>

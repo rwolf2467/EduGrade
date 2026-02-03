@@ -1,0 +1,189 @@
+{
+  "teacherName": "Fabian",
+  "currentClassId": "1769595023015",
+  "classes": [
+    {
+      "id": "1769594974677",
+      "name": "Test Class",
+      "students": [
+        {
+          "id": "1769594992224",
+          "name": "Test Student 1",
+          "grades": [
+            {
+              "id": "1769595098464",
+              "categoryId": "1769595073200",
+              "categoryName": "SA",
+              "weight": 0.5,
+              "name": "SA1",
+              "value": 3,
+              "isPlusMinus": false
+            },
+            {
+              "id": "1769595129160",
+              "categoryId": "1769595089375",
+              "categoryName": "Mitarbeit",
+              "weight": 0.5,
+              "name": "",
+              "value": "+",
+              "isPlusMinus": true
+            }
+          ],
+          "participation": []
+        },
+        {
+          "id": "1769595002231",
+          "name": "Test Student 2",
+          "grades": [
+            {
+              "id": "1769595109128",
+              "categoryId": "1769595073200",
+              "categoryName": "SA",
+              "weight": 0.5,
+              "name": "SA1",
+              "value": 1,
+              "isPlusMinus": false
+            },
+            {
+              "id": "1769595137000",
+              "categoryId": "1769595089375",
+              "categoryName": "Mitarbeit",
+              "weight": 0.5,
+              "name": "",
+              "value": "+",
+              "isPlusMinus": true
+            }
+          ],
+          "participation": []
+        },
+        {
+          "id": "1769595017191",
+          "name": "Test Student 3",
+          "grades": [
+            {
+              "id": "1769595116456",
+              "categoryId": "1769595073200",
+              "categoryName": "SA",
+              "weight": 0.5,
+              "name": "SA1",
+              "value": 5,
+              "isPlusMinus": false
+            },
+            {
+              "id": "1769595148799",
+              "categoryId": "1769595089375",
+              "categoryName": "Mitarbeit",
+              "weight": 0.5,
+              "name": "",
+              "value": "+",
+              "isPlusMinus": true
+            }
+          ],
+          "participation": []
+        }
+      ]
+    },
+    {
+      "id": "1769595023015",
+      "name": "Test Class 2",
+      "students": [
+        {
+          "id": "1769595030959",
+          "name": "Test Student 4",
+          "grades": [
+            {
+              "id": "1769595195290",
+              "categoryId": "1769595073200",
+              "categoryName": "SA",
+              "weight": 0.5,
+              "name": "SA1",
+              "value": 4,
+              "isPlusMinus": false
+            },
+            {
+              "id": "1769595211440",
+              "categoryId": "1769595089375",
+              "categoryName": "Mitarbeit",
+              "weight": 0.5,
+              "name": "",
+              "value": "+",
+              "isPlusMinus": true
+            }
+          ],
+          "participation": []
+        },
+        {
+          "id": "1769595036880",
+          "name": "Test Student 5",
+          "grades": [
+            {
+              "id": "1769595200969",
+              "categoryId": "1769595073200",
+              "categoryName": "SA",
+              "weight": 0.5,
+              "name": "SA1",
+              "value": 2,
+              "isPlusMinus": false
+            },
+            {
+              "id": "1769595217992",
+              "categoryId": "1769595089375",
+              "categoryName": "Mitarbeit",
+              "weight": 0.5,
+              "name": "",
+              "value": "+",
+              "isPlusMinus": true
+            }
+          ],
+          "participation": []
+        },
+        {
+          "id": "1769595043840",
+          "name": "Test Student 6",
+          "grades": [
+            {
+              "id": "1769595206490",
+              "categoryId": "1769595073200",
+              "categoryName": "SA",
+              "weight": 0.5,
+              "name": "SA1",
+              "value": 3,
+              "isPlusMinus": false
+            },
+            {
+              "id": "1769595222992",
+              "categoryId": "1769595089375",
+              "categoryName": "Mitarbeit",
+              "weight": 0.5,
+              "name": "",
+              "value": "-",
+              "isPlusMinus": true
+            }
+          ],
+          "participation": []
+        }
+      ]
+    }
+  ],
+  "categories": [
+    {
+      "id": "1769595073200",
+      "name": "SA",
+      "weight": 0.5,
+      "allowPlusMinus": false,
+      "onlyPlusMinus": false
+    },
+    {
+      "id": "1769595089375",
+      "name": "Mitarbeit",
+      "weight": 0.5,
+      "allowPlusMinus": true,
+      "onlyPlusMinus": true
+    }
+  ],
+  "students": [],
+  "participationSettings": {
+    "plusValue": 0.1,
+    "minusValue": 0.1
+  }
+}

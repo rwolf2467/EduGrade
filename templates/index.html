@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>EduGrade</title>
+    <link rel="icon" type="image/png" href="/static/logo.svg">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/basecoat.cdn.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/js/all.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+
+<body>
+    <!-- Store current user info -->
+    <script>
+        window.currentUser = {
+            id: '{{ user.id }}',
+            username: "{{ user.username }}",
+            email: "{{ user.email }}"
+        };
+    </script>
+
+    <div id="toaster" class="toaster"></div>
+
+    <div id="app">
+        <!-- Setup Page -->
+        <div id="setup-page" class="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50">
+            <dialog id="setup-dialog" class="dialog w-full sm:max-w-[425px]" open>
+                <div>
+                    <header>
+                        <img src="/static/logo.svg" alt="EduGrade Logo" class="mx-auto mb-3"
+                            style="height: 48px; width: auto;">
+                        <h2>Welcome!</h2>
+                        <p>Welcome to EduGrade! A tool to help you manage and track student grades effectively.</p>
+                    </header>
+                    <section>
+                        <form id="setup-form" class="form grid gap-6">
+                            <div class="grid gap-2">
+                                <p class="text-lg font-medium">Welcome, <span class="text-primary font-semibold">{{
+                                        user.username }}</span>!</p>
+                                <p class="text-sm" style="color: oklch(.708 0 0);">Great to have you here! Let's set up
+                                    your first classroom.</p>
+                            </div>
+                            <div class="grid gap-2">
+                                <label for="class-name">Class name (e.g., "1A")</label>
+                                <input type="text" id="class-name" class="input" value="1A">
+                                <p class="text-sm" style="color: oklch(.708 0 0);">Create your first class. You can
+                                    always add more or make changes later.</p>
+                            </div>
+                    </section>
+                    <footer class="flex justify-end gap-2">
+                        <button type="button" class="btn-outline" id="import-setup">Import</button>
+                        <button type="submit" class="btn-primary">Let's go</button>
+                    </footer>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+
+        <!-- Import Dialog -->
+        <dialog id="import-dialog" class="dialog w-full sm:max-w-[425px]">
+            <div>
+                <header>
+                    <h2>Import Data</h2>
+                </header>
+                <section>
+                    <form id="import-form" class="form grid gap-6">
+                        <div class="grid gap-2">
+                            <label for="import-file">Select JSON File</label>
+                            <input type="file" id="import-file" class="input" accept=".json" required>
+                        </div>
+                    </form>
+                </section>
+                <footer class="flex justify-end gap-2">
+                    <button type="button" class="btn-outline" id="cancel-import">Cancel</button>
+                    <button type="button" class="btn-primary" id="confirm-import">Import</button>
+                </footer>
+            </div>
+        </dialog>
+        <dialog id="alert-dialog" class="dialog w-full sm:max-w-[425px]" aria-labelledby="alert-dialog-title"
+            onclick="if (event.target === this) this.close()">
+            <div>
+                <header>
+                    <h2 id="alert-dialog-title">Alert</h2>
+                </header>
+                <section class="flex gap-3 items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="text-yellow-500 flex-shrink-0 mt-0.5">
+                        <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+                        <path d="M12 9v4" />
+                        <path d="M12 17h.01" />
+                    </svg>
+                    <p id="alert-message"></p>
+                </section>
+                <footer class="flex justify-end gap-2">
+                    <button type="button" class="btn-primary" id="close-alert">Okay</button>
+                </footer>
+            </div>
+        </dialog>
+        <!-- Main Dashboard -->
+        <div id="dashboard" class="hidden">
+            <aside class="sidebar" data-side="left" aria-hidden="false">
+                <nav aria-label="Sidebar navigation">
+                    <section class="scrollbar">
+                        <div role="group" aria-labelledby="group-label-home" class="w-full">
+                            <h3 id="group-label-home">Navigation</h3>
+                            <ul class="w-full">
+                                <li class="w-full">
+                                    <button id="nav-home" class="btn-block btn-primary mb-2 w-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                            <polyline points="9 22 9 12 15 12 15 22" />
+                                        </svg>
+                                        <span>Home</span>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                        <div role="group" aria-labelledby="group-label-content-1" class="w-full">
+                            <h3 id="group-label-content-1">Classes</h3>
+                            <ul class="w-full">
+                                <li class="w-full">
+                                    <button id="add-class" class="btn-block btn-secondary mb-2 w-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="m7 11 2-2-2-2" />
+                                            <path d="M11 13h4" />
+                                            <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                                        </svg>
+                                        <span>Add Class</span>
+                                    </button>
+                                </li>
+                                <li class="w-full">
+                                    <div id="class-list" class="space-y-1 w-full"></div>
+                                </li>
+                            </ul>
+                        </div>
+                    </section>
+                    <section class="mt-auto pt-4 flex justify-end">
+                        <div role="group" aria-labelledby="group-label-content-2" class="w-full">
+                            <h3 id="group-label-content-2" class="sr-only">Actions</h3>
+                            <div role="group" class="button-group w-full" data-orientation="vertical">
+                                <button id="export-data" class="btn-outline w-full">
+                                    <svg class="lucide lucide-download" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M7 10l5 5 5-5" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 15V3" />
+                                    </svg>
+                                    <span>Export</span>
+                                </button>
+                                <button id="profile-btn" class="btn-outline w-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                                        <circle cx="12" cy="7" r="4" />
+                                    </svg>
+                                    <span>Profile</span>
+                                </button>
+                                <button id="logout-btn" class="btn-outline w-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                        <polyline points="16 17 21 12 16 7" />
+                                        <line x1="21" y1="12" x2="9" y2="12" />
+                                    </svg>
+                                    <span>Logout</span>
+                                </button>
+                            </div>
+                            <div class="flex gap-2 mt-4 w-full">
+                                <a href="/about.html" class="btn-outline flex-1">
+                                    <svg class="lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                        <circle cx="12" cy="12" r="10" stroke-width="2" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 16v-4M12 8h.01" />
+                                    </svg>
+                                    <span>About</span>
+                                </a>
+                                <button type="button" aria-label="Toggle dark mode" data-tooltip="Toggle dark mode"
+                                    data-side="left"
+                                    onclick="document.dispatchEvent(new CustomEvent('basecoat:theme'))"
+                                    class="btn-icon-outline size-8">
+                                    <span class="hidden dark:block"><svg xmlns="http://www.w3.org/2000/svg" width="24"
+                                            height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="4" />
+                                            <path d="M12 2v2" />
+                                            <path d="M12 20v2" />
+                                            <path d="m4.93 4.93 1.41 1.41" />
+                                            <path d="m17.66 17.66 1.41 1.41" />
+                                            <path d="M2 12h2" />
+                                            <path d="M20 12h2" />
+                                            <path d="m6.34 17.66-1.41 1.41" />
+                                            <path d="m19.07 4.93-1.41 1.41" />
+                                        </svg></span>
+                                    <span class="block dark:hidden"><svg xmlns="http://www.w3.org/2000/svg" width="24"
+                                            height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                                        </svg></span>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                </nav>
+            </aside>
+
+            <main>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="document.dispatchEvent(new CustomEvent('basecoat:sidebar'));"
+                            class="btn-outline" data-tooltip="Toggle sidebar" data-side="right">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M3 6h18" />
+                                <path d="M3 12h18" />
+                                <path d="M3 18h18" />
+                            </svg>
+                        </button>
+
+                        <h2 class="text-xl font-semibold" id="greeting">Hello, <span id="teacher-greeting"></span>!</h2>
+                    </div>
+                </div>
+                <dialog id="clear-storage-dialog" class="dialog w-full sm:max-w-[425px]"
+                    aria-labelledby="clear-storage-dialog-title">
+                    <div>
+                        <header>
+                            <h2>Clear All Data</h2>
+                        </header>
+                        <section class="flex gap-3 items-start">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="text-red-500 flex-shrink-0 mt-0.5">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+                                <path d="M12 9v4" />
+                                <path d="M12 17h.01" />
+                            </svg>
+                            <div>
+                                <p class="mb-2"><strong>This will delete all your data from the server!</strong></p>
+                                <p class="text-sm" style="color: oklch(.708 0 0);">All classes, students, and grades will be permanently deleted. Please export your data first if you want to keep a backup. This action cannot be undone.</p>
+                            </div>
+                        </section>
+                        <footer class="flex justify-end gap-2">
+                            <button type="button" class="btn-outline" id="cancel-clear-storage">Cancel</button>
+                            <button type="button" class="btn-destructive" id="confirm-clear-storage">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash">
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                    <path d="M3 6h18" />
+                                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                </svg>
+                                Delete All Data
+                            </button>
+                        </footer>
+                        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </dialog>
+
+                <!-- Profile Dialog -->
+                <dialog id="profile-dialog" class="dialog w-full sm:max-w-[500px]"
+                    aria-labelledby="profile-dialog-title">
+                    <div>
+                        <header>
+                            <h2 id="profile-dialog-title">Profile</h2>
+                            <p class="text-sm" style="color: oklch(.708 0 0);">Manage your profile and account settings
+                            </p>
+                        </header>
+                        <section class="space-y-6">
+                            <!-- Account Info -->
+                            <div class="p-4 rounded-lg" style="background: oklch(.2 0 0);">
+                                <h3 class="text-sm font-medium mb-2">Account Information</h3>
+                                <div class="space-y-1 text-sm" style="color: oklch(.708 0 0);">
+                                    <p><span class="font-medium">Username:</span> {{ user.username }}</p>
+                                    <p><span class="font-medium">Email:</span> {{ user.email }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Teacher Name -->
+                            <div class="grid gap-2">
+                                <label for="profile-teacher-name" class="text-sm font-medium">Display Name</label>
+                                <input type="text" id="profile-teacher-name" class="input" placeholder="Your name">
+                                <p class="text-xs" style="color: oklch(.708 0 0);">This name will be shown in the
+                                    greeting message.</p>
+                            </div>
+
+                            <!-- School -->
+                            <div class="grid gap-2">
+                                <label for="profile-school" class="text-sm font-medium">School</label>
+                                <input type="text" id="profile-school" class="input" placeholder="Your school name">
+                                <p class="text-xs" style="color: oklch(.708 0 0);">Optional: Name of your school or
+                                    educational institution.</p>
+                            </div>
+
+                            <!-- Danger Zone -->
+                            <div class="alert-destructive p-4 rounded-lg border border-red-500/30" style="background: oklch(.2 .05 25);">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="lucide lucide-octagon-alert-icon lucide-octagon-alert">
+                                    <path d="M12 16h.01" />
+                                    <path d="M12 8v4" />
+                                    <path
+                                        d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z" />
+                                </svg>
+                                <h3 class="text-sm font-medium mb-3 text-red-400">Danger Zone</h3>
+                                <section class="space-y-3">
+                                    <div class="flex items-center justify-between gap-4">
+                                        <div>
+                                            <p class="text-sm font-medium">Clear All Data</p>
+                                            <p class="text-xs" style="color: oklch(.708 0 0);">Deletes all classes,
+                                                students and grades. Your account will be preserved.</p>
+                                        </div>
+                                        <button type="button"
+                                            class="btn-outline text-red-400 border-red-400 hover:bg-red-500/10"
+                                            id="profile-clear-data">
+                                            Clear Data
+                                        </button>
+                                    </div>
+                                    <hr class="border-red-500/20">
+                                    <div class="flex items-center justify-between gap-4">
+                                        <div>
+                                            <p class="text-sm font-medium">Delete Account</p>
+                                            <p class="text-xs" style="color: oklch(.708 0 0);">Permanently deletes your
+                                                account and all associated data.</p>
+                                        </div>
+                                        <button type="button" class="btn-destructive" id="profile-delete-account">
+                                            Delete Account
+                                        </button>
+                                    </div>
+                                </section>
+                            </div>
+                        </section>
+                        <footer class="flex justify-end gap-2">
+                            <button type="button" class="btn-outline" id="cancel-profile">Cancel</button>
+                            <button type="button" class="btn-primary" id="save-profile">Save</button>
+                        </footer>
+                        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </dialog>
+
+                <!-- Delete Account Confirmation Dialog -->
+                <dialog id="delete-account-dialog" class="dialog w-full sm:max-w-[425px]"
+                    aria-labelledby="delete-account-dialog-title">
+                    <div>
+                        <header>
+                            <h2 id="delete-account-dialog-title" class="text-red-400">Delete Account</h2>
+                        </header>
+                        <section class="flex gap-3 items-start">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="text-red-500 flex-shrink-0 mt-0.5">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+                                <path d="M12 9v4" />
+                                <path d="M12 17h.01" />
+                            </svg>
+                            <div>
+                                <p class="mb-2"><strong>This action cannot be undone!</strong></p>
+                                <p class="text-sm" style="color: oklch(.708 0 0);">Your account and all associated data
+                                    will be permanently deleted. You will be logged out immediately.</p>
+                            </div>
+                        </section>
+                        <footer class="flex justify-end gap-2">
+                            <button type="button" class="btn-outline" id="cancel-delete-account">Cancel</button>
+                            <button type="button" class="btn-destructive" id="confirm-delete-account">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                    <path d="M3 6h18" />
+                                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                </svg>
+                                Delete Account
+                            </button>
+                        </footer>
+                        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </dialog>
+
+                <!-- Category Management Dialog -->
+                <dialog id="category-management-dialog" class="dialog w-full sm:max-w-[425px]"
+                    aria-labelledby="category-management-title">
+                    <div>
+                        <header>
+                            <h2 id="category-management-title">Manage Categories</h2>
+                        </header>
+                        <section>
+                            <div id="category-management-list" class="space-y-2"></div>
+                        </section>
+                        <footer class="flex justify-end gap-2">
+                            <button type="button" class="btn-outline" id="close-category-management">Close</button>
+                        </footer>
+                        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()"
+                            data-tooltip="Close dialog" data-side="top">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </dialog>
+
+                <!-- Home View -->
+                <section id="home-view" class="mt-10">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div class="card">
+                            <div class="flex items-center gap-3 p-4">
+                                <div class="p-3 rounded-lg bg-blue-100">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" class="text-blue-600">
+                                        <path d="M18 21a8 8 0 0 0-16 0" />
+                                        <circle cx="10" cy="8" r="5" />
+                                        <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);">Total Classes</p>
+                                    <p class="text-2xl font-bold" id="stat-total-classes">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="flex items-center gap-3 p-4">
+                                <div class="p-3 rounded-lg bg-green-100">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" class="text-green-600">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                        <circle cx="9" cy="7" r="4" />
+                                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);">Total Students</p>
+                                    <p class="text-2xl font-bold" id="stat-total-students">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="flex items-center gap-3 p-4">
+                                <div class="p-3 rounded-lg bg-yellow-100">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" class="text-yellow-600">
+                                        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+                                        <path d="M6 12v5c3 3 9 3 12 0v-5" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);">Overall Average</p>
+                                    <p class="text-2xl font-bold" id="stat-overall-average">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="flex items-center gap-3 p-4">
+                                <div class="p-3 rounded-lg bg-purple-100">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" class="text-purple-600">
+                                        <path d="M12 20h9" />
+                                        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);">Total Grades</p>
+                                    <p class="text-2xl font-bold" id="stat-total-grades">0</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <header class="mb-4 px-4 pt-4">
+                            <h2 class="text-xl font-semibold">Class Overview</h2>
+                        </header>
+                        <div id="class-overview-list" class="space-y-3 px-4 pb-4"></div>
+                    </div>
+                </section>
+
+                <!-- Class View -->
+                <section id="class-view" class="hidden mt-10">
+                    <div class="card mb-6">
+                        <header class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-semibold">Class: <span id="current-class-name"></span></h2>
+                            <div class="flex gap-2">
+                                <button id="add-student" class="btn-primary">
+                                    <svg class="lucide lucide-user-plus" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                        <circle cx="8.5" cy="7" r="4" />
+                                        <line x1="20" y1="8" x2="20" y2="14" />
+                                        <line x1="23" y1="11" x2="17" y2="11" />
+                                    </svg>
+                                    Add Student
+                                </button>
+                                <button id="manage-categories" class="btn-secondary">
+                                    <svg class="lucide lucide-settings" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0h-3.75" />
+                                    </svg>
+                                    Manage Categories
+                                </button>
+                            </div>
+                        </header>
+                        <section class="mb-4 flex gap-2">
+                            <input type="text" id="search-students" class="input flex-1"
+                                placeholder="Search by name or grade...">
+                            <select id="filter-category" class="select">
+                                <option value="">All Categories</option>
+                            </select>
+                        </section>
+                        <section class="overflow-x-auto">
+                            <table class="table w-full">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Grades</th>
+                                        <th>Average</th>
+                                        <th>Weighted</th>
+                                        <th>Final Grade</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="students-table"></tbody>
+                            </table>
+                        </section>
+                    </div>
+                </section>
+
+                <!-- Dialogs -->
+                <dialog id="edit-dialog" class="dialog w-full sm:max-w-[425px]" aria-labelledby="edit-dialog-title">
+                    <div>
+                        <header>
+                            <h2 id="edit-dialog-title"></h2>
+                        </header>
+                        <section>
+                            <form id="edit-form" class="form grid gap-4"></form>
+                        </section>
+                        <footer class="flex justify-end gap-2">
+                            <button type="button" class="btn-outline" id="cancel-edit">Cancel</button>
+                            <button type="submit" class="btn-primary" form="edit-form">Save</button>
+                        </footer>
+                        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()"
+                            data-tooltip="Close dialog" data-side="top">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </dialog>
+
+                <dialog id="manage-categories-dialog" class="dialog w-full sm:max-w-[525px]"
+                    aria-labelledby="manage-categories-title">
+                    <div>
+                        <header>
+                            <h2 id="manage-categories-title">Manage Categories</h2>
+                        </header>
+                        <section>
+                            <div class="tabs w-full" id="manage-categories-tabs">
+                                <nav role="tablist" aria-orientation="horizontal" class="w-full">
+                                    <button type="button" role="tab" id="tab-categories"
+                                        aria-controls="panel-categories" aria-selected="true"
+                                        tabindex="0">Categories</button>
+                                    <button type="button" role="tab" id="tab-percentage"
+                                        aria-controls="panel-percentage" aria-selected="false" tabindex="0">Grade
+                                        Ranges</button>
+                                    <button type="button" role="tab" id="tab-plusminus" aria-controls="panel-plusminus"
+                                        aria-selected="false" tabindex="0">+/- Settings</button>
+                                </nav>
+
+                                <div role="tabpanel" id="panel-categories" aria-labelledby="tab-categories"
+                                    tabindex="-1" aria-selected="true">
+                                    <div class="py-4">
+                                        <div id="categories-list" class="space-y-2"></div>
+                                    </div>
+                                </div>
+
+                                <div role="tabpanel" id="panel-percentage" aria-labelledby="tab-percentage"
+                                    tabindex="-1" aria-selected="false" hidden>
+                                    <div class="py-4">
+                                        <p class="text-sm mb-4" style="color: oklch(.708 0 0);">Define the percentage
+                                            ranges for each grade. These are used when entering grades as percentages.
+                                        </p>
+                                        <div class="space-y-3" id="percentage-ranges-list">
+                                            <div class="flex items-center gap-2">
+                                                <span class="w-12 font-semibold">1</span>
+                                                <input type="number" id="grade-1-min" min="0" max="100"
+                                                    class="input w-20" value="85">
+                                                <span>% -</span>
+                                                <input type="number" id="grade-1-max" min="0" max="100"
+                                                    class="input w-20" value="100">
+                                                <span>%</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="w-12 font-semibold">2</span>
+                                                <input type="number" id="grade-2-min" min="0" max="100"
+                                                    class="input w-20" value="70">
+                                                <span>% -</span>
+                                                <input type="number" id="grade-2-max" min="0" max="100"
+                                                    class="input w-20" value="84">
+                                                <span>%</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="w-12 font-semibold">3</span>
+                                                <input type="number" id="grade-3-min" min="0" max="100"
+                                                    class="input w-20" value="55">
+                                                <span>% -</span>
+                                                <input type="number" id="grade-3-max" min="0" max="100"
+                                                    class="input w-20" value="69">
+                                                <span>%</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="w-12 font-semibold">4</span>
+                                                <input type="number" id="grade-4-min" min="0" max="100"
+                                                    class="input w-20" value="40">
+                                                <span>% -</span>
+                                                <input type="number" id="grade-4-max" min="0" max="100"
+                                                    class="input w-20" value="54">
+                                                <span>%</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="w-12 font-semibold">5</span>
+                                                <input type="number" id="grade-5-min" min="0" max="100"
+                                                    class="input w-20" value="0">
+                                                <span>% -</span>
+                                                <input type="number" id="grade-5-max" min="0" max="100"
+                                                    class="input w-20" value="39">
+                                                <span>%</span>
+                                            </div>
+                                        </div>
+                                        <button id="save-percentage-ranges" class="btn-primary mt-4 w-full">Save
+                                            Ranges</button>
+                                    </div>
+                                </div>
+
+                                <div role="tabpanel" id="panel-plusminus" aria-labelledby="tab-plusminus" tabindex="-1"
+                                    aria-selected="false" hidden>
+                                    <div class="py-4">
+                                        <p class="text-sm mb-3" style="color: oklch(.708 0 0);">Settings for categories
+                                            that use only +/- grades instead of numeric grades. The grade is calculated
+                                            from a starting grade, adjusted by each + and -.</p>
+                                        <div class="grid grid-cols-3 gap-3">
+                                            <div>
+                                                <label class="block text-sm mb-1">Start grade</label>
+                                                <input type="number" id="plusminus-start-grade" step="0.5" min="1"
+                                                    max="5" class="input w-full" value="3">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm mb-1">Per + (better)</label>
+                                                <input type="number" id="plusminus-plus-value" step="0.1" min="0.1"
+                                                    max="2" class="input w-full" value="0.5">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm mb-1">Per - (worse)</label>
+                                                <input type="number" id="plusminus-minus-value" step="0.1" min="0.1"
+                                                    max="2" class="input w-full" value="0.5">
+                                            </div>
+                                        </div>
+                                        <button id="save-plusminus-settings" class="btn-primary mt-4 w-full">Save
+                                            Settings</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <footer class="flex justify-between items-center gap-2">
+                            <button id="add-category" class="btn-secondary">
+                                <svg class="lucide lucide-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42Z" />
+                                    <circle cx="7.5" cy="15.5" r="1" />
+                                </svg>
+                                Add Category
+                            </button>
+                            <button type="button" class="btn-outline" id="close-manage-categories">Close</button>
+                        </footer>
+                        <button type="button" aria-label="Close dialog" data-tooltip="Close dialog" data-side="top"
+                            onclick="this.closest('dialog').close()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </dialog>
+
+
+
+                <dialog id="confirm-dialog" class="dialog w-full sm:max-w-[425px]"
+                    aria-labelledby="confirm-dialog-title">
+                    <div>
+                        <header>
+                            <h2>Confirmation</h2>
+                        </header>
+                        <section>
+                            <p id="confirm-message" class="mb-4"></p>
+                        </section>
+                        <footer class="flex justify-end gap-2">
+                            <button type="button" class="btn-outline" id="cancel-action">Cancel</button>
+                            <button type="button" class="btn-destructive" id="confirm-action">Delete</button>
+                        </footer>
+                    </div>
+                </dialog>
+
+                <!-- Add Class Dialog -->
+                <dialog id="add-class-dialog" class="dialog w-full sm:max-w-[425px]"
+                    aria-labelledby="add-class-dialog-title">
+                    <div>
+                        <header>
+                            <h2 id="add-class-dialog-title">Add Class</h2>
+                        </header>
+                        <section>
+                            <form id="add-class-form" class="form grid gap-4">
+                                <div class="grid gap-2">
+                                    <label for="class-name-input" class="block mb-2">Class Name</label>
+                                    <input type="text" id="class-name-input" name="name" class="input w-full" required>
+                                </div>
+                            </form>
+                        </section>
+                        <footer class="flex justify-end gap-2">
+                            <button type="button" class="btn-outline" id="cancel-add-class">Cancel</button>
+                            <button type="submit" class="btn-primary" form="add-class-form">Add</button>
+                        </footer>
+                        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </dialog>
+
+                <!-- Add Student Dialog -->
+                <dialog id="add-student-dialog" class="dialog w-full sm:max-w-[425px]"
+                    aria-labelledby="add-student-dialog-title">
+                    <div>
+                        <header>
+                            <h2 id="add-student-dialog-title">Add Student</h2>
+                        </header>
+                        <section>
+                            <form id="add-student-form" class="form grid gap-4">
+                                <div class="grid gap-2">
+                                    <label for="student-name-input" class="block mb-2">Student Name</label>
+                                    <input type="text" id="student-name-input" name="name" class="input w-full"
+                                        required>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);">What is the name of the student
+                                        you would like to add?</p>
+                                </div>
+                            </form>
+                        </section>
+                        <footer class="flex justify-end gap-2">
+                            <button type="button" class="btn-outline" id="cancel-add-student">Cancel</button>
+                            <button type="submit" class="btn-primary" form="add-student-form"><svg
+                                    xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="lucide lucide-user-plus-icon lucide-user-plus">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <line x1="19" x2="19" y1="8" y2="14" />
+                                    <line x1="22" x2="16" y1="11" y2="11" />
+                                </svg> Add</button>
+                        </footer>
+                        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </dialog>
+            </main>
+        </div>
+    </div>
+
+    <script src="/static/scripts/security.js"></script>
+    <script src="/static/scripts/data.js"></script>
+    <script src="/static/scripts/storage.js"></script>
+    <script src="/static/scripts/ui.js"></script>
+    <script src="/static/scripts/dataManagement.js"></script>
+    <script src="/static/scripts/render.js"></script>
+    <script src="/static/scripts/exportImport.js"></script>
+    <script src="/static/scripts/tutorial.js"></script>
+    <script src="/static/scripts/eventListeners.js"></script>
+    <script src="/static/scripts/theme.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Logout button
+            const logoutHandler = async () => {
+                try {
+                    await fetch('/api/logout', { method: 'POST' });
+                    window.location.href = '/login';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    window.location.href = '/login';
+                }
+            };
+
+            document.getElementById('logout-btn').addEventListener('click', logoutHandler);
+
+            // Profile dialog handlers
+            const profileDialog = document.getElementById('profile-dialog');
+            const deleteAccountDialog = document.getElementById('delete-account-dialog');
+
+            const openProfileDialog = () => {
+                // Load current values
+                document.getElementById('profile-teacher-name').value = appData.teacherName || '';
+                document.getElementById('profile-school').value = appData.school || '';
+                profileDialog.showModal();
+            };
+
+            document.getElementById('profile-btn').addEventListener('click', openProfileDialog);
+
+            document.getElementById('cancel-profile').addEventListener('click', () => {
+                profileDialog.close();
+            });
+
+            document.getElementById('save-profile').addEventListener('click', async () => {
+                const teacherName = document.getElementById('profile-teacher-name').value.trim();
+                const school = document.getElementById('profile-school').value.trim();
+
+                // Validate teacher name
+                if (teacherName && teacherName.length > 100) {
+                    showAlertDialog('Display name must be at most 100 characters.');
+                    return;
+                }
+
+                // Update appData
+                appData.teacherName = teacherName;
+                appData.school = school;
+
+                // Update greeting display
+                if (teacherName) {
+                    document.getElementById('teacher-greeting').textContent = escapeHtml(teacherName);
+                } else {
+                    document.getElementById('teacher-greeting').textContent = window.currentUser.username;
+                }
+
+                // Save to server
+                saveData('Profile saved successfully.', 'success');
+                profileDialog.close();
+            });
+
+            // Clear data button in profile
+            const clearStorageDialog = document.getElementById('clear-storage-dialog');
+
+            document.getElementById('profile-clear-data').addEventListener('click', () => {
+                profileDialog.close();
+                clearStorageDialog.showModal();
+            });
+
+            document.getElementById('cancel-clear-storage').addEventListener('click', () => {
+                clearStorageDialog.close();
+            });
+
+            document.getElementById('confirm-clear-storage').addEventListener('click', async () => {
+                try {
+                    // Reset appData to defaults
+                    appData = {
+                        teacherName: "",
+                        currentClassId: null,
+                        classes: [],
+                        categories: [],
+                        students: [],
+                        gradeRanges: {
+                            1: { min: 85, max: 100 },
+                            2: { min: 70, max: 84 },
+                            3: { min: 55, max: 69 },
+                            4: { min: 40, max: 54 },
+                            5: { min: 0, max: 39 }
+                        },
+                        plusMinusSettings: {
+                            startGrade: 3,
+                            plusValue: 0.5,
+                            minusValue: 0.5
+                        },
+                        school: ""
+                    };
+
+                    // Save empty data to server
+                    await fetch('/api/data', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(appData)
+                    });
+
+                    // Reload page to apply changes
+                    location.reload();
+                } catch (error) {
+                    console.error('Clear data error:', error);
+                    showAlertDialog('Error clearing data.');
+                    clearStorageDialog.close();
+                }
+            });
+
+            // Delete account button
+            document.getElementById('profile-delete-account').addEventListener('click', () => {
+                profileDialog.close();
+                deleteAccountDialog.showModal();
+            });
+
+            document.getElementById('cancel-delete-account').addEventListener('click', () => {
+                deleteAccountDialog.close();
+            });
+
+            document.getElementById('confirm-delete-account').addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/api/account', { method: 'DELETE' });
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        window.location.href = '/login';
+                    } else {
+                        showAlertDialog(data.message || 'Error deleting account.');
+                        deleteAccountDialog.close();
+                    }
+                } catch (error) {
+                    console.error('Delete account error:', error);
+                    showAlertDialog('Error deleting account.');
+                    deleteAccountDialog.close();
+                }
+            });
+        });
+    </script>
+
+    <footer class="fixed bottom-0 left-0 right-0 py-2 text-center text-xs" style="color: oklch(.708 0 0);">
+        <p>Entwickelt von Fabian Murauer - Semester Abschlussprojekt 2025</p>
+    </footer>
+</body>
+
+</html>
