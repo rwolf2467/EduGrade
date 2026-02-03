@@ -22,18 +22,23 @@ DB_PATH = DATA_DIR / "edugrade.json"
 DATA_DIR.mkdir(exist_ok=True)
 
 def hash_password(password: str) -> str:
-    """Hash password using PBKDF2"""
-    salt = secrets.token_bytes(16)
-    hashed = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000)
+    """Hash password using PBKDF2 with enhanced security"""
+    salt = secrets.token_bytes(32) 
+    hashed = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 200000)
     return f"{salt.hex()}:{hashed.hex()}"
 
 def verify_password(stored_password: str, provided_password: str) -> bool:
-    """Verify password against stored hash"""
+    """Verify password against stored hash with backward compatibility"""
     try:
         salt_hex, stored_hash = stored_password.split(':')
         salt = bytes.fromhex(salt_hex)
-        provided_hash = hashlib.pbkdf2_hmac('sha256', provided_password.encode(), salt, 100000)
-        return secrets.compare_digest(stored_hash, provided_hash.hex())
+        
+        if len(salt) == 32:
+            provided_hash = hashlib.pbkdf2_hmac('sha256', provided_password.encode(), salt, 200000)
+            return secrets.compare_digest(stored_hash, provided_hash.hex())
+        
+        else:
+            return False
     except:
         return False
 
@@ -196,7 +201,7 @@ def login_user(email: str, password: str) -> dict:
 
     # Create session
     token = generate_session_token()
-    expires_at = (datetime.now() + timedelta(days=7)).isoformat()
+    expires_at = (datetime.now() + timedelta(hours=1)).isoformat()
 
     db["sessions"][token] = {
         "user_id": user["id"],
@@ -304,8 +309,8 @@ app.secret_key = 'change-this-in-production-use-env-var'
 async def startup():
     """Initialize database on startup"""
     print("Initializing JSON database...")
-    init_db()  # ✅ Call synchronously — it's not async!
-    await cleanup_expired_sessions()  # ✅ This one IS async
+    init_db()
+    await cleanup_expired_sessions() 
     print("Database initialized successfully")
 # ============ Startup ============
 
@@ -399,7 +404,7 @@ async def api_login():
             httponly=True,
             secure=False,  # Set to True in production with HTTPS
             samesite='Lax',
-            max_age=7 * 24 * 60 * 60  # 7 days
+            max_age=1 * 60 * 60 
         )
         return response
 
