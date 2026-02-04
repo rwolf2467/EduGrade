@@ -215,3 +215,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 // Home navigation
 document.getElementById("nav-home").addEventListener("click", showHomeView);
 
+// Back to class view from student detail
+document.getElementById("back-to-class").addEventListener("click", backToClassView);
+

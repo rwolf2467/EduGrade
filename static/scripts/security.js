@@ -221,7 +221,8 @@ const sanitizeImportData = (data) => {
                             : parseFloat(grade.value) || 1,
                         weight: parseFloat(grade.weight) || 0.5,
                         isPlusMinus: Boolean(grade.isPlusMinus),
-                        name: escapeHtml(grade.name || '')
+                        name: escapeHtml(grade.name || ''),
+                        createdAt: parseInt(grade.createdAt, 10) || Date.now()
                     })) : []
                 })) : []
             };
@@ -273,7 +274,8 @@ const sanitizeImportData = (data) => {
                     : parseFloat(grade.value) || 1,
                 weight: parseFloat(grade.weight) || 0.5,
                 isPlusMinus: Boolean(grade.isPlusMinus),
-                name: escapeHtml(grade.name || '')
+                name: escapeHtml(grade.name || ''),
+                createdAt: parseInt(grade.createdAt, 10) || Date.now()
             })) : []
         }));
     }

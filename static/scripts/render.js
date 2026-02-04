@@ -130,7 +130,7 @@ const renderStudents = () => {
             const weightedAvg = calculateWeightedAverage(student.grades);
             return `
             <tr>
-              <td>${escapeHtml(student.name)}</td>
+              <td><span class="student-name-link" data-student-id="${safeAttr(student.id)}">${escapeHtml(student.name)}</span></td>
               <td>
                 ${student.grades.map(grade => {
                     const displayValue = grade.isPlusMinus ? escapeHtml(grade.value) : escapeHtml(grade.value);
@@ -171,6 +171,14 @@ const renderStudents = () => {
             </tr>
           `;
         }).join("");
+
+    // Add event listeners for student name links (to open detail view)
+    document.querySelectorAll(".student-name-link").forEach(link => {
+        link.addEventListener("click", () => {
+            const studentId = link.dataset.studentId;
+            showStudentDetailView(studentId);
+        });
+    });
 
     // Add event listeners for manage grade buttons
     document.querySelectorAll("[data-manage-grade]").forEach(btn => {
@@ -994,14 +1002,29 @@ const renderHome = () => {
 const showHomeView = () => {
     const homeView = document.getElementById("home-view");
     const classView = document.getElementById("class-view");
+    const studentDetailView = document.getElementById("student-detail-view");
+
+    // Destroy chart instance if exists
+    if (studentGradeChartInstance) {
+        studentGradeChartInstance.destroy();
+        studentGradeChartInstance = null;
+    }
+
+    // Find which view is currently visible
+    let viewToHide = null;
+    if (!classView.classList.contains("hidden")) {
+        viewToHide = classView;
+    } else if (studentDetailView && !studentDetailView.classList.contains("hidden")) {
+        viewToHide = studentDetailView;
+    }
 
     // Animation triggern
-    if (!classView.classList.contains("hidden")) {
-        // Class View ausblenden mit Animation
-        classView.style.animation = 'viewFadeOut 0.15s ease-in forwards';
+    if (viewToHide) {
+        // View ausblenden mit Animation
+        viewToHide.style.animation = 'viewFadeOut 0.15s ease-in forwards';
         setTimeout(() => {
-            classView.classList.add("hidden");
-            classView.style.animation = '';
+            viewToHide.classList.add("hidden");
+            viewToHide.style.animation = '';
 
             // Home View einblenden
             homeView.classList.remove("hidden");
@@ -1024,14 +1047,29 @@ const showHomeView = () => {
 const showClassView = () => {
     const homeView = document.getElementById("home-view");
     const classView = document.getElementById("class-view");
+    const studentDetailView = document.getElementById("student-detail-view");
+
+    // Destroy chart instance if exists
+    if (studentGradeChartInstance) {
+        studentGradeChartInstance.destroy();
+        studentGradeChartInstance = null;
+    }
+
+    // Find which view is currently visible
+    let viewToHide = null;
+    if (!homeView.classList.contains("hidden")) {
+        viewToHide = homeView;
+    } else if (studentDetailView && !studentDetailView.classList.contains("hidden")) {
+        viewToHide = studentDetailView;
+    }
 
     // Animation triggern
-    if (!homeView.classList.contains("hidden")) {
-        // Home View ausblenden mit Animation
-        homeView.style.animation = 'viewFadeOut 0.15s ease-in forwards';
+    if (viewToHide) {
+        // View ausblenden mit Animation
+        viewToHide.style.animation = 'viewFadeOut 0.15s ease-in forwards';
         setTimeout(() => {
-            homeView.classList.add("hidden");
-            homeView.style.animation = '';
+            viewToHide.classList.add("hidden");
+            viewToHide.style.animation = '';
 
             // Class View einblenden
             classView.classList.remove("hidden");
@@ -1063,4 +1101,424 @@ const showClassView = () => {
 
     document.getElementById("nav-home").classList.remove("btn-primary");
     document.getElementById("nav-home").classList.add("btn-secondary");
+};
+
+// ========== STUDENT DETAIL VIEW FUNCTIONS ==========
+
+// Store the Chart.js instance for cleanup
+let studentGradeChartInstance = null;
+
+/**
+ * SHOW STUDENT DETAIL VIEW
+ *
+ * Navigates to the student detail view with animation.
+ *
+ * @param {string} studentId - The ID of the student to display
+ */
+const showStudentDetailView = (studentId) => {
+    const classView = document.getElementById("class-view");
+    const homeView = document.getElementById("home-view");
+    const studentDetailView = document.getElementById("student-detail-view");
+
+    // Hide other views with animation
+    const viewToHide = !classView.classList.contains("hidden") ? classView : homeView;
+
+    viewToHide.style.animation = 'viewFadeOut 0.15s ease-in forwards';
+    setTimeout(() => {
+        viewToHide.classList.add("hidden");
+        viewToHide.style.animation = '';
+
+        // Show student detail view
+        studentDetailView.classList.remove("hidden");
+        studentDetailView.style.animation = 'none';
+        studentDetailView.offsetHeight; // Force reflow
+        studentDetailView.style.animation = 'viewFadeIn 0.25s ease-out';
+
+        // Render the student details
+        renderStudentDetail(studentId);
+    }, 150);
+};
+
+/**
+ * BACK TO CLASS VIEW
+ *
+ * Returns from student detail view to class view with animation.
+ */
+const backToClassView = () => {
+    const classView = document.getElementById("class-view");
+    const studentDetailView = document.getElementById("student-detail-view");
+
+    // Destroy chart instance if exists
+    if (studentGradeChartInstance) {
+        studentGradeChartInstance.destroy();
+        studentGradeChartInstance = null;
+    }
+
+    studentDetailView.style.animation = 'viewFadeOut 0.15s ease-in forwards';
+    setTimeout(() => {
+        studentDetailView.classList.add("hidden");
+        studentDetailView.style.animation = '';
+
+        classView.classList.remove("hidden");
+        classView.style.animation = 'none';
+        classView.offsetHeight; // Force reflow
+        classView.style.animation = 'viewFadeIn 0.25s ease-out';
+
+        renderStudents();
+    }, 150);
+};
+
+/**
+ * CALCULATE TREND
+ *
+ * Calculates whether the student's grades are improving, declining, or stable.
+ * Compares the average of the first half to the second half of grades.
+ *
+ * @param {Array} grades - Array of grade objects sorted by date
+ * @returns {object} - { trend: 'improving' | 'declining' | 'stable', value: number }
+ */
+const calculateTrend = (grades) => {
+    // Filter numeric grades and sort by date
+    const numericGrades = grades
+        .filter(g => !g.isPlusMinus)
+        .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+    if (numericGrades.length < 2) {
+        return { trend: 'stable', value: 0 };
+    }
+
+    const midPoint = Math.floor(numericGrades.length / 2);
+    const firstHalf = numericGrades.slice(0, midPoint);
+    const secondHalf = numericGrades.slice(midPoint);
+
+    const firstAvg = firstHalf.reduce((sum, g) => sum + g.value, 0) / firstHalf.length;
+    const secondAvg = secondHalf.reduce((sum, g) => sum + g.value, 0) / secondHalf.length;
+
+    const diff = firstAvg - secondAvg; // Positive = improving (lower grades are better)
+
+    if (Math.abs(diff) < 0.3) {
+        return { trend: 'stable', value: diff };
+    } else if (diff > 0) {
+        return { trend: 'improving', value: diff };
+    } else {
+        return { trend: 'declining', value: diff };
+    }
+};
+
+/**
+ * CALCULATE CLASS AVERAGE
+ *
+ * Calculates the weighted average of all students in the current class.
+ *
+ * @returns {number} - Class average or 0 if no grades
+ */
+const calculateClassAverage = () => {
+    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
+    if (!currentClass) return 0;
+
+    const averages = [];
+    currentClass.students.forEach(student => {
+        const avg = calculateWeightedAverage(student.grades);
+        if (avg > 0) averages.push(avg);
+    });
+
+    if (averages.length === 0) return 0;
+    return averages.reduce((sum, avg) => sum + avg, 0) / averages.length;
+};
+
+/**
+ * RENDER STUDENT DETAIL
+ *
+ * Main render function for the student detail view.
+ * Populates all statistics, chart, category breakdown, and grades table.
+ *
+ * @param {string} studentId - The ID of the student to display
+ */
+const renderStudentDetail = (studentId) => {
+    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
+    if (!currentClass) return;
+
+    const student = currentClass.students.find(s => s.id === studentId);
+    if (!student) return;
+
+    // Store student ID for reference
+    document.getElementById("student-detail-view").dataset.studentId = studentId;
+
+    // Set student name
+    document.getElementById("student-detail-name").textContent = student.name;
+
+    // Calculate statistics
+    const weightedAvg = calculateWeightedAverage(student.grades);
+    const finalGrade = calculateFinalGrade(weightedAvg);
+    const trend = calculateTrend(student.grades);
+    const classAvg = calculateClassAverage();
+    const numericGradeCount = student.grades.filter(g => !g.isPlusMinus).length;
+
+    // Populate stat cards
+    document.getElementById("student-stat-average").textContent =
+        weightedAvg ? weightedAvg.toFixed(2) : "-";
+    document.getElementById("student-stat-final").textContent = finalGrade;
+    document.getElementById("student-stat-count").textContent = student.grades.length;
+
+    // Trend display with icon
+    const trendEl = document.getElementById("student-stat-trend");
+    if (trend.trend === 'improving') {
+        trendEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"><path d="m18 15-6-6-6 6"/></svg><span class="text-green-500">Improving</span>`;
+    } else if (trend.trend === 'declining') {
+        trendEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><path d="m6 9 6 6 6-6"/></svg><span class="text-red-500">Declining</span>`;
+    } else {
+        trendEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><path d="M5 12h14"/></svg><span class="text-yellow-500">Stable</span>`;
+    }
+
+    // Class comparison
+    const comparisonEl = document.getElementById("student-stat-comparison");
+    if (weightedAvg && classAvg) {
+        const diff = classAvg - weightedAvg; // Positive = better than class (lower is better)
+        if (Math.abs(diff) < 0.1) {
+            comparisonEl.innerHTML = `<span class="text-yellow-500">=</span>`;
+        } else if (diff > 0) {
+            comparisonEl.innerHTML = `<span class="text-green-500">+${diff.toFixed(1)}</span>`;
+        } else {
+            comparisonEl.innerHTML = `<span class="text-red-500">${diff.toFixed(1)}</span>`;
+        }
+    } else {
+        comparisonEl.textContent = "-";
+    }
+
+    // Render chart, category breakdown, and grades table
+    renderStudentGradeChart(student);
+    renderCategoryBreakdown(student);
+    renderStudentGradesTable(student);
+};
+
+/**
+ * RENDER STUDENT GRADE CHART
+ *
+ * Creates a Chart.js line chart showing grades over time, grouped by category.
+ *
+ * @param {object} student - The student object
+ */
+const renderStudentGradeChart = (student) => {
+    const ctx = document.getElementById("student-grade-chart").getContext("2d");
+
+    // Destroy existing chart if any
+    if (studentGradeChartInstance) {
+        studentGradeChartInstance.destroy();
+    }
+
+    // Group grades by category
+    const gradesByCategory = {};
+    const categoryColors = [
+        { bg: 'rgba(59, 130, 246, 0.2)', border: 'rgb(59, 130, 246)' },   // Blue
+        { bg: 'rgba(34, 197, 94, 0.2)', border: 'rgb(34, 197, 94)' },     // Green
+        { bg: 'rgba(249, 115, 22, 0.2)', border: 'rgb(249, 115, 22)' },   // Orange
+        { bg: 'rgba(168, 85, 247, 0.2)', border: 'rgb(168, 85, 247)' },   // Purple
+        { bg: 'rgba(236, 72, 153, 0.2)', border: 'rgb(236, 72, 153)' },   // Pink
+        { bg: 'rgba(234, 179, 8, 0.2)', border: 'rgb(234, 179, 8)' },     // Yellow
+    ];
+
+    // Only include numeric grades
+    const numericGrades = student.grades.filter(g => !g.isPlusMinus);
+
+    numericGrades.forEach(grade => {
+        const catName = grade.categoryName || 'Unknown';
+        if (!gradesByCategory[catName]) {
+            gradesByCategory[catName] = [];
+        }
+        gradesByCategory[catName].push({
+            x: grade.createdAt || Date.now(),
+            y: grade.value,
+            name: grade.name || ''
+        });
+    });
+
+    // Sort each category's grades by date
+    Object.values(gradesByCategory).forEach(grades => {
+        grades.sort((a, b) => a.x - b.x);
+    });
+
+    // Create datasets
+    const datasets = Object.entries(gradesByCategory).map(([categoryName, grades], index) => {
+        const colorIndex = index % categoryColors.length;
+        return {
+            label: categoryName,
+            data: grades,
+            borderColor: categoryColors[colorIndex].border,
+            backgroundColor: categoryColors[colorIndex].bg,
+            borderWidth: 2,
+            tension: 0.3,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            fill: false
+        };
+    });
+
+    // If no data, show empty state
+    if (datasets.length === 0) {
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#6b7280';
+        ctx.fillText('No numeric grades yet', ctx.canvas.width / 2, ctx.canvas.height / 2);
+        return;
+    }
+
+    studentGradeChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day',
+                        displayFormats: {
+                            day: 'dd.MM.yy'
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                },
+                y: {
+                    reverse: true, // Grade 1 at top
+                    min: 1,
+                    max: 5,
+                    title: {
+                        display: true,
+                        text: 'Grade'
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (context) => {
+                            const point = context.raw;
+                            let label = `${context.dataset.label}: ${point.y}`;
+                            if (point.name) {
+                                label += ` (${point.name})`;
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+};
+
+/**
+ * RENDER CATEGORY BREAKDOWN
+ *
+ * Shows statistics for each category the student has grades in.
+ *
+ * @param {object} student - The student object
+ */
+const renderCategoryBreakdown = (student) => {
+    const container = document.getElementById("category-breakdown");
+
+    // Group grades by category
+    const gradesByCategory = {};
+    student.grades.forEach(grade => {
+        const catId = grade.categoryId;
+        if (!gradesByCategory[catId]) {
+            gradesByCategory[catId] = {
+                name: grade.categoryName,
+                weight: grade.weight,
+                grades: []
+            };
+        }
+        gradesByCategory[catId].grades.push(grade);
+    });
+
+    if (Object.keys(gradesByCategory).length === 0) {
+        container.innerHTML = '<p class="text-sm" style="color: oklch(.708 0 0);">No grades yet.</p>';
+        return;
+    }
+
+    container.innerHTML = Object.entries(gradesByCategory).map(([catId, category]) => {
+        const numericGrades = category.grades.filter(g => !g.isPlusMinus);
+        const plusMinusGrades = category.grades.filter(g => g.isPlusMinus);
+
+        let avgText = '-';
+        let gradeInfo = '';
+
+        if (numericGrades.length > 0) {
+            const avg = numericGrades.reduce((sum, g) => sum + g.value, 0) / numericGrades.length;
+            avgText = avg.toFixed(2);
+            gradeInfo = `${numericGrades.length} grade${numericGrades.length !== 1 ? 's' : ''}`;
+        }
+
+        if (plusMinusGrades.length > 0) {
+            const plusCount = plusMinusGrades.filter(g => g.value === '+').length;
+            const minusCount = plusMinusGrades.filter(g => g.value === '-').length;
+            if (gradeInfo) gradeInfo += ', ';
+            gradeInfo += `${plusCount}+ / ${minusCount}-`;
+        }
+
+        return `
+            <div class="category-stat-card p-3 rounded-lg border">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="font-medium">${escapeHtml(category.name)}</span>
+                    <span class="badge badge-secondary text-xs">${(category.weight * 100).toFixed(0)}%</span>
+                </div>
+                <p class="text-2xl font-bold">${avgText}</p>
+                <p class="text-xs" style="color: oklch(.708 0 0);">${gradeInfo}</p>
+            </div>
+        `;
+    }).join('');
+};
+
+/**
+ * RENDER STUDENT GRADES TABLE
+ *
+ * Shows a chronological list of all grades with details.
+ *
+ * @param {object} student - The student object
+ */
+const renderStudentGradesTable = (student) => {
+    const tbody = document.getElementById("student-grades-table");
+
+    // Sort grades by date (newest first)
+    const sortedGrades = [...student.grades].sort((a, b) =>
+        (b.createdAt || 0) - (a.createdAt || 0)
+    );
+
+    if (sortedGrades.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="color: oklch(.708 0 0);">No grades yet.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = sortedGrades.map(grade => {
+        const date = grade.createdAt
+            ? new Date(grade.createdAt).toLocaleDateString('de-AT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            })
+            : '-';
+
+        const displayValue = grade.isPlusMinus ? grade.value : grade.value.toString();
+        const gradeColorClass = getGradeColorClass(grade);
+        const weightDisplay = grade.isPlusMinus ? '-' : `${(grade.weight * 100).toFixed(0)}%`;
+
+        return `
+            <tr>
+                <td>${escapeHtml(date)}</td>
+                <td>${escapeHtml(grade.categoryName || '-')}</td>
+                <td>${escapeHtml(grade.name || '-')}</td>
+                <td><span class="badge ${gradeColorClass}">${escapeHtml(displayValue)}</span></td>
+                <td>${weightDisplay}</td>
+            </tr>
+        `;
+    }).join('');
 };

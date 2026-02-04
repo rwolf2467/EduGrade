@@ -178,7 +178,8 @@ const addGrade = (studentId, categoryId, value, gradeName = "") => {
             categoryId: categoryId,
             categoryName: category.name,    // Name der Kategorie speichern (für Anzeige)
             weight: category.weight,        // Gewichtung von Kategorie übernehmen
-            name: validatedGradeName
+            name: validatedGradeName,
+            createdAt: Date.now()           // Zeitstempel für zeitlichen Graph
         };
 
         // Je nach Notentyp den Wert setzen

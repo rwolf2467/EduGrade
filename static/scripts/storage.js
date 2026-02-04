@@ -299,13 +299,28 @@ const migrateData = () => {
             if (cls.students) {
                 cls.students.forEach(student => {
                     if (student.grades) {
-                        student.grades.forEach(grade => {
+                        student.grades.forEach((grade, index) => {
                             // Ensure categoryName and weight are present
                             if (!grade.categoryName && grade.categoryId) {
                                 const category = appData.categories.find(c => c.id === grade.categoryId);
                                 if (category) {
                                     grade.categoryName = category.name;
                                     grade.weight = category.weight;
+                                }
+                            }
+                            // MIGRATION: Add createdAt timestamp if missing
+                            // Use grade ID as timestamp (IDs are based on Date.now())
+                            // or fallback to sequential timestamps
+                            if (!grade.createdAt) {
+                                const idAsTimestamp = parseInt(grade.id, 10);
+                                if (!isNaN(idAsTimestamp) && idAsTimestamp > 1000000000000) {
+                                    // ID looks like a timestamp (after year 2001)
+                                    grade.createdAt = idAsTimestamp;
+                                } else {
+                                    // Fallback: use a sequential timestamp based on index
+                                    // Start from a base date and add index * 1 day
+                                    const baseDate = Date.now() - (student.grades.length - index) * 86400000;
+                                    grade.createdAt = baseDate;
                                 }
                             }
                         });

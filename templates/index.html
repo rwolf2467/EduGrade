@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/basecoat.cdn.min.css">
     <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/js/all.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 
@@ -194,8 +195,7 @@
                                     <span>About</span>
                                 </a>
                                 <button type="button" aria-label="Toggle dark mode" data-tooltip="Toggle dark mode"
-                                    data-side="left"
-                                    onclick="document.dispatchEvent(new CustomEvent('basecoat:theme'))"
+                                    data-side="left" onclick="document.dispatchEvent(new CustomEvent('basecoat:theme'))"
                                     class="btn-icon-outline size-8">
                                     <span class="hidden dark:block"><svg xmlns="http://www.w3.org/2000/svg" width="24"
                                             height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -255,7 +255,9 @@
                             </svg>
                             <div>
                                 <p class="mb-2"><strong>This will delete all your data from the server!</strong></p>
-                                <p class="text-sm" style="color: oklch(.708 0 0);">All classes, students, and grades will be permanently deleted. Please export your data first if you want to keep a backup. This action cannot be undone.</p>
+                                <p class="text-sm" style="color: oklch(.708 0 0);">All classes, students, and grades
+                                    will be permanently deleted. Please export your data first if you want to keep a
+                                    backup. This action cannot be undone.</p>
                             </div>
                         </section>
                         <footer class="flex justify-end gap-2">
@@ -569,6 +571,82 @@
                                 </thead>
                                 <tbody id="students-table"></tbody>
                             </table>
+                        </section>
+                    </div>
+                </section>
+
+                <!-- Student Detail View -->
+                <section id="student-detail-view" class="hidden mt-10">
+                    <div class="card mb-6">
+                        <header class="flex justify-between items-center mb-4">
+                            <div class="flex items-center gap-3">
+                                <button id="back-to-class" class="btn-outline">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="m12 19-7-7 7-7" />
+                                        <path d="M19 12H5" />
+                                    </svg>
+                                    Back
+                                </button>
+                                <h2 class="text-xl font-semibold" id="student-detail-name"></h2>
+                            </div>
+                        </header>
+
+                        <section class="p-7">
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                                <div class="stat-card p-4 rounded-lg border">
+                                    <p class="text-sm" style="color: oklch(.708 0 0);">Average</p>
+                                    <p class="text-2xl font-bold" id="student-stat-average">-</p>
+                                </div>
+                                <div class="stat-card p-4 rounded-lg border">
+                                    <p class="text-sm" style="color: oklch(.708 0 0);">Final Grade</p>
+                                    <p class="text-2xl font-bold" id="student-stat-final">-</p>
+                                </div>
+                                <div class="stat-card p-4 rounded-lg border">
+                                    <p class="text-sm" style="color: oklch(.708 0 0);">Trend</p>
+                                    <p class="text-2xl font-bold flex items-center gap-1" id="student-stat-trend">-</p>
+                                </div>
+                                <div class="stat-card p-4 rounded-lg border">
+                                    <p class="text-sm" style="color: oklch(.708 0 0);">Grade Count</p>
+                                    <p class="text-2xl font-bold" id="student-stat-count">0</p>
+                                </div>
+                                <div class="stat-card p-4 rounded-lg border">
+                                    <p class="text-sm" style="color: oklch(.708 0 0);">vs. Class Avg</p>
+                                    <p class="text-2xl font-bold" id="student-stat-comparison">-</p>
+                                </div>
+                            </div>
+
+                            <!-- Chart Container -->
+                            <div class="chart-container mb-6" style="position: relative; height: 300px;">
+                                <canvas id="student-grade-chart"></canvas>
+                            </div>
+
+                            <!-- Kategorie-Aufschlüsselung -->
+                            <div class="mb-6">
+                                <h3 class="text-lg font-semibold mb-3">Category Breakdown</h3>
+                                <div id="category-breakdown"
+                                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                            </div>
+
+                            <!-- Noten-Tabelle -->
+                            <div>
+                                <h3 class="text-lg font-semibold mb-3">Grade History</h3>
+                                <div class="overflow-x-auto">
+                                    <table class="table w-full">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Category</th>
+                                                <th>Name</th>
+                                                <th>Grade</th>
+                                                <th>Weight</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="student-grades-table"></tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </section>
                     </div>
                 </section>
