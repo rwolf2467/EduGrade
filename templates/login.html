@@ -15,12 +15,19 @@
     <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/js/all.min.js" defer></script>
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+        }
         .auth-container {
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 1rem;
+            box-sizing: border-box;
+            overflow-y: auto;
         }
         .auth-card {
             width: 100%;
@@ -153,9 +160,6 @@
         </div>
     </div>
 
-    <footer class="fixed bottom-0 left-0 right-0 py-2 text-center text-xs" style="color: oklch(.708 0 0);">
-        <p>Developed with ❤️ by Fabian Murauer</p>
-    </footer>
 
     <script>
         // Toast notification function
