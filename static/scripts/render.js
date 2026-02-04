@@ -755,17 +755,20 @@ const calculateSimpleAverage = (grades) => {
  * Dies ist die KERNFUNKTION für die Notenberechnung.
  * Sie berücksichtigt die Gewichtung jeder Kategorie.
  *
- * FORMEL FÜR GEWICHTETEN DURCHSCHNITT:
- *   Durchschnitt = Σ(Note × Gewicht) / Σ(Gewicht)
+ * BERECHNUNG IN 2 SCHRITTEN (österreichisches System):
+ * 1. Erst Durchschnitt PRO KATEGORIE berechnen
+ * 2. Dann Kategorie-Durchschnitte mit Kategorie-Gewichten kombinieren
+ *
+ * FORMEL:
+ *   Durchschnitt = Σ(Kategorie-Durchschnitt × Kategorie-Gewicht) / Σ(Kategorie-Gewicht)
  *
  * Beispiel:
- *   Schularbeit (Gewicht 0.5): Note 2
- *   Test (Gewicht 0.3): Note 3
- *   Mitarbeit (Gewicht 0.2): Note 1
+ *   Schularbeit (Gewicht 0.5): Noten 2, 3, 1 → Durchschnitt 2.0
+ *   Test (Gewicht 0.3): Note 4 → Durchschnitt 4.0
  *
- *   Gewichteter Durchschnitt = (2×0.5 + 3×0.3 + 1×0.2) / (0.5 + 0.3 + 0.2)
- *                            = (1.0 + 0.9 + 0.2) / 1.0
- *                            = 2.1
+ *   Gewichteter Durchschnitt = (2.0×0.5 + 4.0×0.3) / (0.5 + 0.3)
+ *                            = (1.0 + 1.2) / 0.8
+ *                            = 2.75
  *
  * PLUS/MINUS-NOTEN:
  * Werden pro Kategorie gesammelt und in eine Note umgewandelt.
@@ -776,89 +779,79 @@ const calculateSimpleAverage = (grades) => {
  * @returns {number} - Gewichteter Durchschnitt (1-5) oder 0
  */
 const calculateWeightedAverage = (grades) => {
-    // SCHRITT 1: Noten nach Typ trennen
-    const numericGrades = grades.filter(g => !g.isPlusMinus);    // Zahlennoten (1-6)
-    const plusMinusGrades = grades.filter(g => g.isPlusMinus);   // +/- Noten
-
     // Einstellungen für Plus/Minus-Berechnung laden
-    // Falls nicht gesetzt, Standardwerte verwenden
     const plusMinusSettings = appData.plusMinusGradeSettings || {
-        startGrade: 3,      // Ausgangsnote
-        plusValue: 0.5,     // Wie viel ein Plus die Note verbessert
-        minusValue: 0.5     // Wie viel ein Minus die Note verschlechtert
+        startGrade: 3,
+        plusValue: 0.5,
+        minusValue: 0.5
     };
 
-    // Variablen für die Berechnung
-    let weightedSum = 0;    // Summe aller (Note × Gewicht)
-    let totalWeight = 0;    // Summe aller Gewichte
+    // SCHRITT 1: Noten nach Kategorie gruppieren
+    const gradesByCategory = {};
 
-    // SCHRITT 2: NUMERISCHE NOTEN VERARBEITEN
-    if (numericGrades.length > 0) {
-        // Gewichtete Summe: Jede Note wird mit ihrer Gewichtung multipliziert
-        weightedSum = numericGrades.reduce((sum, grade) =>
-            sum + (grade.value * grade.weight), 0
-        );
-
-        // Gesamtgewicht: Alle Gewichtungen addieren
-        totalWeight = numericGrades.reduce((sum, grade) =>
-            sum + grade.weight, 0
-        );
-    }
-
-    // SCHRITT 3: PLUS/MINUS-NOTEN VERARBEITEN
-    // Zuerst nach Kategorie gruppieren (alle + und - einer Kategorie zusammenzählen)
-    const plusMinusByCategory = {};
-
-    plusMinusGrades.forEach(grade => {
-        // Neue Kategorie anlegen falls noch nicht vorhanden
-        if (!plusMinusByCategory[grade.categoryId]) {
-            plusMinusByCategory[grade.categoryId] = {
-                plus: 0,                    // Anzahl der Plus
-                minus: 0,                   // Anzahl der Minus
-                weight: grade.weight        // Gewichtung der Kategorie
+    grades.forEach(grade => {
+        const catId = grade.categoryId;
+        if (!gradesByCategory[catId]) {
+            gradesByCategory[catId] = {
+                weight: grade.weight,
+                numericGrades: [],
+                plusCount: 0,
+                minusCount: 0
             };
         }
 
-        // Plus oder Minus zählen
-        if (grade.value === "+") {
-            plusMinusByCategory[grade.categoryId].plus++;
+        if (grade.isPlusMinus) {
+            if (grade.value === "+") {
+                gradesByCategory[catId].plusCount++;
+            } else {
+                gradesByCategory[catId].minusCount++;
+            }
         } else {
-            plusMinusByCategory[grade.categoryId].minus++;
+            gradesByCategory[catId].numericGrades.push(grade.value);
         }
     });
 
-    // SCHRITT 4: PLUS/MINUS IN ZAHLENNOTEN UMRECHNEN
-    // Für jede Kategorie eine Note berechnen
-    Object.values(plusMinusByCategory).forEach(cat => {
-        // Mit Startnote beginnen
-        let categoryGrade = plusMinusSettings.startGrade;
+    // SCHRITT 2: Durchschnitt pro Kategorie berechnen
+    let weightedSum = 0;
+    let totalWeight = 0;
 
-        // Plus verbessert die Note (macht sie kleiner)
-        // Beispiel: Startnote 3, 2 Plus mit Wert 0.5 → 3 - 1.0 = 2.0
-        categoryGrade -= cat.plus * plusMinusSettings.plusValue;
+    Object.values(gradesByCategory).forEach(category => {
+        let categoryAverage = null;
 
-        // Minus verschlechtert die Note (macht sie größer)
-        // Beispiel: Note 2, 1 Minus mit Wert 0.5 → 2 + 0.5 = 2.5
-        categoryGrade += cat.minus * plusMinusSettings.minusValue;
+        // Numerische Noten: einfacher Durchschnitt
+        if (category.numericGrades.length > 0) {
+            const sum = category.numericGrades.reduce((a, b) => a + b, 0);
+            categoryAverage = sum / category.numericGrades.length;
+        }
 
-        // CLAMPING: Note auf gültigen Bereich 1-5 begrenzen
-        // Math.max(1, ...) stellt sicher dass Note nicht unter 1 fällt
-        // Math.min(5, ...) stellt sicher dass Note nicht über 5 steigt
-        categoryGrade = Math.max(1, Math.min(5, categoryGrade));
+        // Plus/Minus Noten: aus Startnote berechnen
+        if (category.plusCount > 0 || category.minusCount > 0) {
+            let pmGrade = plusMinusSettings.startGrade;
+            pmGrade -= category.plusCount * plusMinusSettings.plusValue;
+            pmGrade += category.minusCount * plusMinusSettings.minusValue;
+            pmGrade = Math.max(1, Math.min(5, pmGrade));
 
-        // Zur gewichteten Summe hinzufügen
-        weightedSum += categoryGrade * cat.weight;
-        totalWeight += cat.weight;
+            if (categoryAverage !== null) {
+                // Wenn es auch numerische Noten gibt, kombinieren
+                // +/- zählt als eine zusätzliche "Note"
+                const totalGrades = category.numericGrades.length + 1;
+                categoryAverage = (categoryAverage * category.numericGrades.length + pmGrade) / totalGrades;
+            } else {
+                categoryAverage = pmGrade;
+            }
+        }
+
+        // Kategorie zum gewichteten Durchschnitt hinzufügen
+        if (categoryAverage !== null) {
+            weightedSum += categoryAverage * category.weight;
+            totalWeight += category.weight;
+        }
     });
 
-    // SCHRITT 5: DURCHSCHNITT BERECHNEN
-    // Wenn keine Gewichtung vorhanden, 0 zurückgeben
+    // SCHRITT 3: Gewichteten Gesamtdurchschnitt berechnen
     if (totalWeight === 0) return 0;
 
-    // Gewichteter Durchschnitt = Summe der gewichteten Noten / Gesamtgewicht
     let average = weightedSum / totalWeight;
-
-    // Endergebnis auf gültigen Bereich 1-5 begrenzen
     return Math.max(1, Math.min(5, average));
 };
 
