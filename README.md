@@ -285,7 +285,24 @@ The enhanced password hashing provides:
 ## License and Legal Information
 
 ### License
-This project is developed as a semester final project and is intended for educational purposes. The code is provided for demonstration and learning purposes.
+
+**EduGrade - Secure Classroom Grade Management System**  
+Copyright (C) 2026 Fabian Murauer
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+### What does this mean?
+
+- ✅ You can use, study, and modify this software
+- ✅ You can share your modified versions
+- ✅ Anyone using your modified version as a web service must provide the source code
+- ✅ The original author (Fabian Murauer) must be credited
+- ❌ You cannot make this software proprietary/closed-source
+- ❌ You cannot sell this software without providing the source code
 
 ### Data Privacy
 - **User Responsibility**: Users are responsible for complying with all applicable data protection laws
