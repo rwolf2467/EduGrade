@@ -358,6 +358,14 @@ async def login_page():
     return await render_template('login.html')
 
 
+@app.route('/terms')
+async def terms():
+    return await render_template('terms.html')
+
+@app.route('/privacy')
+async def privacy():
+    return await render_template('privacy.html')
+
 @app.route('/about.html')
 async def about_page():
     """About page"""

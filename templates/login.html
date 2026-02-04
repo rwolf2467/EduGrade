@@ -128,6 +128,13 @@
                                         <input type="password" id="register-password-confirm" name="password_confirm" class="input" required autocomplete="new-password" placeholder="Repeat your password" minlength="8">
                                     </div>
 
+                                    <div class="flex items-start gap-2 mt-2">
+                                        <input type="checkbox" id="register-terms" name="terms" class="mt-1" required>
+                                        <label for="register-terms" class="text-sm" style="color: oklch(.708 0 0);">
+                                            I agree to the <a href="/terms" target="_blank" class="text-blue-400 hover:underline">Terms of Service</a> and <a href="/privacy" target="_blank" class="text-blue-400 hover:underline">Privacy Policy</a>
+                                        </label>
+                                    </div>
+
                                     <button type="submit" class="btn-primary w-full mt-2" id="register-btn">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -216,6 +223,12 @@
 
             if (password !== passwordConfirm) {
                 showToast('Passwords don\'t match. Please check and try again.');
+                return;
+            }
+
+            const termsAccepted = document.getElementById('register-terms').checked;
+            if (!termsAccepted) {
+                showToast('Please accept the Terms of Service and Privacy Policy.');
                 return;
             }
 
