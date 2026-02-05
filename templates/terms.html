@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/basecoat.cdn.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/scripts/theme.js"></script>
     <style>
         html,
         body {
@@ -399,7 +400,15 @@
                 <ul class="space-y-2" style="color: oklch(.708 0 0);">
                     <li class="flex items-start gap-2">
                         <span class="text-green-500">✓</span>
+                        <span><strong>AES-256-GCM data encryption</strong> - All your data is encrypted with a key derived from your password</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-green-500">✓</span>
                         <span>PBKDF2 password hashing with 200,000 iterations and 32-byte salt</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-green-500">✓</span>
+                        <span>PBKDF2 encryption key derivation with 100,000 iterations</span>
                     </li>
                     <li class="flex items-start gap-2">
                         <span class="text-green-500">✓</span>

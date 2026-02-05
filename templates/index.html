@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de" class="dark">
+<html lang="de">
 
 <head>
     <meta charset="UTF-8">
@@ -17,6 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/scripts/theme.js"></script>
 </head>
 
 <body>
@@ -55,6 +56,32 @@
                                 <input type="text" id="class-name" class="input" value="1A">
                                 <p class="text-sm" style="color: oklch(.708 0 0);">Create your first class. You can
                                     always add more or make changes later.</p>
+                            </div>
+                            <div class="grid gap-2">
+                                <label for="setup-theme">Theme</label>
+                                <div class="flex gap-2">
+                                    <button type="button" id="setup-theme-light" class="btn-outline flex-1 flex items-center justify-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="4" />
+                                            <path d="M12 2v2" />
+                                            <path d="M12 20v2" />
+                                            <path d="m4.93 4.93 1.41 1.41" />
+                                            <path d="m17.66 17.66 1.41 1.41" />
+                                            <path d="M2 12h2" />
+                                            <path d="M20 12h2" />
+                                            <path d="m6.34 17.66-1.41 1.41" />
+                                            <path d="m19.07 4.93-1.41 1.41" />
+                                        </svg>
+                                        Light
+                                    </button>
+                                    <button type="button" id="setup-theme-dark" class="btn-outline flex-1 flex items-center justify-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                                        </svg>
+                                        Dark
+                                    </button>
+                                </div>
+                                <p class="text-sm" style="color: oklch(.708 0 0);">Choose your preferred theme. You can change this anytime.</p>
                             </div>
                     </section>
                     <footer class="flex justify-end gap-2">
@@ -913,10 +940,41 @@
     <script src="/static/scripts/exportImport.js"></script>
     <script src="/static/scripts/tutorial.js"></script>
     <script src="/static/scripts/eventListeners.js"></script>
-    <script src="/static/scripts/theme.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Setup theme buttons
+            const setupThemeLight = document.getElementById('setup-theme-light');
+            const setupThemeDark = document.getElementById('setup-theme-dark');
+
+            const updateThemeButtons = () => {
+                const isDark = document.documentElement.classList.contains('dark');
+                if (isDark) {
+                    setupThemeDark.classList.remove('btn-outline');
+                    setupThemeDark.classList.add('btn-primary');
+                    setupThemeLight.classList.remove('btn-primary');
+                    setupThemeLight.classList.add('btn-outline');
+                } else {
+                    setupThemeLight.classList.remove('btn-outline');
+                    setupThemeLight.classList.add('btn-primary');
+                    setupThemeDark.classList.remove('btn-primary');
+                    setupThemeDark.classList.add('btn-outline');
+                }
+            };
+
+            // Initialize button states
+            updateThemeButtons();
+
+            setupThemeLight.addEventListener('click', () => {
+                document.dispatchEvent(new CustomEvent('basecoat:theme', { detail: { mode: 'light' } }));
+                updateThemeButtons();
+            });
+
+            setupThemeDark.addEventListener('click', () => {
+                document.dispatchEvent(new CustomEvent('basecoat:theme', { detail: { mode: 'dark' } }));
+                updateThemeButtons();
+            });
+
             // Logout button
             const logoutHandler = async () => {
                 try {

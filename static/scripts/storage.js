@@ -18,6 +18,68 @@
 let saveDebounceTimer = null;
 const SAVE_DEBOUNCE_MS = 500;
 
+// ============ HEARTBEAT SYSTEM ============
+// Keeps server-side cache alive while page is open
+
+const HEARTBEAT_INTERVAL_MS = 30000; // 30 seconds
+let heartbeatTimer = null;
+
+const startHeartbeat = () => {
+    // Clear any existing timer
+    if (heartbeatTimer) {
+        clearInterval(heartbeatTimer);
+    }
+
+    // Send heartbeat immediately
+    sendHeartbeat();
+
+    // Then send every 30 seconds
+    heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL_MS);
+};
+
+const sendHeartbeat = async () => {
+    try {
+        await fetch('/api/heartbeat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } catch (error) {
+        // Silently ignore heartbeat errors
+        console.debug('Heartbeat failed:', error);
+    }
+};
+
+const stopHeartbeat = () => {
+    if (heartbeatTimer) {
+        clearInterval(heartbeatTimer);
+        heartbeatTimer = null;
+    }
+};
+
+// Notify server when page is closed to clear cache
+const notifyDisconnect = () => {
+    // Use sendBeacon for reliable delivery on page close
+    navigator.sendBeacon('/api/disconnect', JSON.stringify({}));
+};
+
+// Start heartbeat when page loads
+document.addEventListener('DOMContentLoaded', startHeartbeat);
+
+// Stop heartbeat and notify disconnect when page closes
+window.addEventListener('pagehide', () => {
+    stopHeartbeat();
+    notifyDisconnect();
+});
+
+// Also handle visibility change (tab hidden for long time)
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        stopHeartbeat();
+    } else {
+        startHeartbeat();
+    }
+});
+
 // Event listener for window close to ensure data is saved
 window.addEventListener('beforeunload', async (e) => {
     // If there are pending save operations, save immediately
@@ -88,6 +150,13 @@ const saveData = (message = "Data saved!", type = "success") => {
                 localStorage.setItem("notenverwaltung", JSON.stringify(appData));
                 // Reset error counter
                 localStorage.removeItem('pendingServerSync');
+            } else if (response.status === 429) {
+                // Rate limited
+                const data = await response.json();
+                console.warn('Rate limited:', data.message);
+                localStorage.setItem("notenverwaltung", JSON.stringify(appData));
+                localStorage.setItem('pendingServerSync', 'true');
+                showToast(data.message || "Too many requests. Please slow down.", "error");
             } else {
                 console.error('Server save failed:', response.statusText);
                 // On server error, save locally as backup and mark for later sync

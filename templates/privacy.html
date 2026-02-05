@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/basecoat.cdn.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/scripts/theme.js"></script>
     <style>
         html,
         body {
@@ -293,8 +294,22 @@
                     <div>
                         <h4 class="font-semibold mb-2">Where Your Data is Stored</h4>
                         <p style="color: oklch(.708 0 0);">
-                            All data is stored in JSON format on our server located at <strong>edugrade.avocloud.net</strong>. Data is stored in Austria and does not leave the EU.
+                            All data is stored in encrypted JSON format on our server located at <strong>edugrade.avocloud.net</strong>. Data is stored in Austria and does not leave the EU.
                         </p>
+                    </div>
+
+                    <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                        <h4 class="font-semibold mb-2 text-green-400">End-to-End-like Encryption</h4>
+                        <p style="color: oklch(.708 0 0);" class="mb-2">
+                            Your data (classes, students, grades) is encrypted using <strong>AES-256-GCM</strong> with a key derived from your password.
+                            This means:
+                        </p>
+                        <ul class="space-y-1 text-sm" style="color: oklch(.708 0 0);">
+                            <li>• Only you can decrypt and read your data</li>
+                            <li>• Even server administrators cannot access your plaintext data</li>
+                            <li>• If the database is compromised, your data remains encrypted</li>
+                            <li>• Changing your password will re-encrypt all your data with a new key</li>
+                        </ul>
                     </div>
 
                     <div>
@@ -302,7 +317,15 @@
                         <ul class="space-y-2" style="color: oklch(.708 0 0);">
                             <li class="flex items-start gap-2">
                                 <span class="text-green-500">✓</span>
+                                <span><strong>Data Encryption:</strong> All user data is encrypted with AES-256-GCM using a key derived from your password</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-green-500">✓</span>
                                 <span><strong>Password Security:</strong> PBKDF2 hashing with 200,000 iterations and 32-byte salt</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-green-500">✓</span>
+                                <span><strong>Key Derivation:</strong> Encryption keys derived with PBKDF2 (100,000 iterations) - only you can decrypt your data</span>
                             </li>
                             <li class="flex items-start gap-2">
                                 <span class="text-green-500">✓</span>
@@ -318,7 +341,7 @@
                             </li>
                             <li class="flex items-start gap-2">
                                 <span class="text-green-500">✓</span>
-                                <span><strong>Access Control:</strong> Only you can access your data - no admin access to user data</span>
+                                <span><strong>Access Control:</strong> Only you can access your data - even server admins cannot read your encrypted data</span>
                             </li>
                         </ul>
                     </div>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/basecoat.cdn.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/scripts/theme.js"></script>
     <style>
         /* About page specific styles */
         html,
@@ -102,6 +103,13 @@
                                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
                         Secure Login
+                    </span>
+                    <span class="tech-badge bg-white/20">
+                        <svg class="lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        AES-256 Encrypted
                     </span>
                 </div>
             </div>
@@ -430,6 +438,42 @@
                     <p class="text-xs mt-2" style="color: oklch(.708 0 0);">
                         This prevents loading scripts or styles from unauthorized sources, even if an attacker manages to inject HTML.
                     </p>
+                </div>
+
+                <!-- Data Encryption -->
+                <div class="mb-6">
+                    <h4 class="font-semibold mb-3 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        Data Encryption (AES-256-GCM)
+                    </h4>
+                    <div class="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-3">
+                        <p class="text-sm mb-2"><strong class="text-green-400">Your data is encrypted with your password!</strong></p>
+                        <p class="text-sm" style="color: oklch(.708 0 0);">
+                            All user data (classes, students, grades) is encrypted using AES-256-GCM before being stored on the server.
+                            The encryption key is derived from your password - only you can decrypt your data.
+                        </p>
+                    </div>
+                    <p class="text-sm mb-2"><strong>How it works:</strong></p>
+                    <ul class="space-y-2 text-sm" style="color: oklch(.708 0 0);">
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-0.5">&#10003;</span>
+                            <span><strong>Key Derivation:</strong> Your password is used to derive a unique 256-bit encryption key using PBKDF2 with 100,000 iterations</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-0.5">&#10003;</span>
+                            <span><strong>AES-256-GCM:</strong> Military-grade authenticated encryption - data cannot be read OR tampered with</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-0.5">&#10003;</span>
+                            <span><strong>Unique Nonce:</strong> Each encryption uses a random 96-bit nonce for additional security</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500 mt-0.5">&#10003;</span>
+                            <span><strong>Server-side caching:</strong> Decrypted data is cached in memory during your session for performance, cleared when you close the page</span>
+                        </li>
+                    </ul>
                 </div>
 
                 <!-- Security Functions -->

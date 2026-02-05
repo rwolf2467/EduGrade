@@ -25,9 +25,79 @@ import json
 import hashlib
 import secrets
 import functools
+import base64
+import os
 from pathlib import Path
 from datetime import datetime, timedelta
+from collections import defaultdict
 from quart import Quart, render_template, request, jsonify, redirect, url_for, make_response, send_file
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+# ============ RATE LIMITING ============
+
+# Rate limit storage: {ip: {endpoint: [(timestamp, count)]}}
+rate_limit_storage = defaultdict(lambda: defaultdict(list))
+
+# Rate limit configurations: {endpoint_pattern: (max_requests, time_window_seconds)}
+RATE_LIMITS = {
+    'login': (5, 60),       # 5 attempts per minute
+    'register': (3, 60),    # 3 attempts per minute
+    'data_write': (30, 60), # 30 writes per minute
+    'data_read': (60, 60),  # 60 reads per minute
+    'default': (100, 60),   # 100 requests per minute default
+}
+
+def get_client_ip():
+    """Get client IP from request"""
+    # Check for forwarded headers (reverse proxy)
+    forwarded = request.headers.get('X-Forwarded-For', '')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.remote_addr or 'unknown'
+
+def check_rate_limit(endpoint_type: str = 'default') -> tuple[bool, int]:
+    """
+    Check if request is within rate limit.
+    Returns (is_allowed, seconds_until_reset)
+    """
+    ip = get_client_ip()
+    max_requests, time_window = RATE_LIMITS.get(endpoint_type, RATE_LIMITS['default'])
+    now = datetime.now()
+    window_start = now - timedelta(seconds=time_window)
+
+    # Clean old entries and count recent requests
+    recent_requests = [ts for ts in rate_limit_storage[ip][endpoint_type] if ts > window_start]
+    rate_limit_storage[ip][endpoint_type] = recent_requests
+
+    if len(recent_requests) >= max_requests:
+        # Calculate time until oldest request expires
+        oldest = min(recent_requests)
+        seconds_until_reset = int((oldest + timedelta(seconds=time_window) - now).total_seconds()) + 1
+        return False, seconds_until_reset
+
+    # Add current request
+    rate_limit_storage[ip][endpoint_type].append(now)
+    return True, 0
+
+def rate_limit(endpoint_type: str = 'default'):
+    """Decorator to apply rate limiting to routes"""
+    def decorator(f):
+        @functools.wraps(f)
+        async def decorated_function(*args, **kwargs):
+            is_allowed, seconds_until_reset = check_rate_limit(endpoint_type)
+            if not is_allowed:
+                return jsonify({
+                    'success': False,
+                    'message': f'Too many requests. Please try again in {seconds_until_reset} seconds.',
+                    'rate_limited': True,
+                    'retry_after': seconds_until_reset
+                }), 429
+            return await f(*args, **kwargs)
+        decorated_function.__name__ = f"{f.__name__}_rate_limited"
+        return decorated_function
+    return decorator
 
 # ============ JSON DATABASE IMPLEMENTATION ============
 
@@ -37,6 +107,65 @@ DB_PATH = DATA_DIR / "edugrade.json"
 
 # Ensure data directory exists
 DATA_DIR.mkdir(exist_ok=True)
+
+# ============ ENCRYPTION ============
+
+# In-memory storage for encryption keys (session_token -> encryption_key)
+# This is cleared on server restart, requiring users to re-login
+encryption_keys = {}
+
+# In-memory cache for decrypted user data (session_token -> {data, last_heartbeat})
+# This avoids re-decrypting on every request
+user_data_cache = {}
+
+# Heartbeat timeout in seconds - cache is cleared if no heartbeat received
+HEARTBEAT_TIMEOUT = 60
+
+def derive_encryption_key(password: str, salt: bytes) -> bytes:
+    """Derive a 256-bit encryption key from password using PBKDF2"""
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,  # 256 bits for AES-256
+        salt=salt,
+        iterations=100000,  # Fewer iterations than password hash since this runs on every login
+    )
+    return kdf.derive(password.encode())
+
+def encrypt_user_data(data: dict, key: bytes) -> str:
+    """Encrypt user data using AES-256-GCM"""
+    # Convert data to JSON string
+    json_data = json.dumps(data, ensure_ascii=False)
+
+    # Generate a random 96-bit nonce (recommended for GCM)
+    nonce = os.urandom(12)
+
+    # Encrypt using AES-GCM
+    aesgcm = AESGCM(key)
+    ciphertext = aesgcm.encrypt(nonce, json_data.encode('utf-8'), None)
+
+    # Combine nonce + ciphertext and encode as base64
+    encrypted = base64.b64encode(nonce + ciphertext).decode('ascii')
+    return encrypted
+
+def decrypt_user_data(encrypted_data: str, key: bytes) -> dict:
+    """Decrypt user data using AES-256-GCM"""
+    try:
+        # Decode from base64
+        raw = base64.b64decode(encrypted_data)
+
+        # Extract nonce (first 12 bytes) and ciphertext
+        nonce = raw[:12]
+        ciphertext = raw[12:]
+
+        # Decrypt
+        aesgcm = AESGCM(key)
+        plaintext = aesgcm.decrypt(nonce, ciphertext, None)
+
+        # Parse JSON
+        return json.loads(plaintext.decode('utf-8'))
+    except Exception as e:
+        print(f"Decryption error: {e}")
+        return {}
 
 def hash_password(password: str) -> str:
     """Hash password using PBKDF2 with enhanced security"""
@@ -88,33 +217,105 @@ def save_db(data):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 async def cleanup_expired_sessions():
-    """Remove expired sessions"""
+    """Remove expired sessions and their caches"""
     db = load_db()
     now = datetime.now()
     expired = []
-    
+
     for token, session in db["sessions"].items():
         expires_at = datetime.fromisoformat(session["expires_at"])
         if expires_at < now:
             expired.append(token)
-    
+
     for token in expired:
         del db["sessions"][token]
-    
+        # Clear session cache
+        clear_session_cache(token)
+
+    # Also clean up stale caches (no heartbeat for too long)
+    stale_tokens = []
+    for token, cache_entry in user_data_cache.items():
+        if (now - cache_entry["last_heartbeat"]).total_seconds() > HEARTBEAT_TIMEOUT * 2:
+            stale_tokens.append(token)
+
+    for token in stale_tokens:
+        print(f"Clearing stale cache for token {token[:8]}...")
+        clear_session_cache(token)
+
     save_db(db)
-    # Explicitly return None for async function
     return None
 
-def save_user_data(user_id: str, data):
-    """Save user data"""
+def save_user_data(user_id: str, data, encryption_key: bytes = None, session_token: str = None):
+    """Save user data (encrypted if key is provided)"""
     db = load_db()
-    db["user_data"][user_id] = data
+    if encryption_key:
+        # Store encrypted data
+        encrypted = encrypt_user_data(data, encryption_key)
+        db["user_data"][user_id] = {"encrypted": True, "data": encrypted}
+    else:
+        # Store unencrypted (legacy/migration)
+        db["user_data"][user_id] = data
     save_db(db)
 
-def get_user_data(user_id: str):
-    """Get user data"""
+    # Update cache if session token provided
+    if session_token and session_token in user_data_cache:
+        user_data_cache[session_token]["data"] = data
+        user_data_cache[session_token]["last_heartbeat"] = datetime.now()
+
+def get_user_data(user_id: str, encryption_key: bytes = None):
+    """Get user data from disk (decrypted if encrypted and key is provided)"""
     db = load_db()
-    return db["user_data"].get(user_id, {})
+    stored = db["user_data"].get(user_id, {})
+
+    # Check if data is encrypted
+    if isinstance(stored, dict) and stored.get("encrypted"):
+        if encryption_key:
+            return decrypt_user_data(stored["data"], encryption_key)
+        else:
+            print(f"Warning: Encrypted data for user {user_id} but no key provided")
+            return {}
+    else:
+        # Unencrypted data (legacy)
+        return stored
+
+def get_user_data_cached(user_id: str, session_token: str, encryption_key: bytes = None):
+    """Get user data from cache or decrypt and cache it"""
+    # Check cache first
+    if session_token in user_data_cache:
+        cache_entry = user_data_cache[session_token]
+        # Check if cache is still valid (heartbeat not timed out)
+        if (datetime.now() - cache_entry["last_heartbeat"]).total_seconds() < HEARTBEAT_TIMEOUT:
+            print(f"Cache hit for user {user_id}")
+            return cache_entry["data"]
+        else:
+            # Cache expired, remove it
+            print(f"Cache expired for user {user_id}")
+            del user_data_cache[session_token]
+
+    # Cache miss - load and decrypt from disk
+    print(f"Cache miss for user {user_id}, loading from disk")
+    data = get_user_data(user_id, encryption_key)
+
+    # Store in cache
+    if data and session_token:
+        user_data_cache[session_token] = {
+            "data": data,
+            "user_id": user_id,
+            "last_heartbeat": datetime.now()
+        }
+
+    return data
+
+def get_encryption_key_for_session(token: str) -> bytes | None:
+    """Get the encryption key for a session token"""
+    return encryption_keys.get(token)
+
+def clear_session_cache(token: str):
+    """Clear cache for a session"""
+    if token in user_data_cache:
+        del user_data_cache[token]
+    if token in encryption_keys:
+        del encryption_keys[token]
 
 # ============ AUTHENTICATION FUNCTIONS ============
 
@@ -154,7 +355,7 @@ def register_user(username: str, email: str, password: str) -> dict:
         }
 
     db = load_db()
-    
+
     # Check if user already exists
     if email in db["users"]:
         return {
@@ -167,16 +368,23 @@ def register_user(username: str, email: str, password: str) -> dict:
     user_id = str(len(db["users"]) + 1)
     password_hash = hash_password(password)
 
+    # Generate encryption salt (separate from password hash salt)
+    encryption_salt = secrets.token_bytes(32)
+
     db["users"][email] = {
         "id": user_id,
         "username": username,
         "email": email,
         "password_hash": password_hash,
+        "encryption_salt": encryption_salt.hex(),
         "created_at": datetime.now().isoformat()
     }
 
-    # Initialize user data
-    db["user_data"][user_id] = {
+    # Derive encryption key from password
+    encryption_key = derive_encryption_key(password, encryption_salt)
+
+    # Initialize user data (will be encrypted)
+    initial_data = {
         "teacherName": "",
         "currentClassId": None,
         "classes": [],
@@ -194,6 +402,10 @@ def register_user(username: str, email: str, password: str) -> dict:
         ]
     }
 
+    # Encrypt and store initial data
+    encrypted_data = encrypt_user_data(initial_data, encryption_key)
+    db["user_data"][user_id] = {"encrypted": True, "data": encrypted_data}
+
     save_db(db)
     return {
         'success': True,
@@ -207,7 +419,7 @@ def login_user(email: str, password: str) -> dict:
 
     db = load_db()
     user = db["users"].get(email)
-    
+
     if not user or not verify_password(user["password_hash"], password):
         return {
             'success': False,
@@ -228,6 +440,31 @@ def login_user(email: str, password: str) -> dict:
 
     save_db(db)
 
+    # Handle encryption key
+    user_id = user["id"]
+    encryption_salt_hex = user.get("encryption_salt")
+
+    if not encryption_salt_hex:
+        # Legacy user without encryption - create encryption salt now
+        print(f"Creating encryption salt for legacy user {user_id}")
+        encryption_salt = secrets.token_bytes(32)
+        db["users"][email]["encryption_salt"] = encryption_salt.hex()
+        save_db(db)
+        encryption_salt_hex = encryption_salt.hex()
+
+    # Derive encryption key
+    encryption_salt = bytes.fromhex(encryption_salt_hex)
+    encryption_key = derive_encryption_key(password, encryption_salt)
+    encryption_keys[token] = encryption_key
+
+    # Check if data needs migration (unencrypted -> encrypted)
+    db = load_db()  # Reload to get fresh state
+    stored = db["user_data"].get(user_id, {})
+    if stored and not (isinstance(stored, dict) and stored.get("encrypted")):
+        # Data is not encrypted yet, encrypt it now
+        print(f"Migrating unencrypted data for user {user_id}")
+        save_user_data(user_id, stored, encryption_key)
+
     return {
         'success': True,
         'message': 'Login erfolgreich!',
@@ -245,6 +482,10 @@ def logout_user(token: str) -> bool:
     if token in db["sessions"]:
         del db["sessions"][token]
         save_db(db)
+
+    # Clear session cache (encryption key + data cache)
+    clear_session_cache(token)
+
     return True
 
 def get_user_from_token(token: str) -> dict | None:
@@ -381,6 +622,7 @@ async def about_developer_page():
 # ============ Auth API ============
 
 @app.route('/api/register', methods=['POST'])
+@rate_limit('register')
 async def api_register():
     """Register a new user"""
     data = await request.get_json()
@@ -406,6 +648,7 @@ async def api_register():
 
 
 @app.route('/api/login', methods=['POST'])
+@rate_limit('login')
 async def api_login():
     """Log in a user"""
     data = await request.get_json()
@@ -491,15 +734,19 @@ async def api_delete_account():
 # ============ Data Sync API ============
 
 @app.route('/api/data', methods=['GET'])
+@rate_limit('data_read')
 @login_required
 async def api_get_data():
-    """Get all data for the current user"""
+    """Get all data for the current user (cached)"""
     user_id = request.user['id'] # type: ignore
-    
+    token = get_token_from_request()
+    encryption_key = get_encryption_key_for_session(token)
+
     try:
         print(f"Loading data for user {user_id}")
-        user_data = get_user_data(user_id)
-        
+        # Use cached data if available
+        user_data = get_user_data_cached(user_id, token, encryption_key)
+
         if not user_data:
             print(f"No data found for user {user_id}, creating default data")
             # Create default data if none exists
@@ -520,11 +767,11 @@ async def api_get_data():
                     {'grade': 5, 'minPercent': 0, 'maxPercent': 39}
                 ]
             }
-            save_user_data(user_id, user_data)
-        
+            save_user_data(user_id, user_data, encryption_key, token)
+
         print(f"Found {len(user_data.get('classes', []))} classes for user {user_id}")
         print(f"Found {len(user_data.get('categories', []))} categories for user {user_id}")
-        
+
         print(f"Successfully loaded data for user {user_id}")
         return jsonify(user_data)
 
@@ -534,10 +781,13 @@ async def api_get_data():
 
 
 @app.route('/api/data', methods=['POST'])
+@rate_limit('data_write')
 @login_required
 async def api_save_data():
     """Save all data for the current user (full sync)"""
     user_id = request.user['id'] # type: ignore
+    token = get_token_from_request()
+    encryption_key = get_encryption_key_for_session(token)
     data = await request.get_json()
 
     if not data:
@@ -548,15 +798,43 @@ async def api_save_data():
         print(f"Received data for user {user_id}")
         print(f"Data preview: {len(data.get('classes', []))} classes, {len(data.get('categories', []))} categories")
 
-        # Save complete user data to JSON database
-        save_user_data(user_id, data)
-        
-        print(f"Data successfully saved for user {user_id}")
+        # Save complete user data to JSON database (encrypted) and update cache
+        save_user_data(user_id, data, encryption_key, token)
+
+        print(f"Data successfully saved (encrypted) for user {user_id}")
         return jsonify({'success': True, 'message': 'Data saved successfully'})
 
     except Exception as e:
         print(f"Error saving data for user {user_id}: {str(e)}")
         return jsonify({'success': False, 'message': f'Server error: {str(e)}'}), 500
+
+
+@app.route('/api/heartbeat', methods=['POST'])
+@login_required
+async def api_heartbeat():
+    """Heartbeat endpoint to keep session cache alive"""
+    token = get_token_from_request()
+
+    if token in user_data_cache:
+        user_data_cache[token]["last_heartbeat"] = datetime.now()
+        return jsonify({'success': True, 'cached': True})
+
+    return jsonify({'success': True, 'cached': False})
+
+
+@app.route('/api/disconnect', methods=['POST'])
+@login_required
+async def api_disconnect():
+    """Called when user closes the page - clears cache but keeps session valid"""
+    token = get_token_from_request()
+    user_id = request.user['id'] # type: ignore
+
+    # Clear only the data cache, keep the session and encryption key
+    if token in user_data_cache:
+        print(f"Clearing cache for user {user_id} (page closed)")
+        del user_data_cache[token]
+
+    return jsonify({'success': True})
 
 
 if __name__ == '__main__':

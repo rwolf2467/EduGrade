@@ -3,9 +3,13 @@
 (() => {
     try {
         const stored = localStorage.getItem('themeMode');
-        if (stored ? stored === 'dark'
-            : matchMedia('(prefers-color-scheme: dark)').matches) {
+        // Default to dark mode if no preference is stored
+        const shouldBeDark = stored ? stored === 'dark' : true;
+
+        if (shouldBeDark) {
             document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
         }
     } catch (_) { }
 
