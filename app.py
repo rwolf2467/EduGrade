@@ -246,15 +246,14 @@ async def cleanup_expired_sessions():
     return None
 
 def save_user_data(user_id: str, data, encryption_key: bytes = None, session_token: str = None):
-    """Save user data (encrypted if key is provided)"""
+    """Save user data (ALWAYS encrypted - encryption_key is required)"""
+    if not encryption_key:
+        raise ValueError("Encryption key is required to save user data securely")
+
     db = load_db()
-    if encryption_key:
-        # Store encrypted data
-        encrypted = encrypt_user_data(data, encryption_key)
-        db["user_data"][user_id] = {"encrypted": True, "data": encrypted}
-    else:
-        # Store unencrypted (legacy/migration)
-        db["user_data"][user_id] = data
+    # Store encrypted data
+    encrypted = encrypt_user_data(data, encryption_key)
+    db["user_data"][user_id] = {"encrypted": True, "data": encrypted}
     save_db(db)
 
     # Update cache if session token provided
@@ -364,8 +363,32 @@ def register_user(username: str, email: str, password: str) -> dict:
             'user_id': None
         }
 
-    # Create user
-    user_id = str(len(db["users"]) + 1)
+    # Create user with unique ID
+    # Collect all existing user IDs to ensure uniqueness
+    existing_ids = set()
+    for user_data in db["users"].values():
+        existing_ids.add(user_data.get("id"))
+    for user_id_key in db.get("user_data", {}).keys():
+        existing_ids.add(user_id_key)
+
+    # Generate unique ID using UUID to prevent collisions
+    import uuid
+    user_id = str(uuid.uuid4())[:8]  # Use first 8 chars of UUID
+
+    # Double-check uniqueness (should never happen with UUID, but safety first)
+    max_attempts = 100
+    attempts = 0
+    while user_id in existing_ids and attempts < max_attempts:
+        user_id = str(uuid.uuid4())[:8]
+        attempts += 1
+
+    if user_id in existing_ids:
+        return {
+            'success': False,
+            'message': 'Could not generate unique user ID. Please try again.',
+            'user_id': None
+        }
+
     password_hash = hash_password(password)
 
     # Generate encryption salt (separate from password hash salt)
@@ -792,6 +815,15 @@ async def api_save_data():
 
     if not data:
         return jsonify({'success': False, 'message': 'Invalid request - no data received'}), 400
+
+    # SECURITY: Require encryption key to save data
+    if not encryption_key:
+        print(f"Warning: No encryption key for user {user_id} - rejecting save request")
+        return jsonify({
+            'success': False,
+            'message': 'Session expired. Please log in again to save your data.',
+            'requireRelogin': True
+        }), 401
 
     try:
         # Debug: Log the received data

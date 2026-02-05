@@ -150,13 +150,21 @@ const saveData = (message = "Data saved!", type = "success") => {
                 localStorage.setItem("notenverwaltung", JSON.stringify(appData));
                 // Reset error counter
                 localStorage.removeItem('pendingServerSync');
+            } else if (response.status === 401) {
+                // Session expired or no encryption key - need to re-login
+                const data = await response.json();
+                console.warn('Session expired:', data.message);
+                localStorage.setItem("notenverwaltung", JSON.stringify(appData));
+                localStorage.setItem('pendingServerSync', 'true');
+                // Show alert and redirect to login
+                showSessionExpiredDialog(data.message || "Your session has expired. Please log in again to save your data securely.");
             } else if (response.status === 429) {
-                // Rate limited
+                // Rate limited - show prominent dialog
                 const data = await response.json();
                 console.warn('Rate limited:', data.message);
                 localStorage.setItem("notenverwaltung", JSON.stringify(appData));
                 localStorage.setItem('pendingServerSync', 'true');
-                showToast(data.message || "Too many requests. Please slow down.", "error");
+                showRateLimitDialog(data.message || "You've made too many requests. Please wait a moment before trying again.");
             } else {
                 console.error('Server save failed:', response.statusText);
                 // On server error, save locally as backup and mark for later sync
@@ -186,6 +194,9 @@ const saveData = (message = "Data saved!", type = "success") => {
 const loadData = async () => {
     console.log("Loading data from server...");
 
+    // Show loading overlay while decrypting data
+    showLoadingOverlay('Loading your data', 'Decrypting and loading your grades. This may take a moment...');
+
     try {
         // Try to load data from server
         const response = await fetch('/api/data');
@@ -204,6 +215,7 @@ const loadData = async () => {
             await checkPendingSync();
         } else if (response.status === 401) {
             // Not logged in - redirect to login page
+            hideLoadingOverlay();
             window.location.href = '/login';
             return;
         } else {
@@ -225,6 +237,9 @@ const loadData = async () => {
 
     // Migration and initialization
     migrateData();
+
+    // Hide loading overlay after data is loaded
+    hideLoadingOverlay();
 };
 
 /**

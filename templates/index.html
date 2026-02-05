@@ -589,7 +589,7 @@
                                 <thead>
                                     <tr>
                                         <th>Name</th>
-                                        <th>Grades</th>
+                                        <th># Grades</th>
                                         <th>Average</th>
                                         <th>Weighted</th>
                                         <th>Final Grade</th>
@@ -977,6 +977,8 @@
 
             // Logout button
             const logoutHandler = async () => {
+                const btn = document.getElementById('logout-btn');
+                setButtonLoading(btn, true, 'Signing out...');
                 try {
                     await fetch('/api/logout', { method: 'POST' });
                     window.location.href = '/login';
@@ -1006,6 +1008,7 @@
             });
 
             document.getElementById('save-profile').addEventListener('click', async () => {
+                const btn = document.getElementById('save-profile');
                 const teacherName = document.getElementById('profile-teacher-name').value.trim();
                 const school = document.getElementById('profile-school').value.trim();
 
@@ -1014,6 +1017,8 @@
                     showAlertDialog('Display name must be at most 100 characters.');
                     return;
                 }
+
+                setButtonLoading(btn, true, 'Saving...');
 
                 // Update appData
                 appData.teacherName = teacherName;
@@ -1028,6 +1033,7 @@
 
                 // Save to server
                 saveData('Profile saved successfully.', 'success');
+                setButtonLoading(btn, false);
                 profileDialog.close();
             });
 
@@ -1044,6 +1050,8 @@
             });
 
             document.getElementById('confirm-clear-storage').addEventListener('click', async () => {
+                const btn = document.getElementById('confirm-clear-storage');
+                setButtonLoading(btn, true, 'Clearing...');
                 try {
                     // Reset appData to defaults
                     appData = {
@@ -1078,6 +1086,7 @@
                     location.reload();
                 } catch (error) {
                     console.error('Clear data error:', error);
+                    setButtonLoading(btn, false);
                     showAlertDialog('Error clearing data.');
                     clearStorageDialog.close();
                 }
@@ -1094,6 +1103,8 @@
             });
 
             document.getElementById('confirm-delete-account').addEventListener('click', async () => {
+                const btn = document.getElementById('confirm-delete-account');
+                setButtonLoading(btn, true, 'Deleting...');
                 try {
                     const response = await fetch('/api/account', { method: 'DELETE' });
                     const data = await response.json();
@@ -1101,11 +1112,13 @@
                     if (response.ok) {
                         window.location.href = '/login';
                     } else {
+                        setButtonLoading(btn, false);
                         showAlertDialog(data.message || 'Error deleting account.');
                         deleteAccountDialog.close();
                     }
                 } catch (error) {
                     console.error('Delete account error:', error);
+                    setButtonLoading(btn, false);
                     showAlertDialog('Error deleting account.');
                     deleteAccountDialog.close();
                 }

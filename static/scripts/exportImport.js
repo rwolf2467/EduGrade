@@ -1,4 +1,63 @@
 // ========== EXPORT/IMPORT ==========
+
+/**
+ * IMPORT PROGRESS DIALOG
+ *
+ * Shows a progress bar while importing and encrypting data.
+ */
+let importProgressDialog = null;
+let importProgressBar = null;
+
+const showImportProgress = () => {
+    // Create dialog if not exists
+    if (!importProgressDialog) {
+        importProgressDialog = document.createElement('dialog');
+        importProgressDialog.id = 'import-progress-dialog';
+        importProgressDialog.className = 'dialog';
+        importProgressDialog.style.cssText = 'max-width: 425px; width: 100%;';
+        importProgressDialog.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; padding: 2rem; text-align: center;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 0.75rem; width: 100%; max-width: 320px;">
+                    <div style="margin-bottom: 0.5rem; background: rgba(255, 255, 255, 0.1); color: currentColor; display: flex; width: 48px; height: 48px; align-items: center; justify-content: center; border-radius: 50%;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+                            <path d="m9 12 2 2 4-4"/>
+                        </svg>
+                    </div>
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin: 0;">Importing and encrypting your data</h3>
+                    <p style="font-size: 0.875rem; opacity: 0.7; margin: 0;">Please wait while we securely import and encrypt your data...</p>
+                    <div style="width: 100%; margin-top: 1rem;">
+                        <div style="background: rgba(255, 255, 255, 0.15); position: relative; height: 8px; width: 100%; overflow: hidden; border-radius: 9999px;">
+                            <div id="import-progress-bar" style="background: white; height: 100%; width: 0%; transition: width 0.4s ease-out;"></div>
+                        </div>
+                        <p style="font-size: 0.75rem; opacity: 0.7; margin-top: 0.5rem;" id="import-progress-text">Starting import...</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(importProgressDialog);
+    }
+
+    importProgressBar = importProgressDialog.querySelector('#import-progress-bar');
+    importProgressDialog.showModal();
+};
+
+const setImportProgress = (percent, text) => {
+    if (importProgressBar) {
+        importProgressBar.style.width = `${percent}%`;
+    }
+    const textEl = document.getElementById('import-progress-text');
+    if (textEl && text) {
+        textEl.textContent = text;
+    }
+};
+
+const hideImportProgress = () => {
+    if (importProgressDialog) {
+        importProgressDialog.close();
+    }
+};
+
 const exportData = () => {
     const dataStr = JSON.stringify(appData, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
@@ -19,7 +78,7 @@ document.getElementById("cancel-import").addEventListener("click", () => {
     document.getElementById("import-dialog").close();
 });
 
-document.getElementById("confirm-import").addEventListener("click", () => {
+document.getElementById("confirm-import").addEventListener("click", async () => {
     const fileInput = document.getElementById("import-file");
     const file = fileInput.files[0];
 
@@ -35,60 +94,160 @@ document.getElementById("confirm-import").addEventListener("click", () => {
         return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        try {
-            const rawData = JSON.parse(event.target.result);
+    // Close import dialog and show import progress overlay
+    document.getElementById("import-dialog").close();
+    showImportProgress();
 
-            // Validate the data structure
-            // Kategorien sind jetzt global - Klassen brauchen kein categories-Array mehr
-            if (rawData.teacherName && Array.isArray(rawData.classes)) {
-                // Check if the data structure matches our expected format
-                // Akzeptiere sowohl alte Struktur (categories pro Klasse) als auch neue (globale categories)
-                const isValid = rawData.classes.every(cls =>
-                    cls.id && cls.name && Array.isArray(cls.students)
-                ) && (!rawData.categories || rawData.categories.every(cat =>
-                    cat.id && cat.name && typeof cat.weight === 'number'
-                )) && (!rawData.students || rawData.students.every(student =>
-                    student.id && student.name && Array.isArray(student.grades)
-                ));
+    // Wait for dialog to render before starting file read
+    await new Promise(resolve => setTimeout(resolve, 150));
 
-                if (isValid) {
-                    // Sanitize the imported data to prevent XSS
-                    const sanitizedData = sanitizeImportData(rawData);
+    // Track start time to ensure minimum display duration
+    const startTime = Date.now();
+    const MIN_LOADING_TIME = 3000; // 3 seconds minimum
 
-                    if (!sanitizedData) {
-                        showAlertDialog("Error sanitizing imported data. The file may be corrupted.");
-                        return;
-                    }
+    // Helper function to read file as Promise
+    const readFileAsText = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => resolve(event.target.result);
+            reader.onerror = (error) => reject(error);
+            reader.readAsText(file);
+        });
+    };
 
-                    // Load the sanitized data into the application
-                    appData = sanitizedData;
-                    saveData("Data imported successfully!", "success");
-
-                    // Close the import dialog
-                    document.getElementById("import-dialog").close();
-
-                    // Hide the setup page and show the dashboard
-                    document.getElementById("setup-page").classList.add("hidden");
-                    document.getElementById("dashboard").classList.remove("hidden");
-                    // Use teacherName or fallback to username
-                    const displayName = appData.teacherName || window.currentUser.username;
-                    document.getElementById("teacher-greeting").textContent = displayName;
-
-                    // Render the UI with the imported data
-                    renderClassList();
-                    renderStudents();
-                    renderCategoryFilter();
-                } else {
-                    showAlertDialog("Invalid data structure. Please make sure the JSON file is in the correct format.");
-                }
-            } else {
-                showAlertDialog("Invalid data structure. Please make sure the JSON file is in the correct format.");
-            }
-        } catch (error) {
-            showAlertDialog("Error parsing the JSON file. Please make sure it is a valid JSON file.");
+    // Helper function to ensure minimum loading time
+    const ensureMinTime = async () => {
+        const elapsed = Date.now() - startTime;
+        if (elapsed < MIN_LOADING_TIME) {
+            await new Promise(resolve => setTimeout(resolve, MIN_LOADING_TIME - elapsed));
         }
     };
-    reader.readAsText(file);
+
+    try {
+        // Step 1: Read file
+        setImportProgress(10, 'Reading file...');
+        await new Promise(resolve => setTimeout(resolve, 400));
+
+        const fileContent = await readFileAsText(file);
+
+        // Step 2: Parse JSON
+        setImportProgress(25, 'Parsing data...');
+        await new Promise(resolve => setTimeout(resolve, 400));
+
+        const rawData = JSON.parse(fileContent);
+
+        // Step 3: Validate structure
+        setImportProgress(40, 'Validating data structure...');
+        await new Promise(resolve => setTimeout(resolve, 400));
+
+        // Validate the data structure
+        if (!rawData.teacherName || !Array.isArray(rawData.classes)) {
+            await ensureMinTime();
+            hideImportProgress();
+            showAlertDialog("Invalid data structure. Please make sure the JSON file is in the correct format.");
+            return;
+        }
+
+        // Check if the data structure matches our expected format
+        const isValid = rawData.classes.every(cls =>
+            cls.id && cls.name && Array.isArray(cls.students)
+        ) && (!rawData.categories || rawData.categories.every(cat =>
+            cat.id && cat.name && typeof cat.weight === 'number'
+        )) && (!rawData.students || rawData.students.every(student =>
+            student.id && student.name && Array.isArray(student.grades)
+        ));
+
+        if (!isValid) {
+            await ensureMinTime();
+            hideImportProgress();
+            showAlertDialog("Invalid data structure. Please make sure the JSON file is in the correct format.");
+            return;
+        }
+
+        // Step 4: Sanitize data
+        setImportProgress(55, 'Sanitizing data...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const sanitizedData = sanitizeImportData(rawData);
+
+        if (!sanitizedData) {
+            await ensureMinTime();
+            hideImportProgress();
+            showAlertDialog("Error sanitizing imported data. The file may be corrupted.");
+            return;
+        }
+
+        // Load the sanitized data into the application
+        appData = sanitizedData;
+
+        // Step 5: Encrypt and save (longest step)
+        setImportProgress(70, 'Encrypting and saving...');
+
+        await new Promise((resolve) => {
+            fetch('/api/data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(appData)
+            })
+            .then(response => {
+                if (response.ok) {
+                    localStorage.setItem("notenverwaltung", JSON.stringify(appData));
+                } else {
+                    // Save locally as backup
+                    localStorage.setItem("notenverwaltung", JSON.stringify(appData));
+                    localStorage.setItem('pendingServerSync', 'true');
+                }
+                resolve();
+            })
+            .catch(error => {
+                console.error('Import save error:', error);
+                localStorage.setItem("notenverwaltung", JSON.stringify(appData));
+                localStorage.setItem('pendingServerSync', 'true');
+                resolve();
+            });
+        });
+
+        // Extra delay for encryption step (most important)
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        // Step 6: Finalize
+        setImportProgress(90, 'Finalizing...');
+        await new Promise(resolve => setTimeout(resolve, 400));
+
+        // Complete progress bar
+        setImportProgress(100, 'Complete!');
+
+        // Ensure minimum loading time
+        await ensureMinTime();
+
+        // Small delay to show 100% before closing
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        hideImportProgress();
+        showToast("Data imported successfully!", "success");
+
+        // Hide the setup page and show the dashboard
+        document.getElementById("setup-page").classList.add("hidden");
+        document.getElementById("dashboard").classList.remove("hidden");
+
+        // Use teacherName or fallback to username
+        const displayName = appData.teacherName || window.currentUser.username;
+        document.getElementById("teacher-greeting").textContent = displayName;
+
+        // Render the UI with the imported data
+        renderClassList();
+        renderStudents();
+        renderCategoryFilter();
+
+        // Update home view with current data
+        if (typeof renderHome === 'function') {
+            renderHome();
+        }
+
+    } catch (error) {
+        console.error('Import error:', error);
+        await ensureMinTime();
+        hideImportProgress();
+        showAlertDialog("Error parsing the JSON file. Please make sure it is a valid JSON file.");
+    }
 });
