@@ -106,6 +106,9 @@ const renderStudents = () => {
         return;
     }
 
+    // Update class stats when students table changes
+    renderClassStats();
+
     // Suchbegriff und Kategoriefilter aus den Input-Feldern holen
     const searchTerm = document.getElementById("search-students").value.toLowerCase();
     const filterCategory = document.getElementById("filter-category").value;
@@ -137,18 +140,24 @@ const renderStudents = () => {
               <td>${weightedAvg ? weightedAvg.toFixed(2) : "—"}</td>
               <td>${calculateFinalGrade(weightedAvg)}</td>
               <td>
+                <button class="btn-icon btn-secondary mr-1" data-view-student="${safeAttr(student.id)}" data-tooltip="View details" data-side="top">
+                  <svg class="lucide lucide-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                    <circle cx="12" cy="12" r="3" stroke-width="2" />
+                  </svg>
+                </button>
                 <button class="btn-icon btn-primary mr-1" data-add-grade="${safeAttr(student.id)}" data-tooltip="Add grade" data-side="top">
                   <svg class="lucide lucide-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                   </svg>
                 </button>
-                <button class="btn-icon btn-secondary mr-1" data-edit-student="${safeAttr(student.id)}" data-tooltip="Edit student" data-side="top">
+                <button class="btn-icon btn-secondary mr-1" data-edit-student="${safeAttr(student.id)}" data-tooltip="Rename" data-side="top">
                   <svg class="lucide lucide-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.5 5.5l-4 4L17 11.5 21 7.5z" />
                   </svg>
                 </button>
-                <button class="btn-icon btn-destructive" data-delete-student="${safeAttr(student.id)}" data-tooltip="Delete student" data-side="top">
+                <button class="btn-icon btn-destructive" data-delete-student="${safeAttr(student.id)}" data-tooltip="Delete" data-side="top">
                   <svg class="lucide lucide-trash-2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18" />
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -163,6 +172,14 @@ const renderStudents = () => {
     document.querySelectorAll(".student-name-link").forEach(link => {
         link.addEventListener("click", () => {
             const studentId = link.dataset.studentId;
+            showStudentDetailView(studentId);
+        });
+    });
+
+    // Add event listeners for view details buttons
+    document.querySelectorAll("[data-view-student]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const studentId = btn.dataset.viewStudent;
             showStudentDetailView(studentId);
         });
     });
@@ -397,6 +414,50 @@ const renderStudents = () => {
         });
     });
 
+};
+
+/**
+ * RENDER CLASS STATS
+ *
+ * Displays statistics for the current class at the top of the class view.
+ * Shows: Class average, student count, total grades, pass rate.
+ */
+const renderClassStats = () => {
+    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
+    if (!currentClass) return;
+
+    const studentCount = currentClass.students.length;
+    let totalGrades = 0;
+    let passCount = 0;
+    let studentWithGradesCount = 0;
+    const classAverages = [];
+
+    currentClass.students.forEach(student => {
+        const numericGrades = student.grades.filter(g => !g.isPlusMinus);
+        totalGrades += numericGrades.length;
+
+        const avg = calculateWeightedAverage(student.grades);
+        if (avg > 0) {
+            classAverages.push(avg);
+            studentWithGradesCount++;
+            if (avg <= 4.5) passCount++;
+        }
+    });
+
+    // Class average
+    const classAverage = classAverages.length > 0
+        ? (classAverages.reduce((a, b) => a + b, 0) / classAverages.length).toFixed(2)
+        : "-";
+
+    // Pass rate (students with grade 4 or better)
+    const passRate = studentWithGradesCount > 0
+        ? Math.round((passCount / studentWithGradesCount) * 100) + "%"
+        : "-";
+
+    document.getElementById("class-stat-average").textContent = classAverage;
+    document.getElementById("class-stat-students").textContent = studentCount;
+    document.getElementById("class-stat-grades").textContent = totalGrades;
+    document.getElementById("class-stat-pass-rate").textContent = passRate;
 };
 
 const renderCategoryFilter = () => {
@@ -905,6 +966,7 @@ const showClassView = () => {
             }
 
             renderClassList();
+            renderClassStats();
             renderStudents();
             renderCategoryFilter();
         }, 150);
@@ -917,6 +979,7 @@ const showClassView = () => {
         }
 
         renderClassList();
+        renderClassStats();
         renderStudents();
         renderCategoryFilter();
     }
@@ -1316,7 +1379,7 @@ const renderStudentGradesTable = (student) => {
     );
 
     if (sortedGrades.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="color: oklch(.708 0 0);">No grades yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="color: oklch(.708 0 0);">No grades yet.</td></tr>';
         return;
     }
 
@@ -1340,7 +1403,87 @@ const renderStudentGradesTable = (student) => {
                 <td>${escapeHtml(grade.name || '-')}</td>
                 <td><span class="badge ${gradeColorClass}">${escapeHtml(displayValue)}</span></td>
                 <td>${weightDisplay}</td>
+                <td>
+                    <div class="flex gap-1">
+                        <button class="btn-icon btn-secondary" data-edit-grade="${safeAttr(grade.id)}" data-tooltip="Edit grade" data-side="top">
+                            <svg class="lucide lucide-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.5 5.5l-4 4L17 11.5 21 7.5z" />
+                            </svg>
+                        </button>
+                        <button class="btn-icon btn-destructive" data-delete-grade="${safeAttr(grade.id)}" data-tooltip="Delete grade" data-side="top">
+                            <svg class="lucide lucide-trash-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                        </button>
+                    </div>
+                </td>
             </tr>
         `;
     }).join('');
+
+    // Add event listeners for edit grade buttons
+    document.querySelectorAll("#student-grades-table [data-edit-grade]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const gradeId = btn.dataset.editGrade;
+            const grade = student.grades.find(g => g.id === gradeId);
+            if (grade) {
+                const isPlusMinus = grade.isPlusMinus;
+
+                let valueInput;
+                if (isPlusMinus) {
+                    valueInput = `
+                        <select name="value" class="select w-full" required>
+                            <option value="+" ${grade.value === '+' ? 'selected' : ''}>+ (Plus)</option>
+                            <option value="-" ${grade.value === '-' ? 'selected' : ''}>- (Minus)</option>
+                        </select>
+                    `;
+                } else {
+                    valueInput = `<input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" value="${escapeHtml(grade.value)}" required>`;
+                }
+
+                const content = `
+                    <div class="grid gap-2">
+                        <label class="block mb-2">Grade name (optional)</label>
+                        <input type="text" name="name" class="input w-full" value="${escapeHtml(grade.name || '')}" maxlength="100">
+                    </div>
+                    <div class="grid gap-2">
+                        <label class="block mb-2">Grade value</label>
+                        ${valueInput}
+                    </div>
+                `;
+
+                showDialog("edit-dialog", "Edit Grade", content, (formData) => {
+                    const newValue = formData.get("value");
+                    const newName = formData.get("name");
+
+                    if (isPlusMinus) {
+                        grade.value = newValue;
+                    } else {
+                        grade.value = parseFloat(newValue);
+                    }
+                    grade.name = newName;
+
+                    saveData("Grade updated!", "success");
+                    renderStudentDetail(student.id);
+                });
+            }
+        });
+    });
+
+    // Add event listeners for delete grade buttons
+    document.querySelectorAll("#student-grades-table [data-delete-grade]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const gradeId = btn.dataset.deleteGrade;
+            showConfirmDialog("Are you sure you want to delete this grade?", () => {
+                const gradeIndex = student.grades.findIndex(g => g.id === gradeId);
+                if (gradeIndex !== -1) {
+                    student.grades.splice(gradeIndex, 1);
+                    saveData("Grade deleted!", "success");
+                    renderStudentDetail(student.id);
+                }
+            });
+        });
+    });
 };

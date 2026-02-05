@@ -288,21 +288,39 @@ const showSessionExpiredDialog = (message = "Your session has expired. Please lo
                     <p id="session-expired-message" class="text-muted-foreground"></p>
                     <p class="text-sm mt-3" style="color: oklch(.708 0 0);">Your data has been saved locally and will be synced when you log in again.</p>
                 </section>
-                <footer class="flex justify-end gap-2">
-                    <button type="button" class="btn-outline" id="session-expired-later">Later</button>
-                    <button type="button" class="btn-primary" id="session-expired-login">Log In Now</button>
+                <footer class="flex justify-end">
+                    <button type="button" class="btn-primary" id="session-expired-login">Log In</button>
                 </footer>
             </div>
         `;
         document.body.appendChild(dialog);
 
-        // Close button handler
-        dialog.querySelector('#session-expired-later').addEventListener('click', () => {
-            dialog.close();
+        // Prevent closing with Escape key
+        dialog.addEventListener('cancel', (e) => {
+            e.preventDefault();
         });
 
-        // Login button handler
-        dialog.querySelector('#session-expired-login').addEventListener('click', () => {
+        // Prevent closing by clicking backdrop
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+                e.stopPropagation();
+            }
+        });
+
+        // Login button handler - only way to proceed
+        dialog.querySelector('#session-expired-login').addEventListener('click', async () => {
+            // Clear all local data for security
+            localStorage.removeItem('notenverwaltung');
+            localStorage.removeItem('pendingServerSync');
+            sessionStorage.clear();
+
+            // Logout from server to clear session cookie
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+            } catch (e) {
+                // Ignore errors, redirect anyway
+            }
+
             window.location.href = '/login';
         });
     }

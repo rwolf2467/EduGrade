@@ -577,6 +577,27 @@
                                 </button>
                             </div>
                         </header>
+
+                        <!-- Class Stats -->
+                        <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div class="stat-card p-4 rounded-lg border">
+                                <p class="text-sm" style="color: oklch(.708 0 0);">Class Average</p>
+                                <p class="text-2xl font-bold" id="class-stat-average">-</p>
+                            </div>
+                            <div class="stat-card p-4 rounded-lg border">
+                                <p class="text-sm" style="color: oklch(.708 0 0);">Students</p>
+                                <p class="text-2xl font-bold" id="class-stat-students">0</p>
+                            </div>
+                            <div class="stat-card p-4 rounded-lg border">
+                                <p class="text-sm" style="color: oklch(.708 0 0);">Total Grades</p>
+                                <p class="text-2xl font-bold" id="class-stat-grades">0</p>
+                            </div>
+                            <div class="stat-card p-4 rounded-lg border">
+                                <p class="text-sm" style="color: oklch(.708 0 0);">Pass Rate</p>
+                                <p class="text-2xl font-bold" id="class-stat-pass-rate">-</p>
+                            </div>
+                        </section>
+
                         <section class="mb-4 flex gap-2">
                             <input type="text" id="search-students" class="input flex-1"
                                 placeholder="Search by name or grade...">
@@ -668,6 +689,7 @@
                                                 <th>Name</th>
                                                 <th>Grade</th>
                                                 <th>Weight</th>
+                                                <th>Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody id="student-grades-table"></tbody>
