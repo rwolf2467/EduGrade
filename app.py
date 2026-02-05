@@ -582,7 +582,7 @@ app = Quart(__name__,
             static_folder='static',
             static_url_path='/static')
 
-app.secret_key = 'change-this-in-production-use-env-var'
+app.secret_key = 'eea304a198d6a9a860b2963de5991c3319040b665f2b912248ddc5be1c9f01f7' # Default secret key for session management. Change in production!
 
 
 
