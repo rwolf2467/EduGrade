@@ -29,18 +29,21 @@ EduGrade is a modern, security-focused web application for teachers to manage st
 - **Accessibility**: Built with modern web standards for better accessibility support
 
 ### Security Features
+- **Data Encryption**: All user data encrypted with AES-256-GCM using password-derived keys
 - **Enhanced Authentication**: 1-hour session timeout for improved security posture
 - **Secure Password Storage**: PBKDF2 hashing with 200,000 iterations and 32-byte salt
+- **Smart Session Caching**: In-memory caching with heartbeat system for optimal performance
 - **Comprehensive Protection**: CSRF protection, CSP headers, and secure cookie management
 
 ## Technology Stack
 
 - **Backend**: Python 3.8+ with Quart (async Flask-like framework)
 - **Frontend**: HTML5, JavaScript, Tailwind CSS, Basecoat CSS
-- **Database**: JSON-based file storage
+- **Database**: JSON-based file storage with AES-256-GCM encryption
+- **Encryption**: AES-256-GCM for data, PBKDF2 for key derivation (cryptography library)
 - **Authentication**: Secure session tokens with enhanced PBKDF2 password hashing (200k iterations, 32-byte salt)
 - **Charts**: Chart.js for data visualization
-- **Security**: Comprehensive security measures including short-lived sessions, secure cookies, and input validation
+- **Security**: Comprehensive security measures including encrypted storage, short-lived sessions, secure cookies, and input validation
 
 ## Requirements
 
@@ -75,6 +78,8 @@ EduGrade is a modern, security-focused web application for teachers to manage st
    ```bash
    pip install -r requirements.txt
    ```
+
+   This includes the `cryptography` library for AES-256-GCM encryption.
 
 3. **Run the application:**
    ```bash
@@ -172,9 +177,22 @@ edugrade/
 - **Secure Cookies**: HttpOnly and Secure flags for session cookies to prevent JavaScript access
 - **Input Validation**: Comprehensive validation for all user inputs to prevent injection attacks
 
+### Data Encryption
+- **AES-256-GCM Encryption**: All user data (classes, students, grades) is encrypted at rest
+- **Password-Derived Keys**: Encryption keys are derived from user passwords using PBKDF2 (100,000 iterations)
+- **Unique Nonces**: Each encryption operation uses a random 96-bit nonce for additional security
+- **Authenticated Encryption**: GCM mode ensures data integrity - tampering is detected and rejected
+
+### Smart Session Caching
+- **In-Memory Cache**: Decrypted data is cached in server RAM during active sessions for performance
+- **Heartbeat System**: Client sends heartbeat every 30 seconds to keep cache alive
+- **Automatic Cleanup**: Cache is cleared when user closes the page or after 60 seconds of inactivity
+- **Visibility-Aware**: Heartbeat pauses when browser tab is hidden, resumes when visible
+
 ### Data Protection
-- **Secure Storage**: Password hashes and sensitive data are stored securely
+- **Secure Storage**: Password hashes and sensitive data are stored securely with encryption
 - **Token Management**: Proper session token management with expiration and cleanup
+- **Zero-Knowledge Design**: Server administrators cannot read user data without the user's password
 
 ## Usage
 
@@ -280,6 +298,14 @@ The enhanced password hashing provides:
 
 - **Brute Force Resistance**: 200,000 iterations make password cracking attempts computationally expensive
 - **Rainbow Table Protection**: 32-byte salts prevent the use of pre-computed hash tables
+
+### Data Encryption Security
+User data is protected with military-grade encryption:
+
+- **AES-256-GCM**: Industry-standard authenticated encryption used by governments and banks worldwide
+- **Password-Derived Keys**: Your password is the only way to decrypt your data - even server admins cannot access it
+- **Key Derivation**: PBKDF2 with 100,000 iterations protects against brute-force key attacks
+- **Forward Secrecy**: Each encryption uses a unique random nonce, so identical data encrypts differently each time
 
 
 ## License and Legal Information
