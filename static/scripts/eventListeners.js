@@ -24,7 +24,7 @@ document.getElementById("setup-form").addEventListener("submit", async (e) => {
         location.reload();
     } catch (error) {
         console.error('Error saving setup data:', error);
-        showAlertDialog('Error saving data. Please try again.');
+        showAlertDialog(t('error.savingData'));
     }
 });
 
@@ -125,7 +125,7 @@ document.getElementById("save-plusminus-settings").addEventListener("click", () 
     const plusValue = document.getElementById("plusminus-plus-value").value;
     const minusValue = document.getElementById("plusminus-minus-value").value;
     updatePlusMinusGradeSettings(startGrade, plusValue, minusValue);
-    showToast("Plus/Minus category settings saved!", "success");
+    showToast(t("toast.plusMinusSettingsSaved"), "success");
 });
 
 // Event listener for saving percentage ranges
@@ -143,7 +143,7 @@ document.getElementById("save-percentage-ranges").addEventListener("click", () =
         }
     }
     if (updateGradePercentageRanges(ranges)) {
-        showToast("Grade percentage ranges saved!", "success");
+        showToast(t("toast.gradeRangesSaved"), "success");
     }
 });
 
@@ -151,25 +151,25 @@ document.getElementById("save-percentage-ranges").addEventListener("click", () =
 document.getElementById("add-category").addEventListener("click", () => {
     const content = `
         <div class="grid gap-2">
-          <label class="block mb-2">Category Name</label>
+          <label class="block mb-2">${t("category.categoryName")}</label>
           <input type="text" name="name" class="input w-full" required>
-          <p class="text-sm" style="color: oklch(.708 0 0);">Let's start by giving your new category a name. What would you like to call it?"</p>
+          <p class="text-sm" style="color: oklch(.708 0 0);">${t("category.categoryNameHint")}</p>
         </div>
         <div class="grid gap-2">
-          <label class="block mb-2">Weight (e.g., 0.5 for 50%)</label>
+          <label class="block mb-2">${t("category.weight")}</label>
           <input type="number" name="weight" step="0.1" min="0.1" max="1" class="input w-full" required>
-          <p class="text-sm" style="color: oklch(.708 0 0);">Now, let's set the weight for this category. How much should it contribute to the overall grade? Remember, you can always adjust this later."</p>
+          <p class="text-sm" style="color: oklch(.708 0 0);">${t("category.weightHint")}</p>
         </div>
         <div class="grid gap-2">
           <label class="flex items-center gap-2">
             <input type="checkbox" name="onlyPlusMinus" class="checkbox">
-            <span>Plus/Minus only</span>
+            <span>${t("category.plusMinusOnly")}</span>
           </label>
-          <p class="text-sm" style="color: oklch(.708 0 0);">Enable this for categories that only use +/- grades (no numeric grades). The final grade is calculated from the number of + and - entries.</p>
+          <p class="text-sm" style="color: oklch(.708 0 0);">${t("category.plusMinusHint")}</p>
         </div>
       `;
 
-    showDialog("edit-dialog", "Add Category", content, (formData) => {
+    showDialog("edit-dialog", t("category.addCategory"), content, (formData) => {
         const onlyPlusMinus = formData.get("onlyPlusMinus") === "on";
         addCategory(formData.get("name"), formData.get("weight"), false, onlyPlusMinus);
         renderCategoryManagement();
@@ -195,6 +195,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("teacher-greeting").textContent = displayName;
         renderClassList();
         showHomeView();
+        I18n.applyI18nToDOM();
 
         // Data is now stored on the server, show different message
         // showAlertDialog("Your data is synced to the server and stored securely.");
@@ -205,6 +206,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 initTutorial();
             }, 1500);
         }
+        
+        // Attach student access button event listener after DOM is loaded and data is ready
+        document.getElementById("student-access-btn").addEventListener("click", window.openStudentAccessDialog);
     } else {
         // Show setup page if no classes are found
         document.getElementById("setup-page").classList.remove("hidden");
@@ -217,4 +221,9 @@ document.getElementById("nav-home").addEventListener("click", showHomeView);
 
 // Back to class view from student detail
 document.getElementById("back-to-class").addEventListener("click", backToClassView);
+
+// Student Access (Share) Dialog
+document.getElementById("close-student-access").addEventListener("click", () => {
+    document.getElementById("student-access-dialog").close();
+});
 

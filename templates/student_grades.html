@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>Grades - EduGrade</title>
+    <link rel="icon" type="image/png" href="/static/logo.svg">
+    <meta name="theme-color" content="#9333ea">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/basecoat.cdn.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/js/all.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/scripts/theme.js"></script>
+    <script src="/static/scripts/i18n.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            padding: 1rem;
+        }
+        .student-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="toaster" class="toaster"></div>
+
+    <!-- Theme Toggle -->
+    <button type="button" id="theme-toggle" aria-label="Toggle dark mode"
+        class="fixed top-4 right-4 btn-icon-outline size-10 z-50"
+        onclick="document.dispatchEvent(new CustomEvent('basecoat:theme'))">
+        <span class="hidden dark:block">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" />
+            </svg>
+        </span>
+        <span class="block dark:hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+            </svg>
+        </span>
+    </button>
+
+    <div class="student-container">
+        {% if error %}
+        <!-- Error State -->
+        <div class="flex items-center justify-center" style="min-height: 80vh;">
+            <div class="card p-8 text-center" style="max-width: 420px; width: 100%;">
+                <img src="/static/logo.svg" alt="EduGrade Logo" class="mx-auto mb-4" style="height: 48px; width: auto;">
+                <div class="flex size-12 shrink-0 items-center justify-center rounded-full bg-red-500/15 mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                </div>
+                {% if error == 'invalid' %}
+                <h2 class="text-xl font-semibold mb-2" data-i18n="studentView.invalidLink">Invalid link</h2>
+                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="studentView.invalidLinkMsg">This access link is invalid. Please ask your teacher for a correct link.</p>
+                {% elif error == 'expired' %}
+                <h2 class="text-xl font-semibold mb-2" data-i18n="studentView.expired">Access expired</h2>
+                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="studentView.expiredMsg">This access has expired. Please ask your teacher for a new link.</p>
+                {% elif error == 'revoked' %}
+                <h2 class="text-xl font-semibold mb-2" data-i18n="studentView.revoked">Access deactivated</h2>
+                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="studentView.revokedMsg">This access has been deactivated by the teacher.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% else %}
+        <!-- PIN Entry State -->
+        <div id="pin-entry" class="flex items-center justify-center" style="min-height: 80vh;">
+            <div class="card p-8 text-center" style="max-width: 420px; width: 100%;">
+                <img src="/static/logo.svg" alt="EduGrade Logo" class="mx-auto mb-4" style="height: 48px; width: auto;">
+                <h2 class="text-xl font-semibold mb-1">{{ class_name }}</h2>
+                <p class="text-sm mb-6" style="color: oklch(.708 0 0);">{{ teacher_name }}</p>
+
+                <form id="pin-form" class="form grid gap-4">
+                    <div class="grid gap-2">
+                        <label for="pin-input" class="text-sm font-medium" data-i18n="studentView.yourPin">Your PIN</label>
+                        <input type="text" id="pin-input" class="input text-center text-2xl tracking-widest"
+                            maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="off"
+                            placeholder="------" required>
+                        <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="studentView.pinHint">Enter your 6-digit PIN that you received from your teacher.</p>
+                    </div>
+                    <button type="submit" class="btn-primary w-full" id="pin-submit-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" />
+                        </svg>
+                        <span data-i18n="studentView.showGrades">Show grades</span>
+                    </button>
+                </form>
+
+                <p id="pin-error" class="text-sm text-red-500 mt-3 hidden"></p>
+            </div>
+        </div>
+
+        <!-- Grades Display State (hidden initially) -->
+        <div id="grades-display" class="hidden">
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold" id="student-name-display"></h1>
+                    <p class="text-sm" style="color: oklch(.708 0 0);" id="class-info-display"></p>
+                </div>
+                <img src="/static/logo.svg" alt="EduGrade" style="height: 32px; width: auto;">
+            </div>
+
+            <!-- Subject Tabs -->
+            <div id="student-subject-tabs" class="flex items-center gap-2 flex-wrap mb-4"></div>
+
+            <!-- Stat Cards -->
+            <div id="student-stat-cards" class="grid grid-cols-2 gap-4 mb-6"></div>
+
+            <!-- Grades Table -->
+            <div class="card mb-6">
+                <header class="px-4 pt-4 mb-3">
+                    <h3 class="text-lg font-semibold" data-i18n="studentView.gradeOverview">Grade overview</h3>
+                </header>
+                <div class="overflow-x-auto">
+                    <table class="table w-full">
+                        <thead>
+                            <tr>
+                                <th data-i18n="table.date">Date</th>
+                                <th data-i18n="table.category">Category</th>
+                                <th data-i18n="table.name">Name</th>
+                                <th data-i18n="table.grade">Grade</th>
+                                <th data-i18n="table.weight">Weight</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-grades-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Category Breakdown -->
+            <div id="student-category-section" class="mb-6 hidden">
+                <h3 class="text-lg font-semibold mb-3" data-i18n="student.categoryBreakdown">Category Breakdown</h3>
+                <div id="student-category-breakdown" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+            </div>
+
+            <!-- Chart -->
+            <div id="student-chart-section" class="mb-6 hidden">
+                <h3 class="text-lg font-semibold mb-3" data-i18n="student.gradeHistory">Grade History</h3>
+                <div class="chart-container" style="position: relative; height: 300px;">
+                    <canvas id="student-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Pass data from Jinja to JS
+        window.shareToken = '{{ token }}';
+        window.shareError = '{{ error or "" }}';
+        // Apply translations to static HTML
+        document.addEventListener('DOMContentLoaded', () => I18n.applyI18nToDOM());
+    </script>
+    <script src="/static/scripts/studentView.js"></script>
+</body>
+
+</html>

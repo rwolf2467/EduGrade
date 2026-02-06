@@ -16,16 +16,16 @@ let dialogWasOpen = false; // Für Dialog-Schließen-Checks
 const TUTORIAL_STEPS = [
     {
         id: 'welcome',
-        title: 'Welcome to EduGrade!',
-        content: 'This interactive tour will guide you through EduGrade.\n\nYou\'ll learn by doing - creating a category, setting up grade ranges, adding a student, and managing grades!\n\nClick "Next" to begin.',
+        get title() { return t("tutorial.welcome.title"); },
+        get content() { return t("tutorial.welcome.content"); },
         targetSelector: null,
         position: 'center',
         manualNext: true // Benutzer muss "Next" klicken
     },
     {
         id: 'click-manage-categories',
-        title: 'Step 1: Open Category Manager',
-        content: 'First, let\'s create a grade category.\n\nClick the "Manage Categories" button to open the category manager.',
+        get title() { return t("tutorial.openCategories.title"); },
+        get content() { return t("tutorial.openCategories.content"); },
         targetSelector: '#manage-categories',
         position: 'bottom',
         waitFor: {
@@ -38,8 +38,8 @@ const TUTORIAL_STEPS = [
     },
     {
         id: 'click-add-category',
-        title: 'Add a Category',
-        content: 'Now click "Add Category" to create your first grade category.\n\nCategories define grade types like "Schularbeit", "Test", or "Mitarbeit".',
+        get title() { return t("tutorial.addCategory.title"); },
+        get content() { return t("tutorial.addCategory.content"); },
         targetSelector: '#add-category',
         position: 'bottom',
         waitFor: {
@@ -57,8 +57,8 @@ const TUTORIAL_STEPS = [
     },
     {
         id: 'fill-category-form',
-        title: 'Create Your Category',
-        content: 'Fill in the form:\n\n1. Enter a name (e.g., "Schularbeit")\n2. Set the weight (e.g., 0.5 for 50%)\n3. Click "Save" to create it\n\nThe weight determines how much this category counts toward the final grade.',
+        get title() { return t("tutorial.fillCategory.title"); },
+        get content() { return t("tutorial.fillCategory.content"); },
         targetSelector: '#edit-dialog',
         position: 'right',
         waitFor: {
@@ -68,8 +68,8 @@ const TUTORIAL_STEPS = [
     },
     {
         id: 'explain-grade-ranges-tab',
-        title: 'Grade Ranges Tab',
-        content: 'Notice the tabs at the top of this dialog:\n\n• Categories - Manage your grade categories\n• Grade Ranges - Set percentage thresholds\n• +/- Settings - Configure plus/minus grades\n\nClick the "Grade Ranges" tab to see the settings.',
+        get title() { return t("tutorial.gradeRangesTab.title"); },
+        get content() { return t("tutorial.gradeRangesTab.content"); },
         targetSelector: '#tab-percentage',
         position: 'bottom',
         waitFor: {
@@ -90,8 +90,8 @@ const TUTORIAL_STEPS = [
     },
     {
         id: 'explain-percentage-settings-and-close',
-        title: 'Grade Ranges Explained',
-        content: 'Here you configure percentage-to-grade conversion:\n\n• Grade 1: 85-100% (Sehr Gut)\n• Grade 2: 70-84% (Gut)\n• Grade 3: 55-69% (Befriedigend)\n• Grade 4: 40-54% (Genügend)\n• Grade 5: 0-39% (Nicht Genügend)\n\nThese are used when entering grades as percentages.\n\nClose this dialog to continue.',
+        get title() { return t("tutorial.gradeRanges.title"); },
+        get content() { return t("tutorial.gradeRanges.content"); },
         targetSelector: '#close-manage-categories',
         position: 'left',
         waitFor: {
@@ -100,8 +100,8 @@ const TUTORIAL_STEPS = [
     },
     {
         id: 'click-add-student',
-        title: 'Step 2: Add a Student',
-        content: 'Now let\'s add a student to your class.\n\nClick the "Add Student" button.',
+        get title() { return t("tutorial.addStudent.title"); },
+        get content() { return t("tutorial.addStudent.content"); },
         targetSelector: '#add-student',
         position: 'bottom',
         waitFor: {
@@ -111,8 +111,8 @@ const TUTORIAL_STEPS = [
     },
     {
         id: 'fill-student-form',
-        title: 'Enter Student Name',
-        content: 'Enter the student\'s name and click "Add".\n\nYou can use any name you like!',
+        get title() { return t("tutorial.fillStudent.title"); },
+        get content() { return t("tutorial.fillStudent.content"); },
         targetSelector: '#add-student-dialog',
         position: 'right',
         waitFor: {
@@ -125,8 +125,8 @@ const TUTORIAL_STEPS = [
     },
     {
         id: 'click-add-grade',
-        title: 'Step 3: Add a Grade',
-        content: 'Your student is ready for grades!\n\nClick the + button in the student\'s row to add a grade.',
+        get title() { return t("tutorial.addGrade.title"); },
+        get content() { return t("tutorial.addGrade.content"); },
         targetSelector: '[data-add-grade]',
         position: 'left',
         waitFor: {
@@ -140,8 +140,8 @@ const TUTORIAL_STEPS = [
     },
     {
         id: 'fill-grade-form',
-        title: 'Enter the Grade',
-        content: 'Fill in the grade form:\n\n1. Select a category\n2. Choose input method:\n   • "Grade" tab: Enter grade directly (1-6)\n   • "Percentage" tab: Enter % and auto-convert\n3. Optionally add a name (e.g., "SA1")\n4. Click "Save"\n\nTry entering a percentage like 87% to see it convert to a grade!',
+        get title() { return t("tutorial.fillGrade.title"); },
+        get content() { return t("tutorial.fillGrade.content"); },
         targetSelector: '#edit-dialog',
         position: 'right',
         waitFor: {
@@ -155,8 +155,8 @@ const TUTORIAL_STEPS = [
     },
     {
         id: 'view-results',
-        title: 'Grade Added!',
-        content: 'Look at the table - you can see:\n\n• The grade badge (color-coded by performance)\n   Green = good, Red = needs improvement\n• The calculated average\n• The final grade (1-5)\n\nClick "Next" to continue.',
+        get title() { return t("tutorial.viewResults.title"); },
+        get content() { return t("tutorial.viewResults.content"); },
         targetSelector: '.student-table-container',
         position: 'top',
         manualNext: true,
@@ -167,16 +167,16 @@ const TUTORIAL_STEPS = [
     },
     {
         id: 'edit-grade-dialog',
-        title: 'Editing Grades',
-        content: 'Click on any grade badge to edit it.\n\nIn the edit dialog you can:\n\n• Switch between Grade/Percentage tabs\n• Change the value\n• Update the name\n• Delete the grade\n\nIf you entered via %, the Percentage tab opens automatically!\n\nClick "Next" to continue.',
+        get title() { return t("tutorial.editGrade.title"); },
+        get content() { return t("tutorial.editGrade.content"); },
         targetSelector: null,
         position: 'center',
         manualNext: true
     },
     {
         id: 'complete',
-        title: 'Congratulations!',
-        content: 'You\'ve mastered the basics of EduGrade!\n\nKey features:\n• Create categories with weights\n• Configure grade ranges (Grade Ranges tab)\n• Enter grades directly or as percentages\n• Color-coded badges show performance\n• Click badges to edit grades\n• Export your data regularly!\n\nHappy grading!',
+        get title() { return t("tutorial.complete.title"); },
+        get content() { return t("tutorial.complete.content"); },
         targetSelector: null,
         position: 'center',
         manualNext: true
@@ -221,16 +221,16 @@ const showTutorialPrompt = () => {
     promptEl.innerHTML = `
         <div class="tutorial-overlay"></div>
         <div class="tutorial-dialog" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-            <h3 class="text-xl font-semibold mb-3">Would you like a quick tour?</h3>
-            <p class="mb-4" style="color: oklch(.708 0 0);">Learn by doing! You'll create a category, add a student, and manage grades yourself.</p>
+            <h3 class="text-xl font-semibold mb-3">${escapeHtml(t("tutorial.prompt"))}</h3>
+            <p class="mb-4" style="color: oklch(.708 0 0);">${escapeHtml(t("tutorial.promptSubtext"))}</p>
             <div class="flex justify-between items-center">
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" class="checkbox" id="tutorial-never-again">
-                    <span class="text-sm" style="color: oklch(.708 0 0);">Don't show again</span>
+                    <span class="text-sm" style="color: oklch(.708 0 0);">${escapeHtml(t("tutorial.dontShowAgain"))}</span>
                 </label>
                 <div class="flex gap-2">
-                    <button type="button" class="btn-outline" id="tutorial-skip">Skip</button>
-                    <button type="button" class="btn-primary" id="tutorial-start">Start Tour</button>
+                    <button type="button" class="btn-outline" id="tutorial-skip">${escapeHtml(t("tutorial.skip"))}</button>
+                    <button type="button" class="btn-primary" id="tutorial-start">${escapeHtml(t("tutorial.startTour"))}</button>
                 </div>
             </div>
         </div>
@@ -332,7 +332,7 @@ const renderTutorialStep = (step, stepIndex) => {
 
     // Hinweis wenn auf Aktion gewartet wird
     const waitingHint = !step.manualNext && step.waitFor
-        ? '<p class="text-xs mt-2" style="color: #3b82f6;">Waiting for your action...</p>'
+        ? `<p class="text-xs mt-2" style="color: #3b82f6;">${escapeHtml(t("tutorial.waiting"))}</p>`
         : '';
 
     // Erstelle ein fixes div Element statt dialog (kein blocking von anderen Elementen)
@@ -349,11 +349,11 @@ const renderTutorialStep = (step, stepIndex) => {
             ${waitingHint}
             <div class="flex justify-between items-center mt-4">
                 <button type="button" class="btn-outline" id="tutorial-skip-btn">
-                    Skip Tour
+                    ${escapeHtml(t("tutorial.skipTour"))}
                 </button>
                 <div class="flex gap-2">
-                    ${stepIndex > 0 ? '<button type="button" class="btn-outline" id="tutorial-back-btn">Back</button>' : ''}
-                    ${showNextButton ? `<button type="button" class="btn-primary" id="tutorial-next-btn">${isLastStep ? 'Finish' : 'Next'}</button>` : ''}
+                    ${stepIndex > 0 ? `<button type="button" class="btn-outline" id="tutorial-back-btn">${escapeHtml(t("tutorial.back"))}</button>` : ''}
+                    ${showNextButton ? `<button type="button" class="btn-primary" id="tutorial-next-btn">${isLastStep ? escapeHtml(t("tutorial.finish")) : escapeHtml(t("tutorial.next"))}</button>` : ''}
                 </div>
             </div>
         </div>
@@ -542,7 +542,7 @@ const skipTutorial = (neverShowAgain) => {
 
     appData.tutorial.completed = true;
     appData.tutorial.neverShowAgain = neverShowAgain;
-    saveData('Tutorial skipped', 'info');
+    saveData(t("tutorial.skipped"), 'info');
 };
 
 /**
@@ -557,7 +557,7 @@ const completeTutorial = () => {
 
     appData.tutorial.completed = true;
     appData.tutorial.currentStep = TUTORIAL_STEPS.length;
-    saveData('Tutorial completed! You\'re ready to start grading.', 'success');
+    saveData(t("tutorial.completed"), 'success');
 };
 
 /**
@@ -609,5 +609,5 @@ const resetTutorial = () => {
         currentStep: 0,
         neverShowAgain: false
     };
-    saveData('Tutorial reset - refresh the page to see it again', 'info');
+    saveData(t("tutorial.reset"), 'info');
 };

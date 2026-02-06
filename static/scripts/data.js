@@ -14,6 +14,11 @@
  * │   └── [Klasse]
  * │       ├── id: String - Eindeutige ID
  * │       ├── name: String - Name der Klasse (z.B. "1A")
+ * │       ├── subjects: Array - Unterrichtsfächer dieser Klasse
+ * │       │   └── [Fach]
+ * │       │       ├── id: String - Eindeutige ID
+ * │       │       └── name: String - Name des Fachs (z.B. "Mathematik")
+ * │       ├── currentSubjectId: null|String - Aktives Fach-Tab (null = Alle Fächer)
  * │       └── students: Array - Schüler dieser Klasse
  * │           └── [Schüler]
  * │               ├── id: String
@@ -26,7 +31,8 @@
  * │               │       ├── value: Number|String - Notenwert (1-6 oder "+"/"-")
  * │               │       ├── weight: Number - Gewichtung (0.1-1.0)
  * │               │       ├── isPlusMinus: Boolean
- * │               │       └── name: String - Optionaler Name (z.B. "SA1")
+ * │               │       ├── name: String - Optionaler Name (z.B. "SA1")
+ * │               │       └── subjectId: String|undefined - Zugehöriges Fach (undefined = kein Fach)
  * │               └── participation: Array - Für zukünftige Erweiterung
  * ├── categories: Array - GLOBALE Notenkategorien (gelten für ALLE Klassen)
  * │   └── [Kategorie]

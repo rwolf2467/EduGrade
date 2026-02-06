@@ -66,7 +66,7 @@ const escapeHtml = (text) => {
 const validateStringInput = (input, maxLength = 200) => {
     // Prüfung auf null/undefined
     if (input === null || input === undefined) {
-        return { isValid: false, value: '', error: 'Input is required' };
+        return { isValid: false, value: '', error: t("validation.inputRequired") };
     }
 
     // Zu String konvertieren und Whitespace an Anfang/Ende entfernen
@@ -74,12 +74,12 @@ const validateStringInput = (input, maxLength = 200) => {
 
     // Leere Eingaben sind ungültig
     if (trimmed.length === 0) {
-        return { isValid: false, value: '', error: 'Input cannot be empty' };
+        return { isValid: false, value: '', error: t("validation.inputEmpty") };
     }
 
     // Längenbegrenzung prüfen (verhindert zu große Daten)
     if (trimmed.length > maxLength) {
-        return { isValid: false, value: '', error: `Input exceeds maximum length of ${maxLength} characters` };
+        return { isValid: false, value: '', error: t("validation.inputTooLong", { max: maxLength }) };
     }
 
     // GEFÄHRLICHE MUSTER ERKENNEN
@@ -95,7 +95,7 @@ const validateStringInput = (input, maxLength = 200) => {
     // Jeden Pattern testen
     for (const pattern of dangerousPatterns) {
         if (pattern.test(trimmed)) {
-            return { isValid: false, value: '', error: 'Input contains potentially dangerous content' };
+            return { isValid: false, value: '', error: t("validation.dangerousContent") };
         }
     }
 
@@ -120,7 +120,7 @@ const validateGradeValue = (value, isPlusMinus = false) => {
         if (value === '+' || value === '-') {
             return { isValid: true, value: value, error: null };
         }
-        return { isValid: false, value: null, error: 'Plus/minus grade must be "+" or "-"' };
+        return { isValid: false, value: null, error: t("validation.plusMinusInvalid") };
     }
 
     // Numerische Noten: Zu Zahl konvertieren
@@ -128,12 +128,12 @@ const validateGradeValue = (value, isPlusMinus = false) => {
 
     // Prüfen ob es überhaupt eine Zahl ist
     if (isNaN(num)) {
-        return { isValid: false, value: null, error: 'Grade must be a number' };
+        return { isValid: false, value: null, error: t("validation.gradeMustBeNumber") };
     }
 
     // Wertebereich prüfen (1-6 für österreichisches System, 6 = Nicht Genügend)
     if (num < 1 || num > 6) {
-        return { isValid: false, value: null, error: 'Grade must be between 1 and 6' };
+        return { isValid: false, value: null, error: t("validation.gradeRange") };
     }
 
     return { isValid: true, value: num, error: null };
@@ -152,12 +152,12 @@ const validateWeight = (value) => {
     const num = parseFloat(value);
 
     if (isNaN(num)) {
-        return { isValid: false, value: null, error: 'Weight must be a number' };
+        return { isValid: false, value: null, error: t("validation.weightMustBeNumber") };
     }
 
     // Gewichtung muss zwischen 10% und 100% liegen
     if (num < 0.1 || num > 1) {
-        return { isValid: false, value: null, error: 'Weight must be between 0.1 and 1' };
+        return { isValid: false, value: null, error: t("validation.weightRange") };
     }
 
     return { isValid: true, value: num, error: null };
@@ -205,6 +205,13 @@ const sanitizeImportData = (data) => {
                 id: String(cls.id || ''),                    // ID immer als String
                 name: escapeHtml(cls.name || ''),            // Name escapen
 
+                // Fächer-System (Subjects) sanitisieren
+                subjects: Array.isArray(cls.subjects) ? cls.subjects.map(subject => ({
+                    id: String(subject.id || ''),
+                    name: escapeHtml(subject.name || '')
+                })) : [],
+                currentSubjectId: cls.currentSubjectId ? String(cls.currentSubjectId) : null,
+
                 // Schüler der Klasse sanitisieren
                 students: Array.isArray(cls.students) ? cls.students.map(student => ({
                     id: String(student.id || ''),
@@ -215,6 +222,8 @@ const sanitizeImportData = (data) => {
                         id: String(grade.id || ''),
                         categoryId: String(grade.categoryId || ''),
                         categoryName: escapeHtml(grade.categoryName || ''),
+                        // subjectId für Fächer-Zuordnung
+                        subjectId: grade.subjectId ? String(grade.subjectId) : null,
                         // Notenwert: +/- nur wenn gültig, sonst als Zahl parsen
                         value: grade.isPlusMinus
                             ? (grade.value === '+' || grade.value === '-' ? grade.value : '+')
@@ -269,6 +278,8 @@ const sanitizeImportData = (data) => {
                 id: String(grade.id || ''),
                 categoryId: String(grade.categoryId || ''),
                 categoryName: escapeHtml(grade.categoryName || ''),
+                // subjectId für Fächer-Zuordnung
+                subjectId: grade.subjectId ? String(grade.subjectId) : null,
                 value: grade.isPlusMinus
                     ? (grade.value === '+' || grade.value === '-' ? grade.value : '+')
                     : parseFloat(grade.value) || 1,

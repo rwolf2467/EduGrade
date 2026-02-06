@@ -24,18 +24,26 @@ const showImportProgress = () => {
                             <path d="m9 12 2 2 4-4"/>
                         </svg>
                     </div>
-                    <h3 style="font-size: 1.125rem; font-weight: 600; margin: 0;">Importing and encrypting your data</h3>
-                    <p style="font-size: 0.875rem; opacity: 0.7; margin: 0;">Please wait while we securely import and encrypt your data...</p>
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin: 0;" id="import-progress-title">${escapeHtml(t("import.importing"))}</h3>
+                    <p style="font-size: 0.875rem; opacity: 0.7; margin: 0;" id="import-progress-subtitle">${escapeHtml(t("import.importingSubtitle"))}</p>
                     <div style="width: 100%; margin-top: 1rem;">
                         <div style="background: rgba(255, 255, 255, 0.15); position: relative; height: 8px; width: 100%; overflow: hidden; border-radius: 9999px;">
                             <div id="import-progress-bar" style="background: white; height: 100%; width: 0%; transition: width 0.4s ease-out;"></div>
                         </div>
-                        <p style="font-size: 0.75rem; opacity: 0.7; margin-top: 0.5rem;" id="import-progress-text">Starting import...</p>
+                        <p style="font-size: 0.75rem; opacity: 0.7; margin-top: 0.5rem;" id="import-progress-text">${escapeHtml(t("import.starting"))}</p>
                     </div>
                 </div>
             </div>
         `;
         document.body.appendChild(importProgressDialog);
+    } else {
+        // Update text in case language changed
+        const titleEl = importProgressDialog.querySelector('#import-progress-title');
+        if (titleEl) titleEl.textContent = t("import.importing");
+        const subtitleEl = importProgressDialog.querySelector('#import-progress-subtitle');
+        if (subtitleEl) subtitleEl.textContent = t("import.importingSubtitle");
+        const textEl = importProgressDialog.querySelector('#import-progress-text');
+        if (textEl) textEl.textContent = t("import.starting");
     }
 
     importProgressBar = importProgressDialog.querySelector('#import-progress-bar');
@@ -66,7 +74,7 @@ const exportData = () => {
     a.href = url;
     a.download = `notenverwaltung_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
-    showToast("Export successful!", "success");
+    showToast(t("toast.exportSuccess"), "success");
 };
 
 // Function to handle the import of data
@@ -83,14 +91,14 @@ document.getElementById("confirm-import").addEventListener("click", async () => 
     const file = fileInput.files[0];
 
     if (!file) {
-        showAlertDialog("Please select a file.");
+        showAlertDialog(t("import.selectFileError"));
         return;
     }
 
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-        showAlertDialog("File is too large. Maximum size is 5MB.");
+        showAlertDialog(t("import.fileTooLarge"));
         return;
     }
 
@@ -125,26 +133,26 @@ document.getElementById("confirm-import").addEventListener("click", async () => 
 
     try {
         // Step 1: Read file
-        setImportProgress(10, 'Reading file...');
+        setImportProgress(10, t("import.readingFile"));
         await new Promise(resolve => setTimeout(resolve, 400));
 
         const fileContent = await readFileAsText(file);
 
         // Step 2: Parse JSON
-        setImportProgress(25, 'Parsing data...');
+        setImportProgress(25, t("import.parsingData"));
         await new Promise(resolve => setTimeout(resolve, 400));
 
         const rawData = JSON.parse(fileContent);
 
         // Step 3: Validate structure
-        setImportProgress(40, 'Validating data structure...');
+        setImportProgress(40, t("import.validating"));
         await new Promise(resolve => setTimeout(resolve, 400));
 
         // Validate the data structure
         if (!rawData.teacherName || !Array.isArray(rawData.classes)) {
             await ensureMinTime();
             hideImportProgress();
-            showAlertDialog("Invalid data structure. Please make sure the JSON file is in the correct format.");
+            showAlertDialog(t("import.invalidStructure"));
             return;
         }
 
@@ -160,12 +168,12 @@ document.getElementById("confirm-import").addEventListener("click", async () => 
         if (!isValid) {
             await ensureMinTime();
             hideImportProgress();
-            showAlertDialog("Invalid data structure. Please make sure the JSON file is in the correct format.");
+            showAlertDialog(t("import.invalidStructure"));
             return;
         }
 
         // Step 4: Sanitize data
-        setImportProgress(55, 'Sanitizing data...');
+        setImportProgress(55, t("import.sanitizing"));
         await new Promise(resolve => setTimeout(resolve, 500));
 
         const sanitizedData = sanitizeImportData(rawData);
@@ -173,7 +181,7 @@ document.getElementById("confirm-import").addEventListener("click", async () => 
         if (!sanitizedData) {
             await ensureMinTime();
             hideImportProgress();
-            showAlertDialog("Error sanitizing imported data. The file may be corrupted.");
+            showAlertDialog(t("import.sanitizeError"));
             return;
         }
 
@@ -181,7 +189,7 @@ document.getElementById("confirm-import").addEventListener("click", async () => 
         appData = sanitizedData;
 
         // Step 5: Encrypt and save (longest step)
-        setImportProgress(70, 'Encrypting and saving...');
+        setImportProgress(70, t("import.encrypting"));
 
         await new Promise((resolve) => {
             fetch('/api/data', {
@@ -211,11 +219,11 @@ document.getElementById("confirm-import").addEventListener("click", async () => 
         await new Promise(resolve => setTimeout(resolve, 800));
 
         // Step 6: Finalize
-        setImportProgress(90, 'Finalizing...');
+        setImportProgress(90, t("import.finalizing"));
         await new Promise(resolve => setTimeout(resolve, 400));
 
         // Complete progress bar
-        setImportProgress(100, 'Complete!');
+        setImportProgress(100, t("import.complete"));
 
         // Ensure minimum loading time
         await ensureMinTime();
@@ -224,7 +232,7 @@ document.getElementById("confirm-import").addEventListener("click", async () => 
         await new Promise(resolve => setTimeout(resolve, 500));
 
         hideImportProgress();
-        showToast("Data imported successfully!", "success");
+        showToast(t("toast.importSuccess"), "success");
 
         // Hide the setup page and show the dashboard
         document.getElementById("setup-page").classList.add("hidden");
@@ -248,6 +256,6 @@ document.getElementById("confirm-import").addEventListener("click", async () => 
         console.error('Import error:', error);
         await ensureMinTime();
         hideImportProgress();
-        showAlertDialog("Error parsing the JSON file. Please make sure it is a valid JSON file.");
+        showAlertDialog(t("import.parseError"));
     }
 });

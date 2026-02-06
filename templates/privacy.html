@@ -10,6 +10,12 @@
     <meta http-equiv="X-Referrer-Policy" content="strict-origin-when-cross-origin">
     <title>Privacy Policy - EduGrade</title>
     <link rel="icon" type="image/png" href="/static/logo.svg">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#9333ea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EduGrade">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/basecoat.cdn.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
@@ -700,6 +706,11 @@
             </p>
         </footer>
     </div>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+    }
+    </script>
 </body>
 
 </html>

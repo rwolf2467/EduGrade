@@ -3,7 +3,20 @@
     "allow": [
       "Bash(grep:*)",
       "Bash(wc:*)",
-      "Bash(pgrep:*)"
+      "Bash(pgrep:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "WebFetch(domain:cdn.jsdelivr.net)",
+      "Bash(convert:*)",
+      "Bash(magick:*)",
+      "Bash(npm install:*)",
+      "Bash(npm search:*)",
+      "Bash(npx bubblewrap:*)",
+      "Bash(keytool:*)",
+      "Bash(unzip:*)",
+      "Bash(yes:*)",
+      "Bash(~/.bubblewrap/android_sdk/cmdline-tools/latest/bin/sdkmanager:*)",
+      "Bash(JAVA_HOME=/tmp/jdk-17.0.2 ANDROID_HOME=/home/murauer/.bubblewrap/android_sdk /home/murauer/Nextcloud/avocloud/Code/EduGrade/twa/gradlew:*)"
     ]
   }
 }

@@ -46,6 +46,8 @@ RATE_LIMITS = {
     'register': (3, 60),    # 3 attempts per minute
     'data_write': (30, 60), # 30 writes per minute
     'data_read': (60, 60),  # 60 reads per minute
+    'pin_verify': (5, 60),  # 5 PIN attempts per minute
+    'share_manage': (20, 60), # 20 share management requests per minute
     'default': (100, 60),   # 100 requests per minute default
 }
 
@@ -90,7 +92,8 @@ def rate_limit(endpoint_type: str = 'default'):
             if not is_allowed:
                 return jsonify({
                     'success': False,
-                    'message': f'Too many requests. Please try again in {seconds_until_reset} seconds.',
+                    'message': 'backend.tooManyRequests',
+                    'message_params': {'seconds': seconds_until_reset},
                     'rate_limited': True,
                     'retry_after': seconds_until_reset
                 }), 429
@@ -192,6 +195,85 @@ def generate_session_token() -> str:
     """Generate a secure session token"""
     return secrets.token_hex(32)
 
+# ============ STUDENT ACCESS FUNCTIONS ============
+
+def hash_pin(pin: str) -> str:
+    """Hash a PIN using PBKDF2 with 50k iterations and 16-byte salt"""
+    salt = secrets.token_bytes(16)
+    hashed = hashlib.pbkdf2_hmac('sha256', pin.encode(), salt, 50000)
+    return f"{salt.hex()}:{hashed.hex()}"
+
+def verify_pin(stored_hash: str, pin: str) -> bool:
+    """Verify a PIN against stored hash (constant-time comparison)"""
+    try:
+        salt_hex, stored = stored_hash.split(':')
+        salt = bytes.fromhex(salt_hex)
+        provided = hashlib.pbkdf2_hmac('sha256', pin.encode(), salt, 50000)
+        return secrets.compare_digest(stored, provided.hex())
+    except Exception:
+        return False
+
+def generate_unique_pin(existing_pins: set) -> str:
+    """Generate a unique 6-digit PIN"""
+    for _ in range(1000):
+        pin = f"{secrets.randbelow(1000000):06d}"
+        if pin not in existing_pins:
+            return pin
+    raise ValueError("Could not generate unique PIN")
+
+def generate_share_token() -> str:
+    """Generate a cryptographically secure share token"""
+    return secrets.token_urlsafe(16)
+
+def build_share_snapshot(user_data: dict, class_id: str) -> dict | None:
+    """Extract class + students + grades + categories for a share snapshot"""
+    cls = None
+    for c in user_data.get('classes', []):
+        if c.get('id') == class_id:
+            cls = c
+            break
+    if not cls:
+        return None
+
+    return {
+        'students': cls.get('students', []),
+        'categories': user_data.get('categories', []),
+        'subjects': cls.get('subjects', []),
+        'plusMinusGradeSettings': user_data.get('plusMinusGradeSettings', {
+            'startGrade': 3, 'plusValue': 0.5, 'minusValue': 0.5
+        })
+    }
+
+def update_active_shares_for_user(user_id: str, user_data: dict):
+    """Update all active share snapshots for a user"""
+    db = load_db()
+    if 'class_shares' not in db:
+        return
+
+    updated = False
+    for token, share in db['class_shares'].items():
+        if share.get('user_id') != user_id or not share.get('active', False):
+            continue
+        # Check if share has expired
+        expires_at = share.get('expires_at')
+        if expires_at and datetime.fromisoformat(expires_at) < datetime.now():
+            share['active'] = False
+            updated = True
+            continue
+        # Update snapshot
+        snapshot = build_share_snapshot(user_data, share['class_id'])
+        if snapshot:
+            share['data'] = snapshot
+            # Update class name in case it changed
+            for c in user_data.get('classes', []):
+                if c.get('id') == share['class_id']:
+                    share['class_name'] = c.get('name', share.get('class_name', ''))
+                    break
+            updated = True
+
+    if updated:
+        save_db(db)
+
 def init_db():
     """Initialize database with default structure"""
     if not DB_PATH.exists():
@@ -206,7 +288,11 @@ def load_db():
     """Load database from JSON file"""
     try:
         with open(DB_PATH, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            data = json.load(f)
+        # Ensure class_shares key exists
+        if 'class_shares' not in data:
+            data['class_shares'] = {}
+        return data
     except (FileNotFoundError, json.JSONDecodeError):
         init_db()
         return load_db()
@@ -241,6 +327,21 @@ async def cleanup_expired_sessions():
     for token in stale_tokens:
         print(f"Clearing stale cache for token {token[:8]}...")
         clear_session_cache(token)
+
+    # Clean up expired shares
+    if 'class_shares' in db:
+        shares_to_delete = []
+        for token, share in db['class_shares'].items():
+            expires_at = share.get('expires_at')
+            if expires_at:
+                exp = datetime.fromisoformat(expires_at)
+                if exp < now:
+                    share['active'] = False
+                # Delete shares that expired more than 30 days ago
+                if exp + timedelta(days=30) < now:
+                    shares_to_delete.append(token)
+        for token in shares_to_delete:
+            del db['class_shares'][token]
 
     save_db(db)
     return None
@@ -325,14 +426,14 @@ def register_user(username: str, email: str, password: str) -> dict:
     if len(username) < 3 or len(username) > 50:
         return {
             'success': False,
-            'message': 'Benutzername muss zwischen 3 und 50 Zeichen lang sein.',
+            'message': 'backend.usernameLength',
             'user_id': None
         }
 
     if not username.replace('_', '').isalnum():
         return {
             'success': False,
-            'message': 'Benutzername darf nur Buchstaben, Zahlen und Unterstriche enthalten.',
+            'message': 'backend.usernameChars',
             'user_id': None
         }
 
@@ -341,7 +442,7 @@ def register_user(username: str, email: str, password: str) -> dict:
     if '@' not in email or '.' not in email:
         return {
             'success': False,
-            'message': 'Ungueltige E-Mail-Adresse.',
+            'message': 'backend.invalidEmail',
             'user_id': None
         }
 
@@ -349,7 +450,7 @@ def register_user(username: str, email: str, password: str) -> dict:
     if len(password) < 8:
         return {
             'success': False,
-            'message': 'Passwort muss mindestens 8 Zeichen lang sein.',
+            'message': 'backend.passwordLength',
             'user_id': None
         }
 
@@ -359,7 +460,7 @@ def register_user(username: str, email: str, password: str) -> dict:
     if email in db["users"]:
         return {
             'success': False,
-            'message': 'Benutzername oder E-Mail bereits vergeben.',
+            'message': 'backend.userExists',
             'user_id': None
         }
 
@@ -385,7 +486,7 @@ def register_user(username: str, email: str, password: str) -> dict:
     if user_id in existing_ids:
         return {
             'success': False,
-            'message': 'Could not generate unique user ID. Please try again.',
+            'message': 'backend.error',
             'user_id': None
         }
 
@@ -432,7 +533,7 @@ def register_user(username: str, email: str, password: str) -> dict:
     save_db(db)
     return {
         'success': True,
-        'message': 'Registrierung erfolgreich!',
+        'message': 'backend.registrationSuccess',
         'user_id': user_id
     }
 
@@ -446,7 +547,7 @@ def login_user(email: str, password: str) -> dict:
     if not user or not verify_password(user["password_hash"], password):
         return {
             'success': False,
-            'message': 'Ungueltige E-Mail oder Passwort.',
+            'message': 'backend.invalidCredentials',
             'token': None,
             'user': None
         }
@@ -490,7 +591,7 @@ def login_user(email: str, password: str) -> dict:
 
     return {
         'success': True,
-        'message': 'Login erfolgreich!',
+        'message': 'backend.loginSuccess',
         'token': token,
         'user': {
             'id': user['id'],
@@ -630,6 +731,24 @@ async def terms():
 async def privacy():
     return await render_template('privacy.html')
 
+@app.route('/service-worker.js')
+async def service_worker():
+    """Serve service worker from root scope"""
+    response = await send_file('static/service-worker.js')
+    response.headers['Cache-Control'] = 'no-cache'
+    response.headers['Service-Worker-Allowed'] = '/'
+    response.headers['Content-Type'] = 'application/javascript'
+    return response
+
+
+@app.route('/.well-known/assetlinks.json')
+async def assetlinks():
+    """Digital Asset Links for TWA verification"""
+    response = await send_file('static/.well-known/assetlinks.json')
+    response.headers['Content-Type'] = 'application/json'
+    return response
+
+
 @app.route('/about.html')
 async def about_page():
     """About page"""
@@ -651,7 +770,7 @@ async def api_register():
     data = await request.get_json()
 
     if not data:
-        return jsonify({'success': False, 'message': 'Invalid request'}), 400
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
 
     username = data.get('username', '')
     email = data.get('email', '')
@@ -659,10 +778,10 @@ async def api_register():
     password_confirm = data.get('password_confirm', '')
 
     if not all([username, email, password, password_confirm]):
-        return jsonify({'success': False, 'message': 'Bitte fuellen Sie alle Felder aus.'}), 400
+        return jsonify({'success': False, 'message': 'backend.fillAllFields'}), 400
 
     if password != password_confirm:
-        return jsonify({'success': False, 'message': 'Die Passwoerter stimmen nicht ueberein.'}), 400
+        return jsonify({'success': False, 'message': 'backend.passwordsMismatch'}), 400
 
     result = register_user(username, email, password)
     status_code = 200 if result['success'] else 400
@@ -677,13 +796,13 @@ async def api_login():
     data = await request.get_json()
 
     if not data:
-        return jsonify({'success': False, 'message': 'Invalid request'}), 400
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
 
     email = data.get('email', '')
     password = data.get('password', '')
 
     if not email or not password:
-        return jsonify({'success': False, 'message': 'Bitte fuellen Sie alle Felder aus.'}), 400
+        return jsonify({'success': False, 'message': 'backend.fillAllFields'}), 400
 
     result = login_user(email, password)
 
@@ -710,7 +829,7 @@ async def api_logout():
     if token:
         logout_user(token)
 
-    response = await make_response(jsonify({'success': True, 'message': 'Logged out'}))
+    response = await make_response(jsonify({'success': True, 'message': 'backend.loggedOut'}))
     response.delete_cookie('session_token')
     return response
 
@@ -745,13 +864,13 @@ async def api_delete_account():
 
         save_db(db)
 
-        response = await make_response(jsonify({'success': True, 'message': 'Account geloescht'}))
+        response = await make_response(jsonify({'success': True, 'message': 'backend.accountDeleted'}))
         response.delete_cookie('session_token')
         return response
 
     except Exception as e:
         print(f"Error deleting account for user {user_id}: {str(e)}")
-        return jsonify({'success': False, 'message': f'Fehler: {str(e)}'}), 500
+        return jsonify({'success': False, 'message': 'backend.error'}), 500
 
 
 # ============ Data Sync API ============
@@ -814,14 +933,14 @@ async def api_save_data():
     data = await request.get_json()
 
     if not data:
-        return jsonify({'success': False, 'message': 'Invalid request - no data received'}), 400
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
 
     # SECURITY: Require encryption key to save data
     if not encryption_key:
         print(f"Warning: No encryption key for user {user_id} - rejecting save request")
         return jsonify({
             'success': False,
-            'message': 'Session expired. Please log in again to save your data.',
+            'message': 'backend.sessionExpired',
             'requireRelogin': True
         }), 401
 
@@ -833,12 +952,15 @@ async def api_save_data():
         # Save complete user data to JSON database (encrypted) and update cache
         save_user_data(user_id, data, encryption_key, token)
 
+        # Update any active share snapshots for this user
+        update_active_shares_for_user(user_id, data)
+
         print(f"Data successfully saved (encrypted) for user {user_id}")
-        return jsonify({'success': True, 'message': 'Data saved successfully'})
+        return jsonify({'success': True, 'message': 'backend.dataSaved'})
 
     except Exception as e:
         print(f"Error saving data for user {user_id}: {str(e)}")
-        return jsonify({'success': False, 'message': f'Server error: {str(e)}'}), 500
+        return jsonify({'success': False, 'message': 'backend.error'}), 500
 
 
 @app.route('/api/heartbeat', methods=['POST'])
@@ -867,6 +989,314 @@ async def api_disconnect():
         del user_data_cache[token]
 
     return jsonify({'success': True})
+
+
+# ============ Student Access (Share) API ============
+
+@app.route('/api/share/class', methods=['POST'])
+@rate_limit('share_manage')
+@login_required
+async def api_create_share():
+    """Create a new share for a class with PINs for each student"""
+    user_id = request.user['id']  # type: ignore
+    token = get_token_from_request()
+    encryption_key = get_encryption_key_for_session(token)
+    data = await request.get_json()
+
+    if not data:
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
+
+    class_id = data.get('class_id')
+    if not class_id:
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
+
+    expires_hours = int(data.get('expires_hours', 168))  # Default 7 days
+    visibility = data.get('visibility', {
+        'grades': True, 'average': True, 'finalGrade': True,
+        'categoryBreakdown': False, 'chart': False
+    })
+
+    # Load user data to build snapshot
+    user_data = get_user_data_cached(user_id, token, encryption_key)
+    if not user_data:
+        return jsonify({'success': False, 'message': 'backend.error'}), 500
+
+    # Find the class
+    cls = None
+    for c in user_data.get('classes', []):
+        if c.get('id') == class_id:
+            cls = c
+            break
+    if not cls:
+        return jsonify({'success': False, 'message': 'backend.classNotFound'}), 404
+
+    # Check if a share already exists for this class
+    db = load_db()
+    for existing_token, existing_share in db.get('class_shares', {}).items():
+        if existing_share.get('user_id') == user_id and existing_share.get('class_id') == class_id and existing_share.get('active'):
+            return jsonify({'success': False, 'message': 'backend.shareExists'}), 409
+
+    # Generate share token
+    share_token = generate_share_token()
+
+    # Generate PINs for each student
+    existing_pins = set()
+    students_pins = {}  # student_id -> {pin_hash, name, pin (cleartext for response only)}
+    cleartext_pins = {}  # student_id -> pin (returned to teacher once)
+
+    for student in cls.get('students', []):
+        pin = generate_unique_pin(existing_pins)
+        existing_pins.add(pin)
+        students_pins[student['id']] = {
+            'pin_hash': hash_pin(pin),
+            'name': student.get('name', '')
+        }
+        cleartext_pins[student['id']] = pin
+
+    # Build snapshot
+    snapshot = build_share_snapshot(user_data, class_id)
+    if not snapshot:
+        return jsonify({'success': False, 'message': 'backend.error'}), 500
+
+    # Get teacher name
+    teacher_name = user_data.get('teacherName', '') or request.user.get('username', '')  # type: ignore
+
+    # Store share
+    now = datetime.now()
+    share_data = {
+        'user_id': user_id,
+        'class_id': class_id,
+        'class_name': cls.get('name', ''),
+        'teacher_name': teacher_name,
+        'created_at': now.isoformat(),
+        'expires_at': (now + timedelta(hours=expires_hours)).isoformat(),
+        'active': True,
+        'visibility': visibility,
+        'students': students_pins,
+        'data': snapshot
+    }
+
+    db['class_shares'][share_token] = share_data
+    save_db(db)
+
+    # Return share info with cleartext PINs (shown once to teacher)
+    pin_list = []
+    for student in cls.get('students', []):
+        pin_list.append({
+            'student_id': student['id'],
+            'name': student.get('name', ''),
+            'pin': cleartext_pins.get(student['id'], '')
+        })
+
+    return jsonify({
+        'success': True,
+        'token': share_token,
+        'expires_at': share_data['expires_at'],
+        'pins': pin_list
+    })
+
+
+@app.route('/api/share/class/<share_token>', methods=['PUT'])
+@rate_limit('share_manage')
+@login_required
+async def api_update_share(share_token):
+    """Update visibility or expiration of an existing share"""
+    user_id = request.user['id']  # type: ignore
+    data = await request.get_json()
+
+    if not data:
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
+
+    db = load_db()
+    share = db.get('class_shares', {}).get(share_token)
+
+    if not share or share.get('user_id') != user_id:
+        return jsonify({'success': False, 'message': 'backend.shareNotFound'}), 404
+
+    # Update visibility
+    if 'visibility' in data:
+        share['visibility'] = data['visibility']
+
+    # Update expiration
+    if 'expires_hours' in data:
+        expires_hours = int(data['expires_hours'])
+        share['expires_at'] = (datetime.now() + timedelta(hours=expires_hours)).isoformat()
+        share['active'] = True  # Re-activate if was expired
+
+    save_db(db)
+    return jsonify({'success': True, 'message': 'backend.shareUpdated'})
+
+
+@app.route('/api/share/class/<share_token>', methods=['DELETE'])
+@rate_limit('share_manage')
+@login_required
+async def api_revoke_share(share_token):
+    """Revoke (deactivate) a share"""
+    user_id = request.user['id']  # type: ignore
+
+    db = load_db()
+    share = db.get('class_shares', {}).get(share_token)
+
+    if not share or share.get('user_id') != user_id:
+        return jsonify({'success': False, 'message': 'backend.shareNotFound'}), 404
+
+    share['active'] = False
+    save_db(db)
+    return jsonify({'success': True, 'message': 'backend.shareRevoked'})
+
+
+@app.route('/api/share/class/<share_token>/regenerate-pins', methods=['POST'])
+@rate_limit('share_manage')
+@login_required
+async def api_regenerate_pins(share_token):
+    """Regenerate all PINs for a share"""
+    user_id = request.user['id']  # type: ignore
+
+    db = load_db()
+    share = db.get('class_shares', {}).get(share_token)
+
+    if not share or share.get('user_id') != user_id:
+        return jsonify({'success': False, 'message': 'backend.shareNotFound'}), 404
+
+    if not share.get('active'):
+        return jsonify({'success': False, 'message': 'backend.shareNotActive'}), 400
+
+    # Regenerate PINs
+    existing_pins = set()
+    cleartext_pins = {}
+    pin_list = []
+
+    for student_id, student_info in share.get('students', {}).items():
+        pin = generate_unique_pin(existing_pins)
+        existing_pins.add(pin)
+        student_info['pin_hash'] = hash_pin(pin)
+        cleartext_pins[student_id] = pin
+        pin_list.append({
+            'student_id': student_id,
+            'name': student_info.get('name', ''),
+            'pin': pin
+        })
+
+    save_db(db)
+    return jsonify({'success': True, 'pins': pin_list})
+
+
+@app.route('/api/share/class/status/<class_id>', methods=['GET'])
+@rate_limit('share_manage')
+@login_required
+async def api_get_share_status(class_id):
+    """Get the share status for a class"""
+    user_id = request.user['id']  # type: ignore
+
+    db = load_db()
+    for token, share in db.get('class_shares', {}).items():
+        if share.get('user_id') == user_id and share.get('class_id') == class_id and share.get('active'):
+            # Check expiration
+            expires_at = share.get('expires_at')
+            if expires_at and datetime.fromisoformat(expires_at) < datetime.now():
+                share['active'] = False
+                save_db(db)
+                return jsonify({'success': True, 'has_share': False})
+
+            return jsonify({
+                'success': True,
+                'has_share': True,
+                'token': token,
+                'class_name': share.get('class_name', ''),
+                'created_at': share.get('created_at', ''),
+                'expires_at': share.get('expires_at', ''),
+                'visibility': share.get('visibility', {}),
+                'student_count': len(share.get('students', {}))
+            })
+
+    return jsonify({'success': True, 'has_share': False})
+
+
+# ============ Public Student Access ============
+
+@app.route('/grades/<share_token>')
+async def student_grades_page(share_token):
+    """Student-facing page for viewing grades"""
+    db = load_db()
+    share = db.get('class_shares', {}).get(share_token)
+
+    error = None
+    if not share:
+        error = 'invalid'
+    elif not share.get('active'):
+        error = 'revoked'
+    else:
+        expires_at = share.get('expires_at')
+        if expires_at and datetime.fromisoformat(expires_at) < datetime.now():
+            error = 'expired'
+
+    return await render_template('student_grades.html',
+        token=share_token,
+        error=error,
+        class_name=share.get('class_name', '') if share else '',
+        teacher_name=share.get('teacher_name', '') if share else ''
+    )
+
+
+@app.route('/api/grades/<share_token>/verify', methods=['POST'])
+@rate_limit('pin_verify')
+async def api_verify_pin(share_token):
+    """Verify student PIN and return grade data"""
+    data = await request.get_json()
+    if not data:
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
+
+    pin = data.get('pin', '')
+    if not pin or len(pin) != 6 or not pin.isdigit():
+        return jsonify({'success': False, 'message': 'backend.invalidPin'}), 400
+
+    db = load_db()
+    share = db.get('class_shares', {}).get(share_token)
+
+    if not share:
+        return jsonify({'success': False, 'message': 'backend.invalidAccessLink'}), 404
+
+    if not share.get('active'):
+        return jsonify({'success': False, 'message': 'backend.accessRevoked'}), 403
+
+    expires_at = share.get('expires_at')
+    if expires_at and datetime.fromisoformat(expires_at) < datetime.now():
+        return jsonify({'success': False, 'message': 'backend.accessExpired'}), 403
+
+    # Find student by PIN
+    matched_student_id = None
+    for student_id, student_info in share.get('students', {}).items():
+        if verify_pin(student_info.get('pin_hash', ''), pin):
+            matched_student_id = student_id
+            break
+
+    if not matched_student_id:
+        return jsonify({'success': False, 'message': 'backend.wrongPin'}), 401
+
+    # Get student data from snapshot
+    snapshot = share.get('data', {})
+    student_data = None
+    for s in snapshot.get('students', []):
+        if s.get('id') == matched_student_id:
+            student_data = s
+            break
+
+    if not student_data:
+        return jsonify({'success': False, 'message': 'backend.studentNotFound'}), 404
+
+    return jsonify({
+        'success': True,
+        'student': {
+            'name': student_data.get('name', ''),
+            'grades': student_data.get('grades', [])
+        },
+        'class_name': share.get('class_name', ''),
+        'teacher_name': share.get('teacher_name', ''),
+        'categories': snapshot.get('categories', []),
+        'subjects': snapshot.get('subjects', []),
+        'plusMinusGradeSettings': snapshot.get('plusMinusGradeSettings', {}),
+        'visibility': share.get('visibility', {})
+    })
 
 
 if __name__ == '__main__':

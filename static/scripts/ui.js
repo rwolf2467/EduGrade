@@ -42,7 +42,7 @@ const setButtonLoading = (btn, isLoading, loadingText = 'Loading...') => {
  * @param {string} description - Beschreibung (optional)
  * @returns {HTMLDialogElement} Das Dialog-Element zum späteren Schließen
  */
-const showLoadingOverlay = (title = 'Processing your request', description = 'Please wait while we process your request. Do not refresh the page.') => {
+const showLoadingOverlay = (title = t('loading.processing'), description = t('loading.pleaseWait')) => {
     // Prüfe ob schon ein Loading-Overlay existiert
     let overlay = document.getElementById('loading-overlay');
     if (overlay) {
@@ -202,7 +202,7 @@ const showToast = (message, type = "info") => {
  *
  * @param {string} message - Die Fehlermeldung
  */
-const showRateLimitDialog = (message = "You've made too many requests. Please wait a moment before trying again.") => {
+const showRateLimitDialog = (message = t("error.tooManyRequestsMsg")) => {
     // Prüfe ob schon ein Rate-Limit-Dialog existiert
     let dialog = document.getElementById('rate-limit-dialog');
 
@@ -223,7 +223,7 @@ const showRateLimitDialog = (message = "You've made too many requests. Please wa
                             </svg>
                         </div>
                         <div>
-                            <h2 class="text-lg font-semibold">Too Many Requests</h2>
+                            <h2 class="text-lg font-semibold">${t("error.tooManyRequests")}</h2>
                         </div>
                     </div>
                 </header>
@@ -231,7 +231,7 @@ const showRateLimitDialog = (message = "You've made too many requests. Please wa
                     <p id="rate-limit-message" class="text-muted-foreground"></p>
                 </section>
                 <footer class="flex justify-end">
-                    <button type="button" class="btn-primary" id="rate-limit-close">Understood</button>
+                    <button type="button" class="btn-primary" id="rate-limit-close">${t("error.understood")}</button>
                 </footer>
             </div>
         `;
@@ -256,7 +256,7 @@ const showRateLimitDialog = (message = "You've made too many requests. Please wa
  *
  * @param {string} message - Die Fehlermeldung
  */
-const showSessionExpiredDialog = (message = "Your session has expired. Please log in again to save your data securely.") => {
+const showSessionExpiredDialog = (message = t("error.sessionExpiredMsg")) => {
     // Prüfe ob schon ein Session-Expired-Dialog existiert
     let dialog = document.getElementById('session-expired-dialog');
 
@@ -280,16 +280,16 @@ const showSessionExpiredDialog = (message = "Your session has expired. Please lo
                             </svg>
                         </div>
                         <div>
-                            <h2 class="text-lg font-semibold">Session Expired</h2>
+                            <h2 class="text-lg font-semibold">${t("error.sessionExpired")}</h2>
                         </div>
                     </div>
                 </header>
                 <section class="py-4">
                     <p id="session-expired-message" class="text-muted-foreground"></p>
-                    <p class="text-sm mt-3" style="color: oklch(.708 0 0);">Your data has been saved locally and will be synced when you log in again.</p>
+                    <p class="text-sm mt-3" style="color: oklch(.708 0 0);">${t("error.localDataSaved")}</p>
                 </section>
                 <footer class="flex justify-end">
-                    <button type="button" class="btn-primary" id="session-expired-login">Log In</button>
+                    <button type="button" class="btn-primary" id="session-expired-login">${t("error.logIn")}</button>
                 </footer>
             </div>
         `;

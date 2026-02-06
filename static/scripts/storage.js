@@ -170,14 +170,14 @@ const saveData = (message = "Data saved!", type = "success") => {
                 // On server error, save locally as backup and mark for later sync
                 localStorage.setItem("notenverwaltung", JSON.stringify(appData));
                 localStorage.setItem('pendingServerSync', 'true');
-                showToast("Data saved locally (server sync failed)", "warning");
+                showToast(t("toast.localSyncFailed"), "warning");
             }
         } catch (error) {
             console.error('Error saving to server:', error);
             // On network error, save locally as backup and mark for later sync
             localStorage.setItem("notenverwaltung", JSON.stringify(appData));
             localStorage.setItem('pendingServerSync', 'true');
-            showToast("Data saved locally (network error)", "warning");
+            showToast(t("toast.localNetworkError"), "warning");
         }
     }, SAVE_DEBOUNCE_MS);
 };
@@ -195,7 +195,7 @@ const loadData = async () => {
     console.log("Loading data from server...");
 
     // Show loading overlay while decrypting data
-    showLoadingOverlay('Loading your data', 'Decrypting and loading your grades. This may take a moment...');
+    showLoadingOverlay(t('loading.loadingData'), t('loading.decrypting'));
 
     try {
         // Try to load data from server
@@ -238,6 +238,11 @@ const loadData = async () => {
     // Migration and initialization
     migrateData();
 
+    // Sync language from server data to i18n engine
+    if (appData.language && appData.language !== I18n.getCurrentLanguage()) {
+        I18n.setLanguage(appData.language);
+    }
+
     // Hide loading overlay after data is loaded
     hideLoadingOverlay();
 };
@@ -252,14 +257,14 @@ const loadFromLocalStorage = () => {
         try {
             appData = JSON.parse(data);
             console.log("Loaded data from localStorage (fallback):", appData);
-            showToast("Using local data (server unavailable)", "warning");
+            showToast(t("toast.usingLocalData"), "warning");
         } catch (e) {
             console.error("Error parsing localStorage data:", e);
-            showToast("Error loading local data", "error");
+            showToast(t("toast.errorLoadingLocal"), "error");
         }
     } else {
         console.log("No local data available");
-        showToast("No local data available", "info");
+        showToast(t("toast.noLocalData"), "info");
     }
 };
 
@@ -287,7 +292,7 @@ const checkPendingSync = async () => {
                 if (response.ok) {
                     console.log('Pending data synchronized successfully');
                     localStorage.removeItem('pendingServerSync');
-                    showToast('Pending changes synchronized with server', 'success');
+                    showToast(t('toast.pendingSynced'), 'success');
                 } else {
                     console.error('Sync failed, will retry later');
                 }
@@ -366,6 +371,11 @@ const migrateData = () => {
             currentStep: 0,
             neverShowAgain: false
         };
+    }
+
+    // Add language field
+    if (!appData.language) {
+        appData.language = I18n.getCurrentLanguage();
     }
 
     // MIGRATION: plusMinusGradeSettings
