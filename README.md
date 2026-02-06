@@ -100,4 +100,4 @@ Licensed under the [GNU Affero General Public License v3.0](https://www.gnu.org/
 
 ## Security Reporting
 
-Report vulnerabilities via [GitHub Issues](https://github.com/yourusername/edugrade/issues).
+Report vulnerabilities via [GitHub Issues](https://github.com/rwolf2467/EduGrade/issues).
