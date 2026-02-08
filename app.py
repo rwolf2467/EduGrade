@@ -121,6 +121,10 @@ encryption_keys = {}
 # This avoids re-decrypting on every request
 user_data_cache = {}
 
+# Master key for encrypting shared data (class_shares)
+# This is generated on server startup and stored in memory
+MASTER_SHARE_KEY = os.urandom(32)  # 256-bit key for AES-256
+
 # Heartbeat timeout in seconds - cache is cleared if no heartbeat received
 HEARTBEAT_TIMEOUT = 60
 
@@ -168,6 +172,44 @@ def decrypt_user_data(encrypted_data: str, key: bytes) -> dict:
         return json.loads(plaintext.decode('utf-8'))
     except Exception as e:
         print(f"Decryption error: {e}")
+        return {}
+
+
+def encrypt_share_data(data: dict, key: bytes) -> str:
+    """Encrypt share data using AES-256-GCM with master key"""
+    # Convert data to JSON string
+    json_data = json.dumps(data, ensure_ascii=False)
+
+    # Generate a random 96-bit nonce (recommended for GCM)
+    nonce = os.urandom(12)
+
+    # Encrypt using AES-GCM
+    aesgcm = AESGCM(key)
+    ciphertext = aesgcm.encrypt(nonce, json_data.encode('utf-8'), None)
+
+    # Combine nonce + ciphertext and encode as base64
+    encrypted = base64.b64encode(nonce + ciphertext).decode('ascii')
+    return encrypted
+
+
+def decrypt_share_data(encrypted_data: str, key: bytes) -> dict:
+    """Decrypt share data using AES-256-GCM with master key"""
+    try:
+        # Decode from base64
+        raw = base64.b64decode(encrypted_data)
+
+        # Extract nonce (first 12 bytes) and ciphertext
+        nonce = raw[:12]
+        ciphertext = raw[12:]
+
+        # Decrypt
+        aesgcm = AESGCM(key)
+        plaintext = aesgcm.decrypt(nonce, ciphertext, None)
+
+        # Parse JSON
+        return json.loads(plaintext.decode('utf-8'))
+    except Exception as e:
+        print(f"Share data decryption error: {e}")
         return {}
 
 def hash_password(password: str) -> str:
@@ -263,7 +305,9 @@ def update_active_shares_for_user(user_id: str, user_data: dict):
         # Update snapshot
         snapshot = build_share_snapshot(user_data, share['class_id'])
         if snapshot:
-            share['data'] = snapshot
+            # Encrypt the updated snapshot
+            encrypted_snapshot = encrypt_share_data(snapshot, MASTER_SHARE_KEY)
+            share['encrypted_data'] = encrypted_snapshot
             # Update class name in case it changed
             for c in user_data.get('classes', []):
                 if c.get('id') == share['class_id']:
@@ -280,7 +324,8 @@ def init_db():
         default_data = {
             "users": {},
             "sessions": {},
-            "user_data": {}
+            "user_data": {},
+            "class_shares": {}
         }
         save_db(default_data)
 
@@ -296,6 +341,30 @@ def load_db():
     except (FileNotFoundError, json.JSONDecodeError):
         init_db()
         return load_db()
+
+
+def migrate_plaintext_shares():
+    """Migrate any existing plaintext shares to encrypted format"""
+    db = load_db()
+    updated = False
+    
+    for token, share in db.get('class_shares', {}).items():
+        # Check if this share has plaintext data (old format)
+        if 'data' in share and 'encrypted_data' not in share:
+            # Encrypt the existing data
+            snapshot = share['data']
+            encrypted_snapshot = encrypt_share_data(snapshot, MASTER_SHARE_KEY)
+            
+            # Replace plaintext data with encrypted data
+            del share['data']
+            share['encrypted_data'] = encrypted_snapshot
+            updated = True
+            
+            print(f"Migrated share {token[:8]} to encrypted format")
+    
+    if updated:
+        save_db(db)
+        print("Completed migration of plaintext shares to encrypted format")
 
 def save_db(data):
     """Save database to JSON file"""
@@ -328,18 +397,27 @@ async def cleanup_expired_sessions():
         print(f"Clearing stale cache for token {token[:8]}...")
         clear_session_cache(token)
 
-    # Clean up expired shares
+    # Clean up expired/inactive shares
     if 'class_shares' in db:
         shares_to_delete = []
         for token, share in db['class_shares'].items():
-            expires_at = share.get('expires_at')
-            if expires_at:
-                exp = datetime.fromisoformat(expires_at)
-                if exp < now:
-                    share['active'] = False
-                # Delete shares that expired more than 30 days ago
-                if exp + timedelta(days=30) < now:
-                    shares_to_delete.append(token)
+            # Check if share is marked as inactive or expired
+            if not share.get('active', True):
+                # Always delete inactive shares (not just mark as inactive)
+                shares_to_delete.append(token)
+            else:
+                # Check if share has expired
+                expires_at = share.get('expires_at')
+                if expires_at:
+                    exp = datetime.fromisoformat(expires_at)
+                    if exp < now:
+                        # Mark as inactive first, then delete if older than 1 day
+                        share['active'] = False
+                        if exp + timedelta(days=1) < now:
+                            shares_to_delete.append(token)
+                    # Delete shares that expired more than 30 days ago
+                    elif exp + timedelta(days=30) < now:
+                        shares_to_delete.append(token)
         for token in shares_to_delete:
             del db['class_shares'][token]
 
@@ -692,7 +770,8 @@ async def startup():
     """Initialize database on startup"""
     print("Initializing JSON database...")
     init_db()
-    await cleanup_expired_sessions() 
+    migrate_plaintext_shares()  # Migrate any existing plaintext shares
+    await cleanup_expired_sessions()
     print("Database initialized successfully")
 # ============ Startup ============
 
@@ -1061,6 +1140,9 @@ async def api_create_share():
     # Get teacher name
     teacher_name = user_data.get('teacherName', '') or request.user.get('username', '')  # type: ignore
 
+    # Encrypt the snapshot data before storing
+    encrypted_snapshot = encrypt_share_data(snapshot, MASTER_SHARE_KEY)
+
     # Store share
     now = datetime.now()
     share_data = {
@@ -1073,7 +1155,7 @@ async def api_create_share():
         'active': True,
         'visibility': visibility,
         'students': students_pins,
-        'data': snapshot
+        'encrypted_data': encrypted_snapshot  # Store encrypted data
     }
 
     db['class_shares'][share_token] = share_data
@@ -1131,7 +1213,7 @@ async def api_update_share(share_token):
 @rate_limit('share_manage')
 @login_required
 async def api_revoke_share(share_token):
-    """Revoke (deactivate) a share"""
+    """Revoke (delete) a share"""
     user_id = request.user['id']  # type: ignore
 
     db = load_db()
@@ -1140,7 +1222,8 @@ async def api_revoke_share(share_token):
     if not share or share.get('user_id') != user_id:
         return jsonify({'success': False, 'message': 'backend.shareNotFound'}), 404
 
-    share['active'] = False
+    # Completely remove the share instead of just deactivating
+    del db['class_shares'][share_token]
     save_db(db)
     return jsonify({'success': True, 'message': 'backend.shareRevoked'})
 
@@ -1190,24 +1273,26 @@ async def api_get_share_status(class_id):
 
     db = load_db()
     for token, share in db.get('class_shares', {}).items():
-        if share.get('user_id') == user_id and share.get('class_id') == class_id and share.get('active'):
-            # Check expiration
-            expires_at = share.get('expires_at')
-            if expires_at and datetime.fromisoformat(expires_at) < datetime.now():
-                share['active'] = False
-                save_db(db)
-                return jsonify({'success': True, 'has_share': False})
-
-            return jsonify({
-                'success': True,
-                'has_share': True,
-                'token': token,
-                'class_name': share.get('class_name', ''),
-                'created_at': share.get('created_at', ''),
-                'expires_at': share.get('expires_at', ''),
-                'visibility': share.get('visibility', {}),
-                'student_count': len(share.get('students', {}))
-            })
+        if share.get('user_id') == user_id and share.get('class_id') == class_id:
+            # Check if share is active and not expired
+            if share.get('active'):
+                expires_at = share.get('expires_at')
+                if expires_at and datetime.fromisoformat(expires_at) < datetime.now():
+                    # Share has expired, remove it completely
+                    del db['class_shares'][token]
+                    save_db(db)
+                    return jsonify({'success': True, 'has_share': False})
+                
+                return jsonify({
+                    'success': True,
+                    'has_share': True,
+                    'token': token,
+                    'class_name': share.get('class_name', ''),
+                    'created_at': share.get('created_at', ''),
+                    'expires_at': share.get('expires_at', ''),
+                    'visibility': share.get('visibility', {}),
+                    'student_count': len(share.get('students', {}))
+                })
 
     return jsonify({'success': True, 'has_share': False})
 
@@ -1273,8 +1358,14 @@ async def api_verify_pin(share_token):
     if not matched_student_id:
         return jsonify({'success': False, 'message': 'backend.wrongPin'}), 401
 
-    # Get student data from snapshot
-    snapshot = share.get('data', {})
+    # Get student data from encrypted snapshot
+    encrypted_data = share.get('encrypted_data')
+    if not encrypted_data:
+        return jsonify({'success': False, 'message': 'backend.error'}), 500
+    
+    # Decrypt the snapshot data
+    snapshot = decrypt_share_data(encrypted_data, MASTER_SHARE_KEY)
+    
     student_data = None
     for s in snapshot.get('students', []):
         if s.get('id') == matched_student_id:
