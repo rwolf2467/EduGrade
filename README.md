@@ -21,12 +21,12 @@ A secure web application for teachers to manage student grades, classes, and per
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|------------|
-| Backend | Python 3.8+, Quart (async) |
-| Frontend | HTML5, JavaScript, Tailwind CSS, Basecoat |
-| Storage | JSON files with AES-256-GCM encryption |
-| Charts | Chart.js |
+| Component | Technology                                |
+|-----------|-------------------------------------------|
+| Backend   | Python 3.8+, Quart (async)                |
+| Frontend  | HTML5, JavaScript, Tailwind CSS, Basecoat |
+| Storage   | JSON files with AES-256-GCM encryption    |
+| Charts    | Chart.js                                  |
 
 ## Quick Start
 
@@ -71,11 +71,11 @@ edugrade/
 
 Edit `app.py` to customize:
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| Port | 1601 | Server port |
-| Session Duration | 1 hour | Login timeout |
-| Debug Mode | True | Enable for development |
+| Setting          | Default | Description            |
+|------------------|---------|------------------------|
+| Port             | 1601    | Server port            |
+| Session Duration | 1 hour  | Login timeout          |
+| Debug Mode       | True    | Enable for development |
 
 For production, change `app.secret_key` to a secure random string.
 

@@ -91,6 +91,12 @@ const I18n = (() => {
         document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
             el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria-label')));
         });
+        
+        // Handle select options with data-i18n-option
+        document.querySelectorAll('option[data-i18n-option]').forEach(option => {
+            const key = option.getAttribute('data-i18n-option');
+            option.textContent = t(key);
+        });
     };
 
     init();

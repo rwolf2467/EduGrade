@@ -47,27 +47,33 @@
                         <img src="/static/logo.svg" alt="EduGrade Logo" class="mx-auto mb-3"
                             style="height: 48px; width: auto;">
                         <h2 data-i18n="setup.welcome">Welcome!</h2>
-                        <p data-i18n="setup.welcomeText">Welcome to EduGrade! A tool to help you manage and track student grades effectively.</p>
+                        <p data-i18n="setup.welcomeText">Welcome to EduGrade! A tool to help you manage and track
+                            student grades effectively.</p>
                     </header>
                     <section>
                         <form id="setup-form" class="form grid gap-6">
                             <div class="grid gap-2">
                                 <p class="text-lg font-medium">Welcome, <span class="text-primary font-semibold">{{
                                         user.username }}</span>!</p>
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="setup.welcomeSubtext">Great to have you here! Let's set up
+                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="setup.welcomeSubtext">
+                                    Great to have you here! Let's set up
                                     your first classroom.</p>
                             </div>
                             <div class="grid gap-2">
                                 <label for="class-name" data-i18n="setup.className">Class name (e.g., "1A")</label>
                                 <input type="text" id="class-name" class="input" value="1A">
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="setup.classHint">Create your first class. You can
+                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="setup.classHint">Create
+                                    your first class. You can
                                     always add more or make changes later.</p>
                             </div>
                             <div class="grid gap-2">
                                 <label for="setup-theme" data-i18n="setup.theme">Theme</label>
                                 <div class="flex gap-2">
-                                    <button type="button" id="setup-theme-light" class="btn-outline flex-1 flex items-center justify-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <button type="button" id="setup-theme-light"
+                                        class="btn-outline flex-1 flex items-center justify-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
                                             <circle cx="12" cy="12" r="4" />
                                             <path d="M12 2v2" />
                                             <path d="M12 20v2" />
@@ -80,30 +86,38 @@
                                         </svg>
                                         <span data-i18n="setup.themeLight">Light</span>
                                     </button>
-                                    <button type="button" id="setup-theme-dark" class="btn-outline flex-1 flex items-center justify-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <button type="button" id="setup-theme-dark"
+                                        class="btn-outline flex-1 flex items-center justify-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
                                         </svg>
                                         <span data-i18n="setup.themeDark">Dark</span>
                                     </button>
                                 </div>
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="setup.themeHint">Choose your preferred theme. You can change this anytime.</p>
+                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="setup.themeHint">Choose
+                                    your preferred theme. You can change this anytime.</p>
                             </div>
                             <div class="grid gap-2">
                                 <label data-i18n="profile.language">Language</label>
                                 <div class="flex gap-2">
-                                    <button type="button" id="setup-lang-en" class="btn-outline flex-1 flex items-center justify-center gap-2">
+                                    <button type="button" id="setup-lang-en"
+                                        class="btn-outline flex-1 flex items-center justify-center gap-2">
                                         English
                                     </button>
-                                    <button type="button" id="setup-lang-de" class="btn-outline flex-1 flex items-center justify-center gap-2">
+                                    <button type="button" id="setup-lang-de"
+                                        class="btn-outline flex-1 flex items-center justify-center gap-2">
                                         Deutsch
                                     </button>
                                 </div>
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="profile.languageHint">Choose your preferred language.</p>
+                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="profile.languageHint">
+                                    Choose your preferred language.</p>
                             </div>
                     </section>
                     <footer class="flex justify-end gap-2">
-                        <button type="button" class="btn-outline" id="import-setup" data-i18n="setup.import">Import</button>
+                        <button type="button" class="btn-outline" id="import-setup"
+                            data-i18n="setup.import">Import</button>
                         <button type="submit" class="btn-primary" data-i18n="setup.letsGo">Let's go</button>
                     </footer>
                     </form>
@@ -126,8 +140,10 @@
                     </form>
                 </section>
                 <footer class="flex justify-end gap-2">
-                    <button type="button" class="btn-outline" id="cancel-import" data-i18n="dialog.cancel">Cancel</button>
-                    <button type="button" class="btn-primary" id="confirm-import" data-i18n="import.import">Import</button>
+                    <button type="button" class="btn-outline" id="cancel-import"
+                        data-i18n="dialog.cancel">Cancel</button>
+                    <button type="button" class="btn-primary" id="confirm-import"
+                        data-i18n="import.import">Import</button>
                 </footer>
             </div>
         </dialog>
@@ -240,8 +256,8 @@
                                     <span data-i18n="nav.about">About</span>
                                 </a>
                                 <button type="button" aria-label="Toggle dark mode" data-tooltip="Toggle dark mode"
-                                    data-i18n-tooltip="nav.toggleDarkMode"
-                                    data-side="left" onclick="document.dispatchEvent(new CustomEvent('basecoat:theme'))"
+                                    data-i18n-tooltip="nav.toggleDarkMode" data-side="left"
+                                    onclick="document.dispatchEvent(new CustomEvent('basecoat:theme'))"
                                     class="btn-icon-outline size-8">
                                     <span class="hidden dark:block"><svg xmlns="http://www.w3.org/2000/svg" width="24"
                                             height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -272,7 +288,8 @@
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <button type="button" onclick="document.dispatchEvent(new CustomEvent('basecoat:sidebar'));"
-                            class="btn-outline" data-tooltip="Toggle sidebar" data-i18n-tooltip="nav.toggleSidebar" data-side="right">
+                            class="btn-outline" data-tooltip="Toggle sidebar" data-i18n-tooltip="nav.toggleSidebar"
+                            data-side="right">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round">
@@ -300,14 +317,17 @@
                                 <path d="M12 17h.01" />
                             </svg>
                             <div>
-                                <p class="mb-2"><strong data-i18n="profile.clearAllDataWarning">This will delete all your data from the server!</strong></p>
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="profile.clearAllDataHint">All classes, students, and grades
+                                <p class="mb-2"><strong data-i18n="profile.clearAllDataWarning">This will delete all
+                                        your data from the server!</strong></p>
+                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="profile.clearAllDataHint">
+                                    All classes, students, and grades
                                     will be permanently deleted. Please export your data first if you want to keep a
                                     backup. This action cannot be undone.</p>
                             </div>
                         </section>
                         <footer class="flex justify-end gap-2">
-                            <button type="button" class="btn-outline" id="cancel-clear-storage" data-i18n="dialog.cancel">Cancel</button>
+                            <button type="button" class="btn-outline" id="cancel-clear-storage"
+                                data-i18n="dialog.cancel">Cancel</button>
                             <button type="button" class="btn-destructive" id="confirm-clear-storage">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -336,43 +356,55 @@
                     <div>
                         <header>
                             <h2 id="profile-dialog-title" data-i18n="profile.title">Profile</h2>
-                            <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="profile.subtitle">Manage your profile and account settings
+                            <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="profile.subtitle">Manage your
+                                profile and account settings
                             </p>
                         </header>
-                        <section class="space-y-6">
+                        <section class="space-y-6 max-h-[60vh] overflow-y-auto">
                             <!-- Account Info -->
                             <div class="p-4 rounded-lg">
-                                <h3 class="text-sm font-medium mb-2" data-i18n="profile.accountInfo">Account Information</h3>
+                                <h3 class="text-sm font-medium mb-2" data-i18n="profile.accountInfo">Account Information
+                                </h3>
                                 <div class="space-y-1 text-sm" style="color: oklch(.708 0 0);">
-                                    <p><span class="font-medium" data-i18n="profile.username">Username:</span> {{ user.username }}</p>
-                                    <p><span class="font-medium" data-i18n="profile.email">Email:</span> {{ user.email }}</p>
+                                    <p><span class="font-medium" data-i18n="profile.username">Username:</span> {{
+                                        user.username }}</p>
+                                    <p><span class="font-medium" data-i18n="profile.email">Email:</span> {{ user.email
+                                        }}</p>
                                 </div>
                             </div>
 
                             <!-- Teacher Name -->
                             <div class="grid gap-2">
-                                <label for="profile-teacher-name" class="text-sm font-medium" data-i18n="profile.displayName">Display Name</label>
-                                <input type="text" id="profile-teacher-name" class="input" placeholder="Your name" data-i18n-placeholder="profile.displayNamePlaceholder">
-                                <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="profile.displayNameHint">This name will be shown in the
+                                <label for="profile-teacher-name" class="text-sm font-medium"
+                                    data-i18n="profile.displayName">Display Name</label>
+                                <input type="text" id="profile-teacher-name" class="input" placeholder="Your name"
+                                    data-i18n-placeholder="profile.displayNamePlaceholder">
+                                <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="profile.displayNameHint">
+                                    This name will be shown in the
                                     greeting message.</p>
                             </div>
 
                             <!-- School -->
                             <div class="grid gap-2">
-                                <label for="profile-school" class="text-sm font-medium" data-i18n="profile.school">School</label>
-                                <input type="text" id="profile-school" class="input" data-i18n-placeholder="profile.schoolPlaceholder" placeholder="Your school name">
-                                <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="profile.schoolHint">Optional: Name of your school or
+                                <label for="profile-school" class="text-sm font-medium"
+                                    data-i18n="profile.school">School</label>
+                                <input type="text" id="profile-school" class="input"
+                                    data-i18n-placeholder="profile.schoolPlaceholder" placeholder="Your school name">
+                                <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="profile.schoolHint">
+                                    Optional: Name of your school or
                                     educational institution.</p>
                             </div>
 
                             <!-- Language -->
                             <div class="grid gap-2">
-                                <label for="profile-language" class="text-sm font-medium" data-i18n="profile.language">Language</label>
+                                <label for="profile-language" class="text-sm font-medium"
+                                    data-i18n="profile.language">Language</label>
                                 <select id="profile-language" class="select">
                                     <option value="en">English</option>
                                     <option value="de">Deutsch</option>
                                 </select>
-                                <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="profile.languageHint">Choose your preferred language.</p>
+                                <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="profile.languageHint">
+                                    Choose your preferred language.</p>
                             </div>
 
                             <!-- Danger Zone -->
@@ -386,12 +418,15 @@
                                     <path
                                         d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z" />
                                 </svg>
-                                <h3 class="text-sm font-medium mb-3 text-red-400" data-i18n="profile.dangerZone">Danger Zone</h3>
+                                <h3 class="text-sm font-medium mb-3 text-red-400" data-i18n="profile.dangerZone">Danger
+                                    Zone</h3>
                                 <section class="space-y-3">
                                     <div class="flex items-center justify-between gap-4">
                                         <div>
-                                            <p class="text-sm font-medium" data-i18n="profile.clearAllData">Clear All Data</p>
-                                            <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="profile.clearDataDesc">Deletes all classes,
+                                            <p class="text-sm font-medium" data-i18n="profile.clearAllData">Clear All
+                                                Data</p>
+                                            <p class="text-xs" style="color: oklch(.708 0 0);"
+                                                data-i18n="profile.clearDataDesc">Deletes all classes,
                                                 students and grades. Your account will be preserved.</p>
                                         </div>
                                         <button type="button"
@@ -403,11 +438,14 @@
                                     <hr class="border-red-500/20">
                                     <div class="flex items-center justify-between gap-4">
                                         <div>
-                                            <p class="text-sm font-medium" data-i18n="profile.deleteAccount">Delete Account</p>
-                                            <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="profile.deleteAccountDesc">Permanently deletes your
+                                            <p class="text-sm font-medium" data-i18n="profile.deleteAccount">Delete
+                                                Account</p>
+                                            <p class="text-xs" style="color: oklch(.708 0 0);"
+                                                data-i18n="profile.deleteAccountDesc">Permanently deletes your
                                                 account and all associated data.</p>
                                         </div>
-                                        <button type="button" class="btn-destructive" id="profile-delete-account" data-i18n="profile.deleteAccount">
+                                        <button type="button" class="btn-destructive" id="profile-delete-account"
+                                            data-i18n="profile.deleteAccount">
                                             Delete Account
                                         </button>
                                     </div>
@@ -415,8 +453,10 @@
                             </div>
                         </section>
                         <footer class="flex justify-end gap-2">
-                            <button type="button" class="btn-outline" id="cancel-profile" data-i18n="dialog.cancel">Cancel</button>
-                            <button type="button" class="btn-primary" id="save-profile" data-i18n="dialog.save">Save</button>
+                            <button type="button" class="btn-outline" id="cancel-profile"
+                                data-i18n="dialog.cancel">Cancel</button>
+                            <button type="button" class="btn-primary" id="save-profile"
+                                data-i18n="dialog.save">Save</button>
                         </footer>
                         <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -434,7 +474,8 @@
                     aria-labelledby="delete-account-dialog-title">
                     <div>
                         <header>
-                            <h2 id="delete-account-dialog-title" class="text-red-400" data-i18n="profile.deleteAccount">Delete Account</h2>
+                            <h2 id="delete-account-dialog-title" class="text-red-400" data-i18n="profile.deleteAccount">
+                                Delete Account</h2>
                         </header>
                         <section class="flex gap-3 items-start">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -445,13 +486,16 @@
                                 <path d="M12 17h.01" />
                             </svg>
                             <div>
-                                <p class="mb-2"><strong data-i18n="profile.deleteAccountWarning">This action cannot be undone!</strong></p>
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="profile.deleteAccountHint">Your account and all associated data
+                                <p class="mb-2"><strong data-i18n="profile.deleteAccountWarning">This action cannot be
+                                        undone!</strong></p>
+                                <p class="text-sm" style="color: oklch(.708 0 0);"
+                                    data-i18n="profile.deleteAccountHint">Your account and all associated data
                                     will be permanently deleted. You will be logged out immediately.</p>
                             </div>
                         </section>
                         <footer class="flex justify-end gap-2">
-                            <button type="button" class="btn-outline" id="cancel-delete-account" data-i18n="dialog.cancel">Cancel</button>
+                            <button type="button" class="btn-outline" id="cancel-delete-account"
+                                data-i18n="dialog.cancel">Cancel</button>
                             <button type="button" class="btn-destructive" id="confirm-delete-account">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -485,7 +529,8 @@
                             <div id="category-management-list" class="space-y-2"></div>
                         </section>
                         <footer class="flex justify-end gap-2">
-                            <button type="button" class="btn-outline" id="close-category-management" data-i18n="dialog.close">Close</button>
+                            <button type="button" class="btn-outline" id="close-category-management"
+                                data-i18n="dialog.close">Close</button>
                         </footer>
                         <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()"
                             data-tooltip="Close dialog" data-i18n-tooltip="dialog.closeDialog" data-side="top">
@@ -514,7 +559,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="home.totalClasses">Total Classes</p>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="home.totalClasses">
+                                        Total Classes</p>
                                     <p class="text-2xl font-bold" id="stat-total-classes">0</p>
                                 </div>
                             </div>
@@ -532,7 +578,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="home.totalStudents">Total Students</p>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="home.totalStudents">
+                                        Total Students</p>
                                     <p class="text-2xl font-bold" id="stat-total-students">0</p>
                                 </div>
                             </div>
@@ -548,7 +595,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="home.overallAverage">Overall Average</p>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="home.overallAverage">
+                                        Overall Average</p>
                                     <p class="text-2xl font-bold" id="stat-overall-average">-</p>
                                 </div>
                             </div>
@@ -564,7 +612,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="home.totalGrades">Total Grades</p>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="home.totalGrades">
+                                        Total Grades</p>
                                     <p class="text-2xl font-bold" id="stat-total-grades">0</p>
                                 </div>
                             </div>
@@ -582,9 +631,9 @@
                 <!-- Class View -->
                 <section id="class-view" class="hidden mt-10">
                     <div class="card mb-6">
-                        <header class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-semibold">Class: <span id="current-class-name"></span></h2>
-                            <div class="flex gap-2">
+                        <header class="mb-4">
+                            <h2 class="text-xl font-semibold mb-3">Class: <span id="current-class-name"></span></h2>
+                            <div class="flex flex-wrap gap-2">
                                 <button id="add-student" class="btn-primary">
                                     <svg class="lucide lucide-user-plus" viewBox="0 0 24 24" fill="none"
                                         stroke="currentColor">
@@ -605,8 +654,9 @@
                                     <span data-i18n="class.manageCategories">Manage Categories</span>
                                 </button>
                                 <button id="student-access-btn" class="btn-secondary">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
                                         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
                                         <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
                                     </svg>
@@ -623,26 +673,31 @@
                         <!-- Class Stats -->
                         <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                             <div class="stat-card p-4 rounded-lg border">
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.classAverage">Class Average</p>
+                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.classAverage">Class
+                                    Average</p>
                                 <p class="text-2xl font-bold" id="class-stat-average">-</p>
                             </div>
                             <div class="stat-card p-4 rounded-lg border">
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.students">Students</p>
+                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.students">Students
+                                </p>
                                 <p class="text-2xl font-bold" id="class-stat-students">0</p>
                             </div>
                             <div class="stat-card p-4 rounded-lg border">
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.totalGrades">Total Grades</p>
+                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.totalGrades">Total
+                                    Grades</p>
                                 <p class="text-2xl font-bold" id="class-stat-grades">0</p>
                             </div>
                             <div class="stat-card p-4 rounded-lg border">
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.passRate">Pass Rate</p>
+                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.passRate">Pass Rate
+                                </p>
                                 <p class="text-2xl font-bold" id="class-stat-pass-rate">-</p>
                             </div>
                         </section>
 
                         <section class="mb-4 flex gap-2">
                             <input type="text" id="search-students" class="input flex-1"
-                                placeholder="Search by name or grade..." data-i18n-placeholder="class.searchPlaceholder">
+                                placeholder="Search by name or grade..."
+                                data-i18n-placeholder="class.searchPlaceholder">
                             <select id="filter-category" class="select">
                                 <option value="">All Categories</option>
                             </select>
@@ -686,23 +741,28 @@
                         <section class="p-7">
                             <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                                 <div class="stat-card p-4 rounded-lg border">
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.average">Average</p>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.average">
+                                        Average</p>
                                     <p class="text-2xl font-bold" id="student-stat-average">-</p>
                                 </div>
                                 <div class="stat-card p-4 rounded-lg border">
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.finalGrade">Final Grade</p>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.finalGrade">
+                                        Final Grade</p>
                                     <p class="text-2xl font-bold" id="student-stat-final">-</p>
                                 </div>
                                 <div class="stat-card p-4 rounded-lg border">
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.trend">Trend</p>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.trend">Trend
+                                    </p>
                                     <p class="text-2xl font-bold flex items-center gap-1" id="student-stat-trend">-</p>
                                 </div>
                                 <div class="stat-card p-4 rounded-lg border">
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.gradeCount">Grade Count</p>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.gradeCount">
+                                        Grade Count</p>
                                     <p class="text-2xl font-bold" id="student-stat-count">0</p>
                                 </div>
                                 <div class="stat-card p-4 rounded-lg border">
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.vsClassAvg">vs. Class Avg</p>
+                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.vsClassAvg">
+                                        vs. Class Avg</p>
                                     <p class="text-2xl font-bold" id="student-stat-comparison">-</p>
                                 </div>
                             </div>
@@ -714,14 +774,16 @@
 
                             <!-- Kategorie-Aufschlüsselung -->
                             <div class="mb-6">
-                                <h3 class="text-lg font-semibold mb-3" data-i18n="student.categoryBreakdown">Category Breakdown</h3>
+                                <h3 class="text-lg font-semibold mb-3" data-i18n="student.categoryBreakdown">Category
+                                    Breakdown</h3>
                                 <div id="category-breakdown"
                                     class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
                             </div>
 
                             <!-- Noten-Tabelle -->
                             <div>
-                                <h3 class="text-lg font-semibold mb-3" data-i18n="student.gradeHistory">Grade History</h3>
+                                <h3 class="text-lg font-semibold mb-3" data-i18n="student.gradeHistory">Grade History
+                                </h3>
                                 <div class="overflow-x-auto">
                                     <table class="table w-full">
                                         <thead>
@@ -752,8 +814,10 @@
                             <form id="edit-form" class="form grid gap-4"></form>
                         </section>
                         <footer class="flex justify-end gap-2">
-                            <button type="button" class="btn-outline" id="cancel-edit" data-i18n="dialog.cancel">Cancel</button>
-                            <button type="submit" class="btn-primary" form="edit-form" data-i18n="dialog.save">Save</button>
+                            <button type="button" class="btn-outline" id="cancel-edit"
+                                data-i18n="dialog.cancel">Cancel</button>
+                            <button type="submit" class="btn-primary" form="edit-form"
+                                data-i18n="dialog.save">Save</button>
                         </footer>
                         <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()"
                             data-tooltip="Close dialog" data-i18n-tooltip="dialog.closeDialog" data-side="top">
@@ -777,13 +841,15 @@
                             <div class="tabs w-full" id="manage-categories-tabs">
                                 <nav role="tablist" aria-orientation="horizontal" class="w-full">
                                     <button type="button" role="tab" id="tab-categories"
-                                        aria-controls="panel-categories" aria-selected="true"
-                                        tabindex="0" data-i18n="category.categories">Categories</button>
+                                        aria-controls="panel-categories" aria-selected="true" tabindex="0"
+                                        data-i18n="category.categories">Categories</button>
                                     <button type="button" role="tab" id="tab-percentage"
-                                        aria-controls="panel-percentage" aria-selected="false" tabindex="0" data-i18n="category.gradeRanges">Grade
+                                        aria-controls="panel-percentage" aria-selected="false" tabindex="0"
+                                        data-i18n="category.gradeRanges">Grade
                                         Ranges</button>
                                     <button type="button" role="tab" id="tab-plusminus" aria-controls="panel-plusminus"
-                                        aria-selected="false" tabindex="0" data-i18n="category.plusMinusSettings">+/- Settings</button>
+                                        aria-selected="false" tabindex="0" data-i18n="category.plusMinusSettings">+/-
+                                        Settings</button>
                                 </nav>
 
                                 <div role="tabpanel" id="panel-categories" aria-labelledby="tab-categories"
@@ -796,7 +862,8 @@
                                 <div role="tabpanel" id="panel-percentage" aria-labelledby="tab-percentage"
                                     tabindex="-1" aria-selected="false" hidden>
                                     <div class="py-4">
-                                        <p class="text-sm mb-4" style="color: oklch(.708 0 0);" data-i18n="category.gradeRangesHint">Define the percentage
+                                        <p class="text-sm mb-4" style="color: oklch(.708 0 0);"
+                                            data-i18n="category.gradeRangesHint">Define the percentage
                                             ranges for each grade. These are used when entering grades as percentages.
                                         </p>
                                         <div class="space-y-3" id="percentage-ranges-list">
@@ -846,7 +913,8 @@
                                                 <span>%</span>
                                             </div>
                                         </div>
-                                        <button id="save-percentage-ranges" class="btn-primary mt-4 w-full" data-i18n="category.saveRanges">Save
+                                        <button id="save-percentage-ranges" class="btn-primary mt-4 w-full"
+                                            data-i18n="category.saveRanges">Save
                                             Ranges</button>
                                     </div>
                                 </div>
@@ -854,27 +922,32 @@
                                 <div role="tabpanel" id="panel-plusminus" aria-labelledby="tab-plusminus" tabindex="-1"
                                     aria-selected="false" hidden>
                                     <div class="py-4">
-                                        <p class="text-sm mb-3" style="color: oklch(.708 0 0);" data-i18n="category.plusMinusSettingsHint">Settings for categories
+                                        <p class="text-sm mb-3" style="color: oklch(.708 0 0);"
+                                            data-i18n="category.plusMinusSettingsHint">Settings for categories
                                             that use only +/- grades instead of numeric grades. The grade is calculated
                                             from a starting grade, adjusted by each + and -.</p>
                                         <div class="grid grid-cols-3 gap-3">
                                             <div>
-                                                <label class="block text-sm mb-1" data-i18n="category.startGrade">Start grade</label>
+                                                <label class="block text-sm mb-1" data-i18n="category.startGrade">Start
+                                                    grade</label>
                                                 <input type="number" id="plusminus-start-grade" step="0.5" min="1"
                                                     max="5" class="input w-full" value="3">
                                             </div>
                                             <div>
-                                                <label class="block text-sm mb-1" data-i18n="category.perPlus">Per + (better)</label>
+                                                <label class="block text-sm mb-1" data-i18n="category.perPlus">Per +
+                                                    (better)</label>
                                                 <input type="number" id="plusminus-plus-value" step="0.1" min="0.1"
                                                     max="2" class="input w-full" value="0.5">
                                             </div>
                                             <div>
-                                                <label class="block text-sm mb-1" data-i18n="category.perMinus">Per - (worse)</label>
+                                                <label class="block text-sm mb-1" data-i18n="category.perMinus">Per -
+                                                    (worse)</label>
                                                 <input type="number" id="plusminus-minus-value" step="0.1" min="0.1"
                                                     max="2" class="input w-full" value="0.5">
                                             </div>
                                         </div>
-                                        <button id="save-plusminus-settings" class="btn-primary mt-4 w-full" data-i18n="category.saveSettings">Save
+                                        <button id="save-plusminus-settings" class="btn-primary mt-4 w-full"
+                                            data-i18n="category.saveSettings">Save
                                             Settings</button>
                                     </div>
                                 </div>
@@ -889,9 +962,11 @@
                                 </svg>
                                 <span data-i18n="category.addCategory">Add Category</span>
                             </button>
-                            <button type="button" class="btn-outline" id="close-manage-categories" data-i18n="dialog.close">Close</button>
+                            <button type="button" class="btn-outline" id="close-manage-categories"
+                                data-i18n="dialog.close">Close</button>
                         </footer>
-                        <button type="button" aria-label="Close dialog" data-tooltip="Close dialog" data-i18n-tooltip="dialog.closeDialog" data-side="top"
+                        <button type="button" aria-label="Close dialog" data-tooltip="Close dialog"
+                            data-i18n-tooltip="dialog.closeDialog" data-side="top"
                             onclick="this.closest('dialog').close()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -915,8 +990,10 @@
                             <p id="confirm-message" class="mb-4"></p>
                         </section>
                         <footer class="flex justify-end gap-2">
-                            <button type="button" class="btn-outline" id="cancel-action" data-i18n="dialog.cancel">Cancel</button>
-                            <button type="button" class="btn-destructive" id="confirm-action" data-i18n="dialog.delete">Delete</button>
+                            <button type="button" class="btn-outline" id="cancel-action"
+                                data-i18n="dialog.cancel">Cancel</button>
+                            <button type="button" class="btn-destructive" id="confirm-action"
+                                data-i18n="dialog.delete">Delete</button>
                         </footer>
                     </div>
                 </dialog>
@@ -931,14 +1008,17 @@
                         <section>
                             <form id="add-class-form" class="form grid gap-4">
                                 <div class="grid gap-2">
-                                    <label for="class-name-input" class="block mb-2" data-i18n="class.classNameLabel">Class Name</label>
+                                    <label for="class-name-input" class="block mb-2"
+                                        data-i18n="class.classNameLabel">Class Name</label>
                                     <input type="text" id="class-name-input" name="name" class="input w-full" required>
                                 </div>
                             </form>
                         </section>
                         <footer class="flex justify-end gap-2">
-                            <button type="button" class="btn-outline" id="cancel-add-class" data-i18n="dialog.cancel">Cancel</button>
-                            <button type="submit" class="btn-primary" form="add-class-form" data-i18n="dialog.add">Add</button>
+                            <button type="button" class="btn-outline" id="cancel-add-class"
+                                data-i18n="dialog.cancel">Cancel</button>
+                            <button type="submit" class="btn-primary" form="add-class-form"
+                                data-i18n="dialog.add">Add</button>
                         </footer>
                         <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -953,22 +1033,26 @@
 
                 <!-- Student Access Dialog -->
                 <dialog id="student-access-dialog" class="dialog w-full sm:max-w-[600px]"
-                    aria-labelledby="student-access-dialog-title"
-                    onclick="if (event.target === this) this.close()">
+                    aria-labelledby="student-access-dialog-title" onclick="if (event.target === this) this.close()">
                     <div>
                         <header>
                             <h2 id="student-access-dialog-title" data-i18n="class.studentAccess">Student Access</h2>
-                            <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.studentAccessSubtitle">Manage access link for students</p>
+                            <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.studentAccessSubtitle">
+                                Manage access link for students</p>
                         </header>
                         <section>
                             <div id="student-access-content" class="py-2">
                                 <div class="flex items-center justify-center p-8">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" class="animate-spin">
+                                        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                                    </svg>
                                 </div>
                             </div>
                         </section>
                         <footer class="flex justify-end gap-2">
-                            <button type="button" class="btn-outline" id="close-student-access" data-i18n="dialog.close">Close</button>
+                            <button type="button" class="btn-outline" id="close-student-access"
+                                data-i18n="dialog.close">Close</button>
                         </footer>
                         <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()"
                             data-tooltip="Close dialog" data-i18n-tooltip="dialog.closeDialog" data-side="top">
@@ -992,16 +1076,19 @@
                         <section>
                             <form id="add-student-form" class="form grid gap-4">
                                 <div class="grid gap-2">
-                                    <label for="student-name-input" class="block mb-2" data-i18n="student.studentName">Student Name</label>
+                                    <label for="student-name-input" class="block mb-2"
+                                        data-i18n="student.studentName">Student Name</label>
                                     <input type="text" id="student-name-input" name="name" class="input w-full"
                                         required>
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.addStudentHint">What is the name of the student
+                                    <p class="text-sm" style="color: oklch(.708 0 0);"
+                                        data-i18n="student.addStudentHint">What is the name of the student
                                         you would like to add?</p>
                                 </div>
                             </form>
                         </section>
                         <footer class="flex justify-end gap-2">
-                            <button type="button" class="btn-outline" id="cancel-add-student" data-i18n="dialog.cancel">Cancel</button>
+                            <button type="button" class="btn-outline" id="cancel-add-student"
+                                data-i18n="dialog.cancel">Cancel</button>
                             <button type="submit" class="btn-primary" form="add-student-form"><svg
                                     xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -1266,9 +1353,9 @@
         <p>Entwickelt von Fabian Murauer - Semester Abschlussprojekt 2025</p>
     </footer>
     <script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
-    }
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+        }
     </script>
 </body>
 

@@ -454,5 +454,8 @@
   "backend.error": "An error occurred. Please try again.",
   "backend.loggedOut": "Logged out",
   "backend.shareUpdated": "Share updated",
-  "backend.shareRevoked": "Share revoked"
+  "backend.shareRevoked": "Share revoked",
+  
+  "auth.english": "English",
+  "auth.german": "German"
 }

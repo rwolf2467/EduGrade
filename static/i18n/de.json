@@ -454,5 +454,8 @@
   "backend.error": "Ein Fehler ist aufgetreten. Bitte versuche es erneut.",
   "backend.loggedOut": "Abgemeldet",
   "backend.shareUpdated": "Zugang aktualisiert",
-  "backend.shareRevoked": "Zugang widerrufen"
+  "backend.shareRevoked": "Zugang widerrufen",
+  
+  "auth.english": "Englisch",
+  "auth.german": "Deutsch"
 }
