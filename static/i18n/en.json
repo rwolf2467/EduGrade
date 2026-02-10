@@ -158,6 +158,7 @@
   "grade.plusMinusOnlyHint": "This category only allows +/~/- grades. The final grade is calculated from the total number of +, ~ and - entries.",
   "grade.mixedHint": "You can enter a numeric grade (1-6) or a +/~/- grade.",
   "grade.mustSelectSubject": "You must select a subject to add a grade.",
+  "grade.previousNames": "Previous grade names",
   "grade.editTooltip": "Edit grade",
   "grade.deleteTooltip": "Delete grade",
 

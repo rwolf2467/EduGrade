@@ -158,6 +158,7 @@
   "grade.plusMinusOnlyHint": "Diese Kategorie erlaubt nur +/~/- Noten. Die Endnote wird aus der Gesamtzahl der +, ~ und - Einträge berechnet.",
   "grade.mixedHint": "Du kannst eine numerische Note (1-6) oder eine +/~/- Note eingeben.",
   "grade.mustSelectSubject": "Sie müssen ein Fach auswählen, um eine Note hinzuzufügen.",
+  "grade.previousNames": "Bisherige Notennamen",
   "grade.editTooltip": "Note bearbeiten",
   "grade.deleteTooltip": "Note löschen",
 

@@ -250,10 +250,31 @@ const openAddGradeDialog = (studentId, onSuccess) => {
         return `<option value="${safeAttr(cat.id)}" data-allow-plus-minus="${cat.allowPlusMinus}" data-only-plus-minus="${cat.onlyPlusMinus || false}">${escapeHtml(cat.name)} (${(cat.weight * 100).toFixed(0)}%)${label}</option>`;
     }).join("");
 
+    // Collect existing grade names from current class/subject for quick reuse
+    const activeSubjectId = currentClass.currentSubjectId;
+    const existingGradeNames = [...new Set(
+        (currentClass.students || [])
+            .flatMap(s => s.grades || [])
+            .filter(g => g.name && g.name.trim() && g.subjectId === activeSubjectId)
+            .map(g => g.name.trim())
+    )].sort();
+
+    const hasGradeNames = existingGradeNames.length > 0;
+
     const content = `
     <div class="grid gap-2">
       <label class="block mb-2">${t("grade.gradeName")}</label>
-      <input type="text" name="name" class="input w-full" placeholder="${t("grade.gradeNamePlaceholder")}">
+      <div class="relative">
+        <div class="flex gap-2">
+          <input type="text" name="name" class="input flex-1" placeholder="${t("grade.gradeNamePlaceholder")}">
+          ${hasGradeNames ? `<button type="button" id="grade-name-dropdown-btn" class="btn-outline" style="padding: 0.4rem 0.5rem; display: flex; align-items: center;" title="${t("grade.previousNames")}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>` : ''}
+        </div>
+        ${hasGradeNames ? `<div id="grade-name-dropdown" class="hidden absolute z-50 mt-1 w-full rounded-lg shadow-lg overflow-auto" style="max-height: 200px; background: var(--card, #1e1e2e); border: 1px solid var(--border, #2d2d3d);">
+          ${existingGradeNames.map(name => `<button type="button" class="grade-name-option w-full text-left px-3 py-2 cursor-pointer" style="border: none; background: none; color: inherit;" onmouseover="this.style.background='rgba(128,128,128,0.15)'" onmouseout="this.style.background='none'" data-name="${safeAttr(name)}">${escapeHtml(name)}</button>`).join('')}
+        </div>` : ''}
+      </div>
       <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.gradeNameHint")}</p>
     </div>
     <div class="grid gap-2">
@@ -443,6 +464,35 @@ const openAddGradeDialog = (studentId, onSuccess) => {
             });
         }
     }, 0);
+
+    // Grade name dropdown listeners
+    if (hasGradeNames) {
+        const dropdownBtn = document.getElementById("grade-name-dropdown-btn");
+        const dropdown = document.getElementById("grade-name-dropdown");
+        const nameInput = document.querySelector("#edit-dialog [name='name']");
+
+        if (dropdownBtn && dropdown && nameInput) {
+            dropdownBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                dropdown.classList.toggle("hidden");
+            });
+
+            dropdown.querySelectorAll(".grade-name-option").forEach(option => {
+                option.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    nameInput.value = option.dataset.name;
+                    dropdown.classList.add("hidden");
+                    nameInput.focus();
+                });
+            });
+
+            document.addEventListener("click", (e) => {
+                if (!dropdownBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add("hidden");
+                }
+            });
+        }
+    }
 };
 
 const renderStudents = () => {
