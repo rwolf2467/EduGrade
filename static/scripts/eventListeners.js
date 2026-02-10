@@ -64,24 +64,193 @@ document.getElementById("add-student").addEventListener("click", () => {
 // Event listener for add student form submission
 document.getElementById("add-student-form").addEventListener("submit", (e) => {
     e.preventDefault();
-    const studentNameInput = document.getElementById("student-name-input").value;
+    const firstName = document.getElementById("student-firstname-input").value;
+    const middleName = document.getElementById("student-middlename-input").value;
+    const lastName = document.getElementById("student-lastname-input").value;
 
-    // Validate student name
-    const validation = validateStringInput(studentNameInput, 100);
-    if (!validation.isValid) {
-        showAlertDialog(validation.error);
-        return;
-    }
-
-    addStudent(validation.value);
+    addStudent(firstName, lastName, middleName);
     document.getElementById("add-student-dialog").close();
-    document.getElementById("student-name-input").value = ""; // Clear input
+    document.getElementById("student-firstname-input").value = "";
+    document.getElementById("student-middlename-input").value = "";
+    document.getElementById("student-lastname-input").value = "";
 });
 
 // Event listener for cancel button
 document.getElementById("cancel-add-student").addEventListener("click", () => {
     document.getElementById("add-student-dialog").close();
-    document.getElementById("student-name-input").value = ""; // Clear input
+    document.getElementById("student-firstname-input").value = "";
+    document.getElementById("student-middlename-input").value = "";
+    document.getElementById("student-lastname-input").value = "";
+});
+
+// ============ IMPORT STUDENTS ============
+
+let parsedStudentsToImport = [];
+
+const resetImportStudentsDialog = () => {
+    document.getElementById("import-students-file").value = "";
+    document.getElementById("import-students-preview").classList.add("hidden");
+    document.getElementById("import-students-table").innerHTML = "";
+    document.getElementById("confirm-import-students").disabled = true;
+    parsedStudentsToImport = [];
+};
+
+const detectColumnType = (header) => {
+    const h = header.toLowerCase().trim();
+    if (['nachname', 'lastname', 'last_name', 'last name', 'familienname', 'surname'].includes(h)) return 'lastName';
+    if (['vorname', 'firstname', 'first_name', 'first name'].includes(h)) return 'firstName';
+    if (['zweitname', 'middlename', 'middle_name', 'middle name', 'zweitvorname', 'zweiter vorname', 'mittelname'].includes(h)) return 'middleName';
+    if (h === 'name') return 'lastName';
+    return null;
+};
+
+const parseCSVStudents = (text) => {
+    const lines = text.split(/\r?\n/).filter(line => line.trim());
+    if (lines.length === 0) return [];
+
+    // Detect delimiter (semicolon or comma)
+    const delimiter = lines[0].includes(';') ? ';' : ',';
+
+    // Check if first line is a header by trying to map columns
+    const firstLineParts = lines[0].split(delimiter).map(p => p.trim().replace(/^["']|["']$/g, ''));
+    const columnMap = firstLineParts.map(detectColumnType);
+    const isHeader = columnMap.some(type => type !== null);
+
+    let dataLines;
+    let getStudent;
+
+    if (isHeader) {
+        // Dynamic mapping based on header names
+        dataLines = lines.slice(1);
+        getStudent = (parts) => {
+            const student = { firstName: '', lastName: '', middleName: '' };
+            for (let i = 0; i < columnMap.length && i < parts.length; i++) {
+                if (columnMap[i]) student[columnMap[i]] = parts[i] || '';
+            }
+            return student;
+        };
+    } else {
+        // No header: default to Vorname[,Zweitname],Nachname
+        dataLines = lines;
+        getStudent = (parts) => {
+            if (parts.length === 1) return { lastName: parts[0], firstName: '', middleName: '' };
+            if (parts.length === 2) return { firstName: parts[0], lastName: parts[1], middleName: '' };
+            return { firstName: parts[0], middleName: parts[1] || '', lastName: parts[2] || '' };
+        };
+    }
+
+    const students = [];
+    for (const line of dataLines) {
+        const parts = line.split(delimiter).map(p => p.trim().replace(/^["']|["']$/g, ''));
+        if (parts.length === 0 || parts.every(p => !p)) continue;
+        const student = getStudent(parts);
+        if (student.firstName || student.lastName) students.push(student);
+    }
+    return students;
+};
+
+const parseJSONStudents = (text) => {
+    const data = JSON.parse(text);
+    if (!Array.isArray(data)) return [];
+    return data
+        .filter(item => item && typeof item === 'object')
+        .map(item => ({
+            lastName: String(item.lastName || item.nachname || item.last_name || ''),
+            firstName: String(item.firstName || item.vorname || item.first_name || ''),
+            middleName: String(item.middleName || item.zweitname || item.middle_name || '')
+        }))
+        .filter(s => s.lastName || s.firstName);
+};
+
+const showImportPreview = (students) => {
+    const preview = document.getElementById("import-students-preview");
+    const table = document.getElementById("import-students-table");
+    const count = document.getElementById("import-students-count");
+    const confirmBtn = document.getElementById("confirm-import-students");
+
+    if (students.length === 0) {
+        preview.classList.remove("hidden");
+        count.textContent = t("import.noStudentsFound");
+        table.innerHTML = "";
+        confirmBtn.disabled = true;
+        return;
+    }
+
+    count.textContent = t("import.studentsFound").replace("{count}", students.length);
+    table.innerHTML = students.map(s => `
+        <tr>
+            <td>${escapeHtml(s.lastName)}</td>
+            <td>${escapeHtml(s.firstName)}</td>
+            <td>${escapeHtml(s.middleName)}</td>
+        </tr>
+    `).join("");
+    preview.classList.remove("hidden");
+    confirmBtn.disabled = false;
+};
+
+document.getElementById("import-students-btn").addEventListener("click", () => {
+    resetImportStudentsDialog();
+    document.getElementById("import-students-dialog").showModal();
+});
+
+document.getElementById("import-students-file").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+        const text = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => resolve(ev.target.result);
+            reader.onerror = (err) => reject(err);
+            reader.readAsText(file);
+        });
+
+        if (file.name.toLowerCase().endsWith('.json')) {
+            parsedStudentsToImport = parseJSONStudents(text);
+        } else {
+            parsedStudentsToImport = parseCSVStudents(text);
+        }
+
+        showImportPreview(parsedStudentsToImport);
+    } catch (err) {
+        console.error("Error reading import file:", err);
+        showAlertDialog(t("import.parseError"));
+    }
+});
+
+document.getElementById("confirm-import-students").addEventListener("click", () => {
+    if (parsedStudentsToImport.length === 0) return;
+
+    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
+    if (!currentClass) return;
+
+    const count = parsedStudentsToImport.length;
+
+    for (const student of parsedStudentsToImport) {
+        const firstNameVal = validateStringInput(student.firstName || '', 50);
+        const lastNameVal = validateStringInput(student.lastName || '', 50);
+        const middleNameVal = student.middleName ? validateStringInput(student.middleName, 50) : { isValid: true, value: '' };
+
+        currentClass.students.push({
+            id: Date.now().toString() + '-' + Math.floor(Math.random() * 10000),
+            firstName: firstNameVal.isValid ? firstNameVal.value : '',
+            lastName: lastNameVal.isValid ? lastNameVal.value : '',
+            middleName: middleNameVal.isValid ? middleNameVal.value : '',
+            grades: [],
+            participation: []
+        });
+    }
+
+    saveData();
+    renderStudents();
+    document.getElementById("import-students-dialog").close();
+    resetImportStudentsDialog();
+    showToast(t("toast.studentsImported").replace("{count}", count), "success");
+});
+
+document.getElementById("cancel-import-students").addEventListener("click", () => {
+    document.getElementById("import-students-dialog").close();
+    resetImportStudentsDialog();
 });
 
 // Track dirty state for settings dialog (grade ranges + plusminus settings)

@@ -4,6 +4,17 @@
 // "Rendern" bedeutet: Daten aus appData nehmen und als HTML darstellen.
 
 /**
+ * Gibt den vollständigen Anzeigenamen eines Schülers zurück.
+ * Format: "Vorname [Zweitname] Nachname"
+ */
+const getStudentDisplayName = (student) => {
+    const parts = [student.firstName];
+    if (student.middleName) parts.push(student.middleName);
+    parts.push(student.lastName);
+    return parts.filter(Boolean).join(' ');
+};
+
+/**
  * KLASSENLISTE RENDERN
  *
  * Zeigt alle Klassen als Buttons in der Sidebar an.
@@ -315,11 +326,12 @@ const renderStudents = () => {
 
     const studentsTable = document.getElementById("students-table");
 
-    // FILTER-PIPELINE: Erst filtern, dann rendern
+    // FILTER-PIPELINE: Erst filtern, sortieren, dann rendern
     studentsTable.innerHTML = currentClass.students
         // 1. FILTERN: Nur Schüler behalten die den Kriterien entsprechen
         .filter(student => {
-            const matchesSearch = student.name.toLowerCase().includes(searchTerm) ||
+            const fullName = getStudentDisplayName(student).toLowerCase();
+            const matchesSearch = fullName.includes(searchTerm) ||
                 student.grades.some(g => {
                     const gradeValue = g.isPlusMinus ? g.value : g.value.toString();
                     const gradeName = g.name || "";
@@ -327,6 +339,12 @@ const renderStudents = () => {
                 });
             const matchesCategory = filterCategory ? student.grades.some(g => g.categoryId === filterCategory) : true;
             return matchesSearch && matchesCategory;
+        })
+        // 2. SORTIEREN: Alphabetisch nach Nachname, dann Vorname
+        .sort((a, b) => {
+            const lastNameCmp = (a.lastName || '').localeCompare(b.lastName || '', 'de');
+            if (lastNameCmp !== 0) return lastNameCmp;
+            return (a.firstName || '').localeCompare(b.firstName || '', 'de');
         })
         .map(student => {
             // Noten nach aktivem Fach filtern
@@ -336,7 +354,9 @@ const renderStudents = () => {
             const gradeCount = filteredGrades.length;
             return `
             <tr>
-              <td><span class="student-name-link" data-student-id="${safeAttr(student.id)}">${escapeHtml(student.name)}</span></td>
+              <td><span class="student-name-link" data-student-id="${safeAttr(student.id)}">${escapeHtml(student.lastName || '')}</span></td>
+              <td>${escapeHtml(student.firstName || '')}</td>
+              <td>${escapeHtml(student.middleName || '')}</td>
               <td>${gradeCount}</td>
               <td>${simpleAvg ? simpleAvg.toFixed(2) : "—"}</td>
               <td>${weightedAvg ? weightedAvg.toFixed(2) : "—"}</td>
@@ -588,14 +608,23 @@ const renderStudents = () => {
             if (student) {
                 const content = `
             <div class="grid gap-2">
-              <label class="block mb-2">${t("table.name")}</label>
-              <input type="text" name="name" class="input w-full" value="${escapeHtml(student.name)}" required maxlength="100">
-              <p class="text-sm" style="color: oklch(.708 0 0);">${t("class.editStudentNameHint")}</p>
+              <label class="block mb-2">${t("student.firstName")}</label>
+              <input type="text" name="firstName" class="input w-full" value="${escapeHtml(student.firstName || '')}" required maxlength="50">
+            </div>
+            <div class="grid gap-2 mt-3">
+              <label class="block mb-2">${t("student.middleName")}</label>
+              <input type="text" name="middleName" class="input w-full" value="${escapeHtml(student.middleName || '')}" maxlength="50">
+            </div>
+            <div class="grid gap-2 mt-3">
+              <label class="block mb-2">${t("student.lastName")}</label>
+              <input type="text" name="lastName" class="input w-full" value="${escapeHtml(student.lastName || '')}" required maxlength="50">
             </div>
           `;
 
                 showDialog("edit-dialog", t("class.editStudent"), content, (formData) => {
-                    student.name = formData.get("name");
+                    student.firstName = formData.get("firstName");
+                    student.middleName = formData.get("middleName") || '';
+                    student.lastName = formData.get("lastName");
                     saveData(t("toast.studentEdited"), "success");
                     renderStudents();
                 });
@@ -1364,7 +1393,7 @@ const renderStudentDetail = (studentId) => {
     document.getElementById("student-detail-view").dataset.studentId = studentId;
 
     // Set student name
-    document.getElementById("student-detail-name").textContent = student.name;
+    document.getElementById("student-detail-name").textContent = getStudentDisplayName(student);
 
     // Noten nach aktivem Fach filtern
     const filteredGrades = filterGradesBySubject(student.grades, currentClass.currentSubjectId);

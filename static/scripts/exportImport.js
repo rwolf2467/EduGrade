@@ -162,7 +162,7 @@ document.getElementById("confirm-import").addEventListener("click", async () => 
         ) && (!rawData.categories || rawData.categories.every(cat =>
             cat.id && cat.name && typeof cat.weight === 'number'
         )) && (!rawData.students || rawData.students.every(student =>
-            student.id && student.name && Array.isArray(student.grades)
+            student.id && (student.lastName || student.name) && Array.isArray(student.grades)
         ));
 
         if (!isValid) {

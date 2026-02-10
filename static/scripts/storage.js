@@ -424,6 +424,32 @@ const migrateData = () => {
         });
     }
 
+    // MIGRATION: Split student name into firstName/lastName/middleName
+    if (appData.classes) {
+        appData.classes.forEach(cls => {
+            if (cls.students) {
+                cls.students.forEach(student => {
+                    if (student.name && !student.lastName) {
+                        const parts = student.name.trim().split(/\s+/);
+                        if (parts.length === 1) {
+                            student.lastName = parts[0];
+                            student.firstName = '';
+                        } else {
+                            student.lastName = parts[parts.length - 1];
+                            student.firstName = parts.slice(0, -1).join(' ');
+                        }
+                        student.middleName = '';
+                        delete student.name;
+                    }
+                    // Ensure fields exist even for already-migrated students
+                    if (!student.firstName && student.firstName !== '') student.firstName = '';
+                    if (!student.lastName && student.lastName !== '') student.lastName = '';
+                    if (!student.middleName && student.middleName !== '') student.middleName = '';
+                });
+            }
+        });
+    }
+
     // Data after migration
     // No automatic saving - data will be saved when user makes next change
     console.log("Data migration completed - changes will be saved on next user action");

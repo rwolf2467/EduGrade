@@ -268,6 +268,16 @@ def generate_share_token() -> str:
     """Generate a cryptographically secure share token"""
     return secrets.token_urlsafe(16)
 
+def get_student_display_name(student: dict) -> str:
+    """Build display name from firstName/lastName/middleName fields, with fallback to legacy name field"""
+    first = student.get('firstName', '')
+    middle = student.get('middleName', '')
+    last = student.get('lastName', '')
+    if first or last:
+        parts = [p for p in [first, middle, last] if p]
+        return ' '.join(parts)
+    return student.get('name', '')
+
 def build_share_snapshot(user_data: dict, class_id: str) -> dict | None:
     """Extract class + students + grades + categories for a share snapshot"""
     cls = None
@@ -1140,7 +1150,7 @@ async def api_create_share():
         existing_pins.add(pin)
         students_pins[student['id']] = {
             'pin_hash': hash_pin(pin),
-            'name': student.get('name', '')
+            'name': get_student_display_name(student)
         }
         cleartext_pins[student['id']] = pin
 
@@ -1178,7 +1188,7 @@ async def api_create_share():
     for student in cls.get('students', []):
         pin_list.append({
             'student_id': student['id'],
-            'name': student.get('name', ''),
+            'name': get_student_display_name(student),
             'pin': cleartext_pins.get(student['id'], '')
         })
 
@@ -1268,7 +1278,7 @@ async def api_regenerate_pins(share_token):
         cleartext_pins[student_id] = pin
         pin_list.append({
             'student_id': student_id,
-            'name': student_info.get('name', ''),
+            'name': get_student_display_name(student_info),
             'pin': pin
         })
 
@@ -1390,7 +1400,7 @@ async def api_verify_pin(share_token):
     return jsonify({
         'success': True,
         'student': {
-            'name': student_data.get('name', ''),
+            'name': get_student_display_name(student_data),
             'grades': student_data.get('grades', [])
         },
         'class_name': share.get('class_name', ''),

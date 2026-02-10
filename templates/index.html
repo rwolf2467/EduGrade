@@ -656,6 +656,16 @@
                                     </svg>
                                     <span data-i18n="class.addStudent">Add Student</span>
                                 </button>
+                                <button id="import-students-btn" class="btn-secondary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="17 8 12 3 7 8" />
+                                        <line x1="12" x2="12" y1="3" y2="15" />
+                                    </svg>
+                                    <span data-i18n="class.importStudents">Import Students</span>
+                                </button>
                                 <button id="student-access-btn" class="btn-secondary">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -709,7 +719,9 @@
                             <table class="table w-full">
                                 <thead>
                                     <tr>
-                                        <th data-i18n="table.name">Name</th>
+                                        <th data-i18n="table.lastName">Last Name</th>
+                                        <th data-i18n="table.firstName">First Name</th>
+                                        <th data-i18n="table.middleName">Middle Name</th>
                                         <th data-i18n="table.gradeCount"># Grades</th>
                                         <th data-i18n="table.average">Average</th>
                                         <th data-i18n="table.weighted">Weighted</th>
@@ -1079,13 +1091,23 @@
                         <section>
                             <form id="add-student-form" class="form grid gap-4">
                                 <div class="grid gap-2">
-                                    <label for="student-name-input" class="block mb-2"
-                                        data-i18n="student.studentName">Student Name</label>
-                                    <input type="text" id="student-name-input" name="name" class="input w-full"
+                                    <label for="student-firstname-input" class="block mb-2"
+                                        data-i18n="student.firstName">First Name</label>
+                                    <input type="text" id="student-firstname-input" name="firstName" class="input w-full"
                                         required>
+                                </div>
+                                <div class="grid gap-2">
+                                    <label for="student-middlename-input" class="block mb-2"
+                                        data-i18n="student.middleName">Middle Name</label>
+                                    <input type="text" id="student-middlename-input" name="middleName" class="input w-full">
                                     <p class="text-sm" style="color: oklch(.708 0 0);"
-                                        data-i18n="student.addStudentHint">What is the name of the student
-                                        you would like to add?</p>
+                                        data-i18n="student.middleNameHint">Optional: if the student has a second first name.</p>
+                                </div>
+                                <div class="grid gap-2">
+                                    <label for="student-lastname-input" class="block mb-2"
+                                        data-i18n="student.lastName">Last Name</label>
+                                    <input type="text" id="student-lastname-input" name="lastName" class="input w-full"
+                                        required>
                                 </div>
                             </form>
                         </section>
@@ -1103,6 +1125,65 @@
                                 </svg> <span data-i18n="dialog.add">Add</span></button>
                         </footer>
                         <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </dialog>
+
+                <!-- Import Students Dialog -->
+                <dialog id="import-students-dialog" class="dialog w-full sm:max-w-[525px]"
+                    aria-labelledby="import-students-dialog-title">
+                    <div>
+                        <header>
+                            <h2 id="import-students-dialog-title" data-i18n="class.importStudents">Import Students</h2>
+                        </header>
+                        <section>
+                            <div class="grid gap-4">
+                                <div class="grid gap-2">
+                                    <label for="import-students-file" class="block mb-2"
+                                        data-i18n="import.selectStudentFile">Select CSV or JSON file</label>
+                                    <input type="file" id="import-students-file" class="input" accept=".csv,.json">
+                                    <p class="text-sm" style="color: oklch(.708 0 0);"
+                                        data-i18n="import.csvJsonHint">CSV (FirstName,MiddleName,LastName) or JSON array with firstName/middleName/lastName fields.</p>
+                                </div>
+                                <div id="import-students-preview" class="hidden">
+                                    <p class="text-sm font-medium mb-2" id="import-students-count"></p>
+                                    <div class="overflow-x-auto border rounded-lg" style="max-height: 300px; overflow-y: auto;">
+                                        <table class="table w-full text-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th data-i18n="table.lastName">Last Name</th>
+                                                    <th data-i18n="table.firstName">First Name</th>
+                                                    <th data-i18n="table.middleName">Middle Name</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="import-students-table"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <footer class="flex justify-end gap-2">
+                            <button type="button" class="btn-outline" id="cancel-import-students"
+                                data-i18n="dialog.cancel">Cancel</button>
+                            <button type="button" class="btn-primary" id="confirm-import-students" disabled>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" x2="12" y1="3" y2="15" />
+                                </svg>
+                                <span data-i18n="import.importStudents">Import</span>
+                            </button>
+                        </footer>
+                        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()"
+                            data-tooltip="Close dialog" data-i18n-tooltip="dialog.closeDialog" data-side="top">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round">

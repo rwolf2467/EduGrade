@@ -22,7 +22,9 @@
  * │       └── students: Array - Schüler dieser Klasse
  * │           └── [Schüler]
  * │               ├── id: String
- * │               ├── name: String
+ * │               ├── firstName: String - Vorname
+ * │               ├── lastName: String - Nachname
+ * │               ├── middleName: String - Zweitname (optional)
  * │               ├── grades: Array - Noten des Schülers
  * │               │   └── [Note]
  * │               │       ├── id: String

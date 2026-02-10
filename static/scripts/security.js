@@ -216,9 +216,25 @@ const sanitizeImportData = (data) => {
                 currentSubjectId: cls.currentSubjectId ? String(cls.currentSubjectId) : null,
 
                 // Schüler der Klasse sanitisieren
-                students: Array.isArray(cls.students) ? cls.students.map(student => ({
+                students: Array.isArray(cls.students) ? cls.students.map(student => {
+                    // MIGRATION: Altes Format (name) → neues Format (firstName/lastName)
+                    let firstName = student.firstName || '';
+                    let lastName = student.lastName || '';
+                    let middleName = student.middleName || '';
+                    if (!firstName && !lastName && student.name) {
+                        const parts = student.name.trim().split(/\s+/);
+                        if (parts.length === 1) {
+                            lastName = parts[0];
+                        } else {
+                            lastName = parts[parts.length - 1];
+                            firstName = parts.slice(0, -1).join(' ');
+                        }
+                    }
+                    return {
                     id: String(student.id || ''),
-                    name: escapeHtml(student.name || ''),
+                    firstName: escapeHtml(firstName),
+                    lastName: escapeHtml(lastName),
+                    middleName: escapeHtml(middleName),
 
                     // Noten des Schülers sanitisieren
                     grades: Array.isArray(student.grades) ? student.grades.map(grade => ({
@@ -236,7 +252,7 @@ const sanitizeImportData = (data) => {
                         name: escapeHtml(grade.name || ''),
                         createdAt: parseInt(grade.createdAt, 10) || Date.now()
                     })) : []
-                })) : []
+                };}) : []
             };
 
             // MIGRATION: Falls alte Daten mit Kategorien pro Klasse importiert werden,
@@ -274,9 +290,25 @@ const sanitizeImportData = (data) => {
 
     // GLOBALE SCHÜLER SANITISIEREN
     if (Array.isArray(data.students)) {
-        sanitized.students = data.students.map(student => ({
+        sanitized.students = data.students.map(student => {
+            // MIGRATION: Altes Format (name) → neues Format (firstName/lastName)
+            let firstName = student.firstName || '';
+            let lastName = student.lastName || '';
+            let middleName = student.middleName || '';
+            if (!firstName && !lastName && student.name) {
+                const parts = student.name.trim().split(/\s+/);
+                if (parts.length === 1) {
+                    lastName = parts[0];
+                } else {
+                    lastName = parts[parts.length - 1];
+                    firstName = parts.slice(0, -1).join(' ');
+                }
+            }
+            return {
             id: String(student.id || ''),
-            name: escapeHtml(student.name || ''),
+            firstName: escapeHtml(firstName),
+            lastName: escapeHtml(lastName),
+            middleName: escapeHtml(middleName),
             grades: Array.isArray(student.grades) ? student.grades.map(grade => ({
                 id: String(grade.id || ''),
                 categoryId: String(grade.categoryId || ''),
@@ -291,7 +323,7 @@ const sanitizeImportData = (data) => {
                 name: escapeHtml(grade.name || ''),
                 createdAt: parseInt(grade.createdAt, 10) || Date.now()
             })) : []
-        }));
+        };});
     }
 
     // PLUS/MINUS-EINSTELLUNGEN VALIDIEREN

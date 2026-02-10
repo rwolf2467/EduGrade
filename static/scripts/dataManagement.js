@@ -56,20 +56,38 @@ const addClass = (name) => {
  *
  * Fügt einen neuen Schüler zur aktuell ausgewählten Klasse hinzu.
  *
- * @param {string} name - Der Name des Schülers
+ * @param {string} firstName - Vorname des Schülers
+ * @param {string} lastName - Nachname des Schülers
+ * @param {string} middleName - Zweitname des Schülers (optional)
  */
-const addStudent = (name) => {
-    // SICHERHEIT: Eingabe validieren (max. 100 Zeichen für längere Namen)
-    const validation = validateStringInput(name, 100);
-    if (!validation.isValid) {
-        showAlertDialog(validation.error);
+const addStudent = (firstName, lastName, middleName) => {
+    // SICHERHEIT: Eingaben validieren (max. 50 Zeichen pro Feld)
+    const firstNameValidation = validateStringInput(firstName, 50);
+    if (!firstNameValidation.isValid) {
+        showAlertDialog(firstNameValidation.error);
         return;
+    }
+    const lastNameValidation = validateStringInput(lastName, 50);
+    if (!lastNameValidation.isValid) {
+        showAlertDialog(lastNameValidation.error);
+        return;
+    }
+    let validatedMiddleName = '';
+    if (middleName && middleName.trim()) {
+        const middleNameValidation = validateStringInput(middleName, 50);
+        if (!middleNameValidation.isValid) {
+            showAlertDialog(middleNameValidation.error);
+            return;
+        }
+        validatedMiddleName = middleNameValidation.value;
     }
 
     // Neues Schüler-Objekt erstellen
     const newStudent = {
         id: Date.now().toString() + '-' + Math.floor(Math.random() * 1000),
-        name: validation.value,
+        firstName: firstNameValidation.value,
+        lastName: lastNameValidation.value,
+        middleName: validatedMiddleName,
         grades: [],              // Leeres Array für Noten
         participation: []        // Für zukünftige Mitarbeits-Funktion
     };
