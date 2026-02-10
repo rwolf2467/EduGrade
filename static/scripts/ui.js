@@ -356,6 +356,37 @@ const showDialog = (dialogId, title, content, onConfirm = null) => {
     // HINWEIS: content sollte bereits escaped sein wenn Benutzerdaten enthalten
     dialog.querySelector("form").innerHTML = content;
 
+    // Dirty-State tracken für Warnung bei ungespeicherten Änderungen
+    let isDirty = false;
+    const form = dialog.querySelector("form");
+    const markDirty = () => { isDirty = true; };
+    form.addEventListener("input", markDirty);
+    form.addEventListener("change", markDirty);
+
+    // Hilfsfunktion: Dialog sicher schließen (mit Cleanup)
+    const cleanupAndClose = () => {
+        form.removeEventListener("input", markDirty);
+        form.removeEventListener("change", markDirty);
+        isDirty = false;
+        dialog.close();
+    };
+
+    // Versuche den Dialog zu schließen - mit Warnung falls dirty
+    const tryClose = async () => {
+        if (isDirty) {
+            const discard = await showUnsavedChangesWarning();
+            if (!discard) return; // Zurück zum Bearbeiten
+        }
+        cleanupAndClose();
+    };
+
+    // Escape-Taste abfangen
+    dialog._cancelHandler = (e) => {
+        e.preventDefault();
+        tryClose();
+    };
+    dialog.addEventListener("cancel", dialog._cancelHandler);
+
     // Dialog öffnen (native HTML5 Dialog-API)
     // showModal() macht den Dialog modal (blockiert Hintergrund)
     dialog.showModal();
@@ -363,7 +394,7 @@ const showDialog = (dialogId, title, content, onConfirm = null) => {
     // Wenn eine Callback-Funktion übergeben wurde
     if (onConfirm) {
         // Event-Handler für Formular-Submit setzen
-        dialog.querySelector("form").onsubmit = (e) => {
+        form.onsubmit = (e) => {
             // Standard-Verhalten verhindern (Seite würde neu laden)
             e.preventDefault();
 
@@ -371,8 +402,29 @@ const showDialog = (dialogId, title, content, onConfirm = null) => {
             // Enthält alle Eingabefelder als Key-Value-Paare
             onConfirm(new FormData(e.target));
 
-            // Dialog schließen
+            // Dialog schließen (kein Warning nötig - wurde gespeichert)
+            form.removeEventListener("input", markDirty);
+            form.removeEventListener("change", markDirty);
+            isDirty = false;
             dialog.close();
+        };
+    }
+
+    // Cancel-Button und X-Button mit tryClose verbinden
+    const cancelBtn = document.getElementById("cancel-edit");
+    if (cancelBtn) {
+        cancelBtn.onclick = (e) => {
+            e.preventDefault();
+            tryClose();
+        };
+    }
+
+    // X-Button (close icon) im Dialog
+    const closeIcon = dialog.querySelector('[aria-label="Close dialog"]');
+    if (closeIcon) {
+        closeIcon.onclick = (e) => {
+            e.preventDefault();
+            tryClose();
         };
     }
 };
@@ -444,6 +496,72 @@ const showAlertDialog = (message) => {
     document.getElementById("close-alert").onclick = () => {
         dialog.close();
     };
+};
+
+/**
+ * UNSAVED CHANGES WARNING
+ *
+ * Shows a confirmation dialog when the user tries to close a dialog
+ * with unsaved changes. Returns a Promise that resolves to true
+ * (discard) or false (go back to editing).
+ *
+ * @returns {Promise<boolean>} - true if user wants to discard
+ */
+const showUnsavedChangesWarning = () => {
+    return new Promise((resolve) => {
+        let warningDialog = document.getElementById('unsaved-changes-dialog');
+
+        if (!warningDialog) {
+            warningDialog = document.createElement('dialog');
+            warningDialog.id = 'unsaved-changes-dialog';
+            warningDialog.className = 'dialog w-full sm:max-w-[425px]';
+            document.body.appendChild(warningDialog);
+        }
+
+        warningDialog.innerHTML = `
+            <div>
+                <header>
+                    <div class="flex items-center gap-3">
+                        <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-yellow-500/15">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                                <path d="M12 9v4"/>
+                                <path d="M12 17h.01"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-semibold">${t('dialog.unsavedTitle')}</h2>
+                        </div>
+                    </div>
+                </header>
+                <section class="py-4">
+                    <p class="text-muted-foreground">${t('dialog.unsavedMessage')}</p>
+                </section>
+                <footer class="flex justify-end gap-2">
+                    <button type="button" class="btn-outline" id="unsaved-back-btn">${t('dialog.unsavedBack')}</button>
+                    <button type="button" class="btn-destructive" id="unsaved-discard-btn">${t('dialog.unsavedDiscard')}</button>
+                </footer>
+            </div>
+        `;
+
+        warningDialog.addEventListener('cancel', (e) => {
+            e.preventDefault();
+            warningDialog.close();
+            resolve(false);
+        }, { once: true });
+
+        warningDialog.querySelector('#unsaved-back-btn').addEventListener('click', () => {
+            warningDialog.close();
+            resolve(false);
+        }, { once: true });
+
+        warningDialog.querySelector('#unsaved-discard-btn').addEventListener('click', () => {
+            warningDialog.close();
+            resolve(true);
+        }, { once: true });
+
+        warningDialog.showModal();
+    });
 };
 
 /**

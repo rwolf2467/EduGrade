@@ -428,3 +428,105 @@ const migrateData = () => {
     // No automatic saving - data will be saved when user makes next change
     console.log("Data migration completed - changes will be saved on next user action");
 };
+
+// ============ VERSION CHECK ============
+
+const VERSION_CHECK_KEY = 'edugrade_version';
+const VERSION_CHECK_INTERVAL = 60000; // Check every 60 seconds
+
+/**
+ * Show update dialog when a new version is detected.
+ * Uses the basecoat-css dialog pattern (same style as session-expired).
+ */
+const showVersionUpdateDialog = () => {
+    // Prevent showing multiple dialogs
+    if (document.getElementById('version-update-dialog')) return;
+
+    const dialog = document.createElement('dialog');
+    dialog.id = 'version-update-dialog';
+    dialog.className = 'dialog w-full sm:max-w-[425px]';
+    dialog.innerHTML = `
+        <div>
+            <header>
+                <div class="flex items-center gap-3">
+                    <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-500/15">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" x2="12" y1="15" y2="3"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold">${t('version.updateTitle')}</h2>
+                    </div>
+                </div>
+            </header>
+            <section class="py-4">
+                <p class="text-muted-foreground">${t('version.updateMessage')}</p>
+                <p class="text-sm mt-3" style="color: oklch(.708 0 0);">${t('version.reloadHint')}</p>
+            </section>
+            <footer class="flex justify-end">
+                <button type="button" class="btn-primary" id="version-reload-btn">${t('version.reloadButton')}</button>
+            </footer>
+        </div>
+    `;
+    document.body.appendChild(dialog);
+
+    // Prevent closing with Escape key
+    dialog.addEventListener('cancel', (e) => {
+        e.preventDefault();
+    });
+
+    // Prevent closing by clicking backdrop
+    dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) {
+            e.stopPropagation();
+        }
+    });
+
+    dialog.querySelector('#version-reload-btn').addEventListener('click', () => {
+        localStorage.setItem(VERSION_CHECK_KEY, window.appVersion);
+        location.reload();
+    });
+
+    dialog.showModal();
+};
+
+/**
+ * Initialize version checking.
+ *
+ * - First visit (no stored version): silently store current version
+ * - Stored version differs from current: show update dialog
+ * - Already open pages: poll /api/version every 60s to detect deploys
+ */
+const initVersionCheck = () => {
+    const currentVersion = window.appVersion;
+    if (!currentVersion) return;
+
+    const storedVersion = localStorage.getItem(VERSION_CHECK_KEY);
+
+    if (!storedVersion) {
+        // First visit ever - store version silently, no dialog
+        localStorage.setItem(VERSION_CHECK_KEY, currentVersion);
+    } else if (storedVersion !== currentVersion) {
+        // Version changed since last visit - show update dialog
+        showVersionUpdateDialog();
+    }
+
+    // Poll for updates while page is open
+    setInterval(async () => {
+        try {
+            const response = await fetch('/api/version');
+            if (response.ok) {
+                const data = await response.json();
+                const serverVersion = data.version;
+                const knownVersion = localStorage.getItem(VERSION_CHECK_KEY);
+                if (knownVersion && serverVersion !== knownVersion) {
+                    showVersionUpdateDialog();
+                }
+            }
+        } catch (e) {
+            // Network error - ignore silently
+        }
+    }, VERSION_CHECK_INTERVAL);
+};

@@ -22,7 +22,7 @@ const renderClassList = () => {
     classList.innerHTML = appData.classes.map(cls =>
         `<div class="w-full">
             <div role="group" class="button-group w-full">
-                <button class="btn-block btn-secondary flex-1 ${cls.id === appData.currentClassId ? 'bg-blue-500 text-white' : ''}"
+                <button class="btn-block ${cls.id === appData.currentClassId ? 'btn-primary' : 'btn-secondary'} flex-1"
                 data-class-id="${safeAttr(cls.id)}">
                     ${escapeHtml(cls.name)}
                 </button>
@@ -37,7 +37,8 @@ const renderClassList = () => {
     ).join("");
 
     document.querySelectorAll("[data-class-id]").forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
             appData.currentClassId = btn.dataset.classId;
             saveData(t("toast.classSelected"), "success");
             showClassView();
@@ -380,7 +381,7 @@ const renderStudents = () => {
 
             // Create category selection with info about +/- support (global categories)
             const categoryOptions = appData.categories.map(cat => {
-                const label = cat.onlyPlusMinus ? ' [+/- only]' : (cat.allowPlusMinus ? ' [+/-]' : '');
+                const label = cat.onlyPlusMinus ? ' [+/~/- only]' : (cat.allowPlusMinus ? ' [+/~/-]' : '');
                 return `<option value="${safeAttr(cat.id)}" data-allow-plus-minus="${cat.allowPlusMinus}" data-only-plus-minus="${cat.onlyPlusMinus || false}">${escapeHtml(cat.name)} (${(cat.weight * 100).toFixed(0)}%)${label}</option>`;
             }).join("");
 
@@ -489,6 +490,7 @@ const renderStudents = () => {
                         <select name="value" class="select w-full" required>
                             <option value="">${t("grade.select")}</option>
                             <option value="+">${t("grade.plus")}</option>
+                            <option value="~">${t("grade.neutral")}</option>
                             <option value="-">${t("grade.minus")}</option>
                         </select>
                         <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.plusMinusOnlyHint")}</p>
@@ -506,6 +508,7 @@ const renderStudents = () => {
                             <option value="5">5</option>
                             <option value="6">6</option>
                             <option value="+">${t("grade.plus")}</option>
+                            <option value="~">${t("grade.neutral")}</option>
                             <option value="-">${t("grade.minus")}</option>
                         </select>
                         <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.mixedHint")}</p>
@@ -721,8 +724,8 @@ const renderCategoryManagement = () => {
                     </div>
                     <div class="grid gap-2">
                         <label class="block mb-2">${t("category.weight")}</label>
-                        <input type="number" name="weight" step="0.1" min="0.1" max="1" class="input w-full" value="${escapeHtml(category.weight)}" required>
-                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("category.editWeightHint")}</p>
+                        <input type="number" name="weight" step="1" min="1" max="100" class="input w-full" value="${escapeHtml(category.weight * 100)}" required>
+                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("category.editWeightHint")} (${t("category.inPercent")})</p>
                     </div>
                     <div class="grid gap-2">
                         <label class="flex items-center gap-2 cursor-pointer">
@@ -734,8 +737,17 @@ const renderCategoryManagement = () => {
                 `;
                 showDialog("edit-dialog", t("category.editCategory"), content, (formData) => {
                     const newName = formData.get("name");
-                    const newWeight = parseFloat(formData.get("weight"));
+                    const newWeight = parseFloat(formData.get("weight")); // This will be the percentage value from the UI
                     const onlyPlusMinus = formData.get("onlyPlusMinus") === "on";
+
+                    // Validate the weight (this will convert percentage to decimal)
+                    const weightValidation = validateWeight(newWeight);
+                    if (!weightValidation.isValid) {
+                        showAlertDialog(weightValidation.error);
+                        return;
+                    }
+                    
+                    const decimalWeight = weightValidation.value; // This is the decimal value for internal use
 
                     // Update all existing grades that belong to this category (in ALL classes)
                     appData.classes.forEach(cls => {
@@ -743,7 +755,7 @@ const renderCategoryManagement = () => {
                             student.grades.forEach(grade => {
                                 if (grade.categoryId === category.id) {
                                     grade.categoryName = newName;
-                                    grade.weight = newWeight;
+                                    grade.weight = decimalWeight; // Use the decimal value internally
                                 }
                             });
                         });
@@ -751,7 +763,7 @@ const renderCategoryManagement = () => {
 
                     // Update the category itself
                     category.name = newName;
-                    category.weight = newWeight;
+                    category.weight = decimalWeight; // Use the decimal value internally
                     category.onlyPlusMinus = onlyPlusMinus;
                     category.allowPlusMinus = onlyPlusMinus || category.allowPlusMinus;
 
@@ -790,6 +802,8 @@ const getGradeColorClass = (grade) => {
     if (grade.isPlusMinus) {
         if (grade.value === '+') {
             return 'grade-badge grade-plus';
+        } else if (grade.value === '~') {
+            return 'grade-badge grade-neutral';
         } else {
             return 'grade-badge grade-minus';
         }
@@ -902,9 +916,10 @@ const calculateWeightedAverage = (grades) => {
         if (grade.isPlusMinus) {
             if (grade.value === "+") {
                 gradesByCategory[catId].plusCount++;
-            } else {
+            } else if (grade.value === "-") {
                 gradesByCategory[catId].minusCount++;
             }
+            // "~" (neutral) has no effect on the grade
         } else {
             gradesByCategory[catId].numericGrades.push(grade.value);
         }
@@ -1133,6 +1148,12 @@ const showHomeView = () => {
 
     document.getElementById("nav-home").classList.add("btn-primary");
     document.getElementById("nav-home").classList.remove("btn-secondary");
+
+    // Reset class buttons in sidebar to inactive
+    document.querySelectorAll("[data-class-id]").forEach(btn => {
+        btn.classList.remove("btn-primary");
+        btn.classList.add("btn-secondary");
+    });
 };
 
 // Show Class View
@@ -1419,18 +1440,43 @@ const renderStudentGradeChart = (student) => {
         { bg: 'rgba(234, 179, 8, 0.2)', border: 'rgb(234, 179, 8)' },     // Yellow
     ];
 
-    // Only include numeric grades
-    const numericGrades = student.grades.filter(g => !g.isPlusMinus);
+    // Plus/Minus settings for converting +/~/- to numeric values
+    const plusMinusSettings = appData.plusMinusGradeSettings || {
+        startGrade: 3,
+        plusValue: 0.5,
+        minusValue: 0.5
+    };
 
-    numericGrades.forEach(grade => {
+    // Include all grades (numeric and +/~/-)
+    student.grades.forEach(grade => {
         const catName = grade.categoryName || 'Unknown';
         if (!gradesByCategory[catName]) {
             gradesByCategory[catName] = [];
         }
+
+        let yValue;
+        let displayLabel;
+        if (grade.isPlusMinus) {
+            if (grade.value === '+') {
+                yValue = plusMinusSettings.startGrade - plusMinusSettings.plusValue;
+                displayLabel = '+';
+            } else if (grade.value === '~') {
+                yValue = plusMinusSettings.startGrade;
+                displayLabel = '~';
+            } else {
+                yValue = plusMinusSettings.startGrade + plusMinusSettings.minusValue;
+                displayLabel = '-';
+            }
+        } else {
+            yValue = grade.value;
+            displayLabel = null;
+        }
+
         gradesByCategory[catName].push({
             x: grade.createdAt || Date.now(),
-            y: grade.value,
-            name: grade.name || ''
+            y: yValue,
+            name: grade.name || '',
+            plusMinusLabel: displayLabel
         });
     });
 
@@ -1449,8 +1495,14 @@ const renderStudentGradeChart = (student) => {
             backgroundColor: categoryColors[colorIndex].bg,
             borderWidth: 2,
             tension: 0.3,
-            pointRadius: 5,
-            pointHoverRadius: 7,
+            pointRadius: grades.map(g => g.plusMinusLabel ? 7 : 5),
+            pointHoverRadius: grades.map(g => g.plusMinusLabel ? 9 : 7),
+            pointStyle: grades.map(g => {
+                if (g.plusMinusLabel === '+') return 'triangle';
+                if (g.plusMinusLabel === '~') return 'rectRot';
+                if (g.plusMinusLabel === '-') return 'crossRot';
+                return 'circle';
+            }),
             fill: false
         };
     });
@@ -1460,7 +1512,7 @@ const renderStudentGradeChart = (student) => {
         ctx.font = '16px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillStyle = '#6b7280';
-        ctx.fillText(t("student.noNumericGrades"), ctx.canvas.width / 2, ctx.canvas.height / 2);
+        ctx.fillText(t("student.noGrades"), ctx.canvas.width / 2, ctx.canvas.height / 2);
         return;
     }
 
@@ -1505,7 +1557,8 @@ const renderStudentGradeChart = (student) => {
                     callbacks: {
                         label: (context) => {
                             const point = context.raw;
-                            let label = `${context.dataset.label}: ${point.y}`;
+                            const valueDisplay = point.plusMinusLabel || point.y;
+                            let label = `${context.dataset.label}: ${valueDisplay}`;
                             if (point.name) {
                                 label += ` (${point.name})`;
                             }
@@ -1562,9 +1615,10 @@ const renderCategoryBreakdown = (student) => {
 
         if (plusMinusGrades.length > 0) {
             const plusCount = plusMinusGrades.filter(g => g.value === '+').length;
+            const neutralCount = plusMinusGrades.filter(g => g.value === '~').length;
             const minusCount = plusMinusGrades.filter(g => g.value === '-').length;
             if (gradeInfo) gradeInfo += ', ';
-            gradeInfo += `${plusCount}+ / ${minusCount}-`;
+            gradeInfo += `${plusCount}+ / ${neutralCount}~ / ${minusCount}-`;
         }
 
         return `
@@ -1654,6 +1708,7 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                     valueInput = `
                         <select name="value" class="select w-full" required>
                             <option value="+" ${grade.value === '+' ? 'selected' : ''}>${t("grade.plus")}</option>
+                            <option value="~" ${grade.value === '~' ? 'selected' : ''}>${t("grade.neutral")}</option>
                             <option value="-" ${grade.value === '-' ? 'selected' : ''}>${t("grade.minus")}</option>
                         </select>
                     `;

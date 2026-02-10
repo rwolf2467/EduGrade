@@ -108,18 +108,11 @@ const addCategory = (name, weight, allowPlusMinus = false, onlyPlusMinus = false
         return;
     }
 
-    // Gewichtung validieren (muss zwischen 0.1 und 1.0 liegen)
-    const weightValidation = validateWeight(weight);
-    if (!weightValidation.isValid) {
-        showAlertDialog(weightValidation.error);
-        return;
-    }
-
     // Neues Kategorie-Objekt erstellen
     const newCategory = {
         id: Date.now().toString(),
         name: nameValidation.value,
-        weight: weightValidation.value,
+        weight: weight,
         // Wenn onlyPlusMinus true ist, muss allowPlusMinus auch true sein
         allowPlusMinus: allowPlusMinus || onlyPlusMinus,
         onlyPlusMinus: onlyPlusMinus
@@ -167,7 +160,7 @@ const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null
 
         // NOTENWERT VALIDIEREN
         // Prüfen ob es eine +/- Note ist
-        const isPlusMinus = value === "+" || value === "-";
+        const isPlusMinus = value === "+" || value === "~" || value === "-";
         const gradeValidation = validateGradeValue(value, isPlusMinus);
         if (!gradeValidation.isValid) {
             showAlertDialog(gradeValidation.error);

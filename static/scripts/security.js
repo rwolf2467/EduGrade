@@ -117,7 +117,7 @@ const validateStringInput = (input, maxLength = 200) => {
 const validateGradeValue = (value, isPlusMinus = false) => {
     // Plus/Minus-Noten: Nur exakt "+" oder "-" erlaubt
     if (isPlusMinus) {
-        if (value === '+' || value === '-') {
+        if (value === '+' || value === '~' || value === '-') {
             return { isValid: true, value: value, error: null };
         }
         return { isValid: false, value: null, error: t("validation.plusMinusInvalid") };
@@ -142,11 +142,11 @@ const validateGradeValue = (value, isPlusMinus = false) => {
 /**
  * VALIDIERUNG VON GEWICHTUNGSWERTEN
  *
- * Kategorien haben eine Gewichtung von 0.1 (10%) bis 1.0 (100%).
+ * Kategorien haben eine Gewichtung von 1% bis 100%.
  * Diese Funktion stellt sicher, dass nur gültige Werte akzeptiert werden.
  *
- * @param {string|number} value - Der zu prüfende Gewichtungswert
- * @returns {object} - Validierungsergebnis
+ * @param {string|number} value - Der zu prüfende Gewichtungswert (in Prozent)
+ * @returns {object} - Validierungsergebnis (mit dezimalem Wert für interne Verwendung)
  */
 const validateWeight = (value) => {
     const num = parseFloat(value);
@@ -155,12 +155,15 @@ const validateWeight = (value) => {
         return { isValid: false, value: null, error: t("validation.weightMustBeNumber") };
     }
 
-    // Gewichtung muss zwischen 10% und 100% liegen
-    if (num < 0.1 || num > 1) {
-        return { isValid: false, value: null, error: t("validation.weightRange") };
+    // Gewichtung muss zwischen 1% und 100% liegen
+    if (num < 1 || num > 100) {
+        return { isValid: false, value: null, error: t("validation.weightRangePercent") };
     }
 
-    return { isValid: true, value: num, error: null };
+    // Den Prozentwert in einen Dezimalwert für interne Verwendung umwandeln (z.B. 30 -> 0.3)
+    const decimalValue = num / 100;
+
+    return { isValid: true, value: decimalValue, error: null };
 };
 
 /**
@@ -226,7 +229,7 @@ const sanitizeImportData = (data) => {
                         subjectId: grade.subjectId ? String(grade.subjectId) : null,
                         // Notenwert: +/- nur wenn gültig, sonst als Zahl parsen
                         value: grade.isPlusMinus
-                            ? (grade.value === '+' || grade.value === '-' ? grade.value : '+')
+                            ? (grade.value === '+' || grade.value === '~' || grade.value === '-' ? grade.value : '+')
                             : parseFloat(grade.value) || 1,
                         weight: parseFloat(grade.weight) || 0.5,
                         isPlusMinus: Boolean(grade.isPlusMinus),
@@ -281,7 +284,7 @@ const sanitizeImportData = (data) => {
                 // subjectId für Fächer-Zuordnung
                 subjectId: grade.subjectId ? String(grade.subjectId) : null,
                 value: grade.isPlusMinus
-                    ? (grade.value === '+' || grade.value === '-' ? grade.value : '+')
+                    ? (grade.value === '+' || grade.value === '~' || grade.value === '-' ? grade.value : '+')
                     : parseFloat(grade.value) || 1,
                 weight: parseFloat(grade.weight) || 0.5,
                 isPlusMinus: Boolean(grade.isPlusMinus),

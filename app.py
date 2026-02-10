@@ -27,6 +27,7 @@ import secrets
 import functools
 import base64
 import os
+import time
 from pathlib import Path
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -756,6 +757,9 @@ def login_required(f):
     decorated_function.__name__ = f"{f.__name__}_login_required"
     return decorated_function
 
+# Version identifier - changes on each server restart (deploy)
+APP_VERSION = str(int(time.time()))
+
 app = Quart(__name__,
             template_folder='templates',
             static_folder='static',
@@ -787,7 +791,7 @@ async def index():
     if not user:
         return redirect(url_for('login_page'))
 
-    return await render_template('index.html', user=user)
+    return await render_template('index.html', user=user, app_version=APP_VERSION)
 
 
 @app.route('/login')
@@ -838,6 +842,14 @@ async def about_page():
 async def about_developer_page():
     """About developer page"""
     return await send_file('about_developer.html')
+
+
+# ============ Version API ============
+
+@app.route('/api/version')
+async def api_version():
+    """Return current app version for update detection"""
+    return jsonify({'version': APP_VERSION})
 
 
 # ============ Auth API ============

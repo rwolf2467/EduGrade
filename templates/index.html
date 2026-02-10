@@ -27,13 +27,14 @@
 </head>
 
 <body>
-    <!-- Store current user info -->
+    <!-- Store current user info and app version -->
     <script>
         window.currentUser = {
             id: '{{ user.id }}',
             username: "{{ user.username }}",
             email: "{{ user.email }}"
         };
+        window.appVersion = '{{ app_version }}';
     </script>
 
     <div id="toaster" class="toaster"></div>
@@ -206,6 +207,16 @@
                                 </li>
                                 <li class="w-full">
                                     <div id="class-list" class="space-y-1 w-full"></div>
+                                </li>
+                                <li class="w-full mt-2">
+                                    <button id="manage-categories" class="btn-block btn-secondary w-full">
+                                        <svg class="lucide lucide-settings" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0h-3.75" />
+                                        </svg>
+                                        <span data-i18n="nav.gradeSettings">Grade Settings</span>
+                                    </button>
                                 </li>
                             </ul>
                         </div>
@@ -645,14 +656,6 @@
                                     </svg>
                                     <span data-i18n="class.addStudent">Add Student</span>
                                 </button>
-                                <button id="manage-categories" class="btn-secondary">
-                                    <svg class="lucide lucide-settings" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0h-3.75" />
-                                    </svg>
-                                    <span data-i18n="class.manageCategories">Manage Categories</span>
-                                </button>
                                 <button id="student-access-btn" class="btn-secondary">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -819,7 +822,7 @@
                             <button type="submit" class="btn-primary" form="edit-form"
                                 data-i18n="dialog.save">Save</button>
                         </footer>
-                        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()"
+                        <button type="button" aria-label="Close dialog"
                             data-tooltip="Close dialog" data-i18n-tooltip="dialog.closeDialog" data-side="top">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -848,7 +851,7 @@
                                         data-i18n="category.gradeRanges">Grade
                                         Ranges</button>
                                     <button type="button" role="tab" id="tab-plusminus" aria-controls="panel-plusminus"
-                                        aria-selected="false" tabindex="0" data-i18n="category.plusMinusSettings">+/-
+                                        aria-selected="false" tabindex="0" data-i18n="category.plusMinusSettings">+/~/-
                                         Settings</button>
                                 </nav>
 
@@ -924,8 +927,8 @@
                                     <div class="py-4">
                                         <p class="text-sm mb-3" style="color: oklch(.708 0 0);"
                                             data-i18n="category.plusMinusSettingsHint">Settings for categories
-                                            that use only +/- grades instead of numeric grades. The grade is calculated
-                                            from a starting grade, adjusted by each + and -.</p>
+                                            that use only +/~/- grades instead of numeric grades. The grade is calculated
+                                            from a starting grade, adjusted by each + and -. ~ (Neutral) has no effect.</p>
                                         <div class="grid grid-cols-3 gap-3">
                                             <div>
                                                 <label class="block text-sm mb-1" data-i18n="category.startGrade">Start
@@ -967,7 +970,7 @@
                         </footer>
                         <button type="button" aria-label="Close dialog" data-tooltip="Close dialog"
                             data-i18n-tooltip="dialog.closeDialog" data-side="top"
-                            onclick="this.closest('dialog').close()">
+                            id="close-manage-categories-x">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">

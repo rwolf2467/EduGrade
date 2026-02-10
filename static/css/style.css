@@ -397,6 +397,17 @@ dialog.tutorial-open {
     background-color: rgba(34, 197, 94, 0.25) !important;
 }
 
+/* Neutral - Gelb/Orange */
+.grade-neutral {
+    background-color: rgba(234, 179, 8, 0.15) !important;
+    color: #eab308 !important;
+    border-color: rgba(234, 179, 8, 0.3) !important;
+}
+
+.grade-neutral:hover {
+    background-color: rgba(234, 179, 8, 0.25) !important;
+}
+
 /* Minus - Rot */
 .grade-minus {
     background-color: rgba(239, 68, 68, 0.15) !important;
@@ -431,6 +442,10 @@ html:not(.dark) .grade-5 {
 
 html:not(.dark) .grade-plus {
     color: #16a34a !important;
+}
+
+html:not(.dark) .grade-neutral {
+    color: #ca8a04 !important;
 }
 
 html:not(.dark) .grade-minus {

@@ -27,7 +27,9 @@
 
     const getGradeColorClass = (grade) => {
         if (grade.isPlusMinus) {
-            return grade.value === '+' ? 'grade-badge grade-plus' : 'grade-badge grade-minus';
+            if (grade.value === '+') return 'grade-badge grade-plus';
+            if (grade.value === '~') return 'grade-badge grade-neutral';
+            return 'grade-badge grade-minus';
         }
         const value = parseFloat(grade.value);
         if (isNaN(value)) return 'badge-secondary';
@@ -55,7 +57,8 @@
             }
             if (grade.isPlusMinus) {
                 if (grade.value === '+') byCategory[catId].plusCount++;
-                else byCategory[catId].minusCount++;
+                else if (grade.value === '-') byCategory[catId].minusCount++;
+                // "~" (neutral) has no effect
             } else {
                 byCategory[catId].numericGrades.push(grade.value);
             }
@@ -311,9 +314,10 @@
 
             if (pm.length > 0) {
                 const plus = pm.filter(g => g.value === '+').length;
+                const neutral = pm.filter(g => g.value === '~').length;
                 const minus = pm.filter(g => g.value === '-').length;
                 if (info) info += ', ';
-                info += `${plus}+ / ${minus}-`;
+                info += `${plus}+ / ${neutral}~ / ${minus}-`;
             }
 
             return `
