@@ -94,16 +94,13 @@ const renderClassList = () => {
  * HELPER: Noten für aktives Fach filtern
  *
  * Gibt die gefilterten Noten zurück basierend auf dem aktuellen Fach-Tab.
- * - "overview": Alle Noten (wird bei Schnellübersicht verwendet)
- * - subjectId: Nur Noten mit diesem subjectId
  *
  * @param {Array} grades - Array mit Noten-Objekten
- * @param {string|null} currentSubjectId - Aktives Fach oder "overview"
+ * @param {string|null} currentSubjectId - Aktives Fach
  * @returns {Array} - Gefilterte Noten
  */
 const filterGradesBySubject = (grades, currentSubjectId) => {
-    if (!currentSubjectId) return []; // Kein Fach ausgewählt, keine Noten anzeigen (sollte nicht vorkommen)
-    if (currentSubjectId === "overview") return grades; // Schnellübersicht: alle Noten
+    if (!currentSubjectId) return [];
     return grades.filter(g => g.subjectId === currentSubjectId);
 };
 
@@ -119,9 +116,9 @@ const renderSubjectTabs = () => {
 
     // Sicherstellen, dass subjects-Array existiert (Rückwärtskompatibilität)
     if (!currentClass.subjects) currentClass.subjects = [];
-    if (currentClass.currentSubjectId === undefined || currentClass.currentSubjectId === null) {
-        // Wenn es Fächer gibt aber keines ausgewählt ist, wähle "overview" (Schnellübersicht)
-        currentClass.currentSubjectId = "overview";
+    if (!currentClass.currentSubjectId || currentClass.currentSubjectId === "overview") {
+        // Erstes Fach auswählen falls vorhanden
+        currentClass.currentSubjectId = currentClass.subjects.length > 0 ? currentClass.subjects[0].id : null;
     }
 
     const container = document.getElementById("subject-tabs");
@@ -130,10 +127,6 @@ const renderSubjectTabs = () => {
     const activeId = currentClass.currentSubjectId;
 
     let html = '';
-
-    // SCHNELLÜBERSICHT-TAB als erstes Tab
-    const isOverviewActive = activeId === "overview";
-    html += `<button class="${isOverviewActive ? 'btn-sm-primary' : 'btn-sm-outline'}" data-subject-id="overview">${t("class.quickOverview")}</button>`;
 
     // Ein Tab pro Fach
     currentClass.subjects.forEach(subject => {
@@ -223,70 +216,6 @@ const renderSubjectTabs = () => {
 };
 
 /**
- * SCHNELLÜBERSICHT RENDERN
- *
- * Zeigt eine Übersicht über alle Fächer der Klasse mit ihren Durchschnittsnoten an.
- */
-const renderQuickOverview = () => {
-    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-    if (!currentClass) return;
-
-    const studentsTable = document.getElementById("students-table");
-
-    // Berechne Durchschnitte für jedes Fach
-    const subjectStats = currentClass.subjects.map(subject => {
-        let totalAvg = 0;
-        let studentCount = 0;
-        let gradeCount = 0;
-
-        currentClass.students.forEach(student => {
-            const subjectGrades = student.grades.filter(g => g.subjectId === subject.id && !g.isPlusMinus);
-            if (subjectGrades.length > 0) {
-                const avg = calculateWeightedAverage(subjectGrades);
-                if (avg > 0) {
-                    totalAvg += avg;
-                    studentCount++;
-                }
-                gradeCount += subjectGrades.length;
-            }
-        });
-
-        const avgGrade = studentCount > 0 ? (totalAvg / studentCount).toFixed(2) : '-';
-        const finalGrade = studentCount > 0 ? calculateFinalGrade(totalAvg / studentCount) : '-';
-
-        return { subject, avgGrade, finalGrade, studentCount, gradeCount };
-    });
-
-    // Render als Übersichtstabelle
-    studentsTable.innerHTML = subjectStats.map(stat => `
-        <tr>
-            <td class="font-semibold">${escapeHtml(stat.subject.name)}</td>
-            <td>${stat.gradeCount}</td>
-            <td>${stat.avgGrade}</td>
-            <td>—</td>
-            <td>${stat.finalGrade}</td>
-            <td>
-                <button class="btn-sm-outline" data-goto-subject="${safeAttr(stat.subject.id)}">
-                    ${t("class.viewDetails")}
-                </button>
-            </td>
-        </tr>
-    `).join('');
-
-    // Event Listener für "Details anzeigen" Buttons
-    document.querySelectorAll('[data-goto-subject]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const subjectId = btn.dataset.gotoSubject;
-            currentClass.currentSubjectId = subjectId;
-            saveData();
-            renderSubjectTabs();
-            renderStudents();
-            renderClassStats();
-        });
-    });
-};
-
-/**
  * SCHÜLERTABELLE RENDERN
  *
  * Zeigt alle Schüler der aktuellen Klasse in einer Tabelle an.
@@ -302,18 +231,225 @@ const renderQuickOverview = () => {
  * - Suchfunktion: Filtert nach Name, Notenwert oder Notenname
  * - Kategoriefilter: Zeigt nur Schüler mit Noten in einer bestimmten Kategorie
  */
+
+/**
+ * OPEN ADD GRADE DIALOG
+ *
+ * Opens the dialog for adding a grade to a student. Reusable from class view and student detail view.
+ *
+ * @param {string} studentId - The ID of the student
+ * @param {function} onSuccess - Callback after grade is successfully added
+ */
+const openAddGradeDialog = (studentId, onSuccess) => {
+    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
+    if (!currentClass) return;
+
+    // Create category selection with info about +/- support (global categories)
+    const categoryOptions = appData.categories.map(cat => {
+        const label = cat.onlyPlusMinus ? ' [+/~/- only]' : (cat.allowPlusMinus ? ' [+/~/-]' : '');
+        return `<option value="${safeAttr(cat.id)}" data-allow-plus-minus="${cat.allowPlusMinus}" data-only-plus-minus="${cat.onlyPlusMinus || false}">${escapeHtml(cat.name)} (${(cat.weight * 100).toFixed(0)}%)${label}</option>`;
+    }).join("");
+
+    const content = `
+    <div class="grid gap-2">
+      <label class="block mb-2">${t("grade.gradeName")}</label>
+      <input type="text" name="name" class="input w-full" placeholder="${t("grade.gradeNamePlaceholder")}">
+      <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.gradeNameHint")}</p>
+    </div>
+    <div class="grid gap-2">
+      <label class="block mb-2">${t("grade.category")}</label>
+      <select name="categoryId" id="grade-category-select" class="select w-full" required>
+        ${categoryOptions}
+      </select>
+      <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.categoryHint")}</p>
+    </div>
+    <div class="grid gap-2" id="grade-value-container">
+      <div class="tabs w-full" id="grade-input-tabs">
+        <nav role="tablist" aria-orientation="horizontal" class="w-full">
+          <button type="button" role="tab" id="tab-grade-direct" aria-controls="panel-grade-direct" aria-selected="true" tabindex="0">${t("grade.gradeTab")}</button>
+          <button type="button" role="tab" id="tab-grade-percent" aria-controls="panel-grade-percent" aria-selected="false" tabindex="0">${t("grade.percentageTab")}</button>
+        </nav>
+        <div role="tabpanel" id="panel-grade-direct" aria-labelledby="tab-grade-direct" tabindex="-1" aria-selected="true">
+          <div class="pt-3">
+            <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input" placeholder="1-6">
+            <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterGrade")}</p>
+          </div>
+        </div>
+        <div role="tabpanel" id="panel-grade-percent" aria-labelledby="tab-grade-percent" tabindex="-1" aria-selected="false" hidden>
+          <div class="pt-3">
+            <div class="flex items-center gap-2">
+              <input type="number" id="grade-percent-input" step="0.1" min="0" max="100" class="input flex-1" placeholder="0-100">
+              <span>%</span>
+            </div>
+            <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterPercentage")}</p>
+            <p class="text-sm mt-1 font-semibold" id="percent-preview"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+    showDialog("edit-dialog", t("grade.addGrade"), content, (formData) => {
+        // Check if percentage tab is active
+        const percentPanel = document.getElementById("panel-grade-percent");
+        const percentInput = document.getElementById("grade-percent-input");
+        const directGradeInput = document.getElementById("grade-value-input");
+
+        let gradeValue = formData.get("value");
+        let enteredAsPercent = false;
+        let percentValue = null;
+
+        // If percentage panel is visible and has a value, convert it
+        if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
+            percentValue = parseFloat(percentInput.value);
+            const convertedGrade = percentToGrade(percentValue);
+            if (convertedGrade !== null) {
+                gradeValue = convertedGrade.toString();
+                enteredAsPercent = true;
+            } else {
+                showAlertDialog(t("error.invalidPercentage"));
+                return;
+            }
+        } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
+            showAlertDialog(t("error.enterPercentage"));
+            return;
+        } else if ((!percentPanel || percentPanel.hidden) && directGradeInput && !directGradeInput.value && !gradeValue) {
+            showAlertDialog(t("error.enterGrade"));
+            return;
+        }
+
+        // subjectId vom aktiven Fach-Tab übernehmen - sicherstellen, dass immer ein Fach ausgewählt ist
+        const activeSubjectId = currentClass.currentSubjectId;
+        // Wenn kein Fach ausgewählt ist (was nicht vorkommen sollte), verhindere das Hinzufügen
+        if (!activeSubjectId) {
+            showAlertDialog(t("grade.mustSelectSubject"));
+            return;
+        }
+        const newGrade = addGrade(studentId, formData.get("categoryId"), gradeValue, formData.get("name"), activeSubjectId);
+
+        if (newGrade) {
+            // Store percentage info if entered as percentage
+            if (enteredAsPercent) {
+                newGrade.enteredAsPercent = true;
+                newGrade.percentValue = percentValue;
+            }
+
+            saveData(t("toast.gradeAdded"), "success");
+            if (onSuccess) onSuccess();
+        }
+    });
+
+    // Add dynamic input switching based on category selection
+    const categorySelect = document.getElementById("grade-category-select");
+    const valueContainer = document.getElementById("grade-value-container");
+
+    const updateGradeInput = () => {
+        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+        const allowPlusMinus = selectedOption.dataset.allowPlusMinus === "true";
+        const onlyPlusMinus = selectedOption.dataset.onlyPlusMinus === "true";
+
+        if (onlyPlusMinus) {
+            // Only +/- grades allowed - no tabs needed
+            valueContainer.innerHTML = `
+                <label class="block mb-2">${t("grade.gradeTab")}</label>
+                <select name="value" class="select w-full" required>
+                    <option value="">${t("grade.select")}</option>
+                    <option value="+">${t("grade.plus")}</option>
+                    <option value="~">${t("grade.neutral")}</option>
+                    <option value="-">${t("grade.minus")}</option>
+                </select>
+                <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.plusMinusOnlyHint")}</p>
+            `;
+        } else if (allowPlusMinus) {
+            // Allow +/- but also numeric - no percentage for mixed
+            valueContainer.innerHTML = `
+                <label class="block mb-2">${t("grade.gradeTab")}</label>
+                <select name="value" class="select w-full" required>
+                    <option value="">${t("grade.selectGradeType")}</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="+">${t("grade.plus")}</option>
+                    <option value="~">${t("grade.neutral")}</option>
+                    <option value="-">${t("grade.minus")}</option>
+                </select>
+                <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.mixedHint")}</p>
+            `;
+        } else {
+            // Normal numeric grades - show tabs with percentage option
+            valueContainer.innerHTML = `
+                <div class="tabs w-full" id="grade-input-tabs">
+                  <nav role="tablist" aria-orientation="horizontal" class="w-full">
+                    <button type="button" role="tab" id="tab-grade-direct" aria-controls="panel-grade-direct" aria-selected="true" tabindex="0">${t("grade.gradeTab")}</button>
+                    <button type="button" role="tab" id="tab-grade-percent" aria-controls="panel-grade-percent" aria-selected="false" tabindex="0">${t("grade.percentageTab")}</button>
+                  </nav>
+                  <div role="tabpanel" id="panel-grade-direct" aria-labelledby="tab-grade-direct" tabindex="-1" aria-selected="true">
+                    <div class="pt-3">
+                      <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input" placeholder="1-6">
+                      <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterGrade")}</p>
+                    </div>
+                  </div>
+                  <div role="tabpanel" id="panel-grade-percent" aria-labelledby="tab-grade-percent" tabindex="-1" aria-selected="false" hidden>
+                    <div class="pt-3">
+                      <div class="flex items-center gap-2">
+                        <input type="number" id="grade-percent-input" step="0.1" min="0" max="100" class="input flex-1" placeholder="0-100">
+                        <span>%</span>
+                      </div>
+                      <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterPercentage")}</p>
+                      <p class="text-sm mt-1 font-semibold" id="percent-preview"></p>
+                    </div>
+                  </div>
+                </div>
+            `;
+
+            // Add percentage preview listener
+            setTimeout(() => {
+                const percentInput = document.getElementById("grade-percent-input");
+                const percentPreview = document.getElementById("percent-preview");
+                if (percentInput && percentPreview) {
+                    percentInput.addEventListener("input", () => {
+                        const percent = parseFloat(percentInput.value);
+                        if (!isNaN(percent) && percent >= 0 && percent <= 100) {
+                            const grade = percentToGrade(percent);
+                            percentPreview.textContent = t("grade.percentPreview", { grade: grade });
+                        } else {
+                            percentPreview.textContent = "";
+                        }
+                    });
+                }
+            }, 0);
+        }
+    };
+
+    categorySelect.addEventListener("change", updateGradeInput);
+    updateGradeInput(); // Initialize on load
+
+    // Add initial percentage preview listener
+    setTimeout(() => {
+        const percentInput = document.getElementById("grade-percent-input");
+        const percentPreview = document.getElementById("percent-preview");
+        if (percentInput && percentPreview) {
+            percentInput.addEventListener("input", () => {
+                const percent = parseFloat(percentInput.value);
+                if (!isNaN(percent) && percent >= 0 && percent <= 100) {
+                    const grade = percentToGrade(percent);
+                    percentPreview.textContent = t("grade.percentPreview", { grade: grade });
+                } else {
+                    percentPreview.textContent = "";
+                }
+            });
+        }
+    }, 0);
+};
+
 const renderStudents = () => {
     // Aktuelle Klasse finden
     const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
     if (!currentClass) {
         console.error("No current class found!");
-        return;
-    }
-
-    // Wenn Schnellübersicht aktiv ist, zeige diese statt der Schülertabelle
-    if (currentClass.currentSubjectId === "overview") {
-        renderQuickOverview();
-        renderClassStats();
         return;
     }
 
@@ -397,207 +533,7 @@ const renderStudents = () => {
 
     document.querySelectorAll("[data-add-grade]").forEach(btn => {
         btn.addEventListener("click", () => {
-            const studentId = btn.dataset.addGrade;
-
-            // Create category selection with info about +/- support (global categories)
-            const categoryOptions = appData.categories.map(cat => {
-                const label = cat.onlyPlusMinus ? ' [+/~/- only]' : (cat.allowPlusMinus ? ' [+/~/-]' : '');
-                return `<option value="${safeAttr(cat.id)}" data-allow-plus-minus="${cat.allowPlusMinus}" data-only-plus-minus="${cat.onlyPlusMinus || false}">${escapeHtml(cat.name)} (${(cat.weight * 100).toFixed(0)}%)${label}</option>`;
-            }).join("");
-
-            const content = `
-            <div class="grid gap-2">
-              <label class="block mb-2">${t("grade.gradeName")}</label>
-              <input type="text" name="name" class="input w-full" placeholder="${t("grade.gradeNamePlaceholder")}">
-              <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.gradeNameHint")}</p>
-            </div>
-            <div class="grid gap-2">
-              <label class="block mb-2">${t("grade.category")}</label>
-              <select name="categoryId" id="grade-category-select" class="select w-full" required>
-                ${categoryOptions}
-              </select>
-              <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.categoryHint")}</p>
-            </div>
-            <div class="grid gap-2" id="grade-value-container">
-              <div class="tabs w-full" id="grade-input-tabs">
-                <nav role="tablist" aria-orientation="horizontal" class="w-full">
-                  <button type="button" role="tab" id="tab-grade-direct" aria-controls="panel-grade-direct" aria-selected="true" tabindex="0">${t("grade.gradeTab")}</button>
-                  <button type="button" role="tab" id="tab-grade-percent" aria-controls="panel-grade-percent" aria-selected="false" tabindex="0">${t("grade.percentageTab")}</button>
-                </nav>
-                <div role="tabpanel" id="panel-grade-direct" aria-labelledby="tab-grade-direct" tabindex="-1" aria-selected="true">
-                  <div class="pt-3">
-                    <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input" placeholder="1-6">
-                    <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterGrade")}</p>
-                  </div>
-                </div>
-                <div role="tabpanel" id="panel-grade-percent" aria-labelledby="tab-grade-percent" tabindex="-1" aria-selected="false" hidden>
-                  <div class="pt-3">
-                    <div class="flex items-center gap-2">
-                      <input type="number" id="grade-percent-input" step="0.1" min="0" max="100" class="input flex-1" placeholder="0-100">
-                      <span>%</span>
-                    </div>
-                    <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterPercentage")}</p>
-                    <p class="text-sm mt-1 font-semibold" id="percent-preview"></p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-
-            showDialog("edit-dialog", t("grade.addGrade"), content, (formData) => {
-                // Check if percentage tab is active
-                const percentPanel = document.getElementById("panel-grade-percent");
-                const percentInput = document.getElementById("grade-percent-input");
-                const directGradeInput = document.getElementById("grade-value-input");
-
-                let gradeValue = formData.get("value");
-                let enteredAsPercent = false;
-                let percentValue = null;
-
-                // If percentage panel is visible and has a value, convert it
-                if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
-                    percentValue = parseFloat(percentInput.value);
-                    const convertedGrade = percentToGrade(percentValue);
-                    if (convertedGrade !== null) {
-                        gradeValue = convertedGrade.toString();
-                        enteredAsPercent = true;
-                    } else {
-                        showAlertDialog(t("error.invalidPercentage"));
-                        return;
-                    }
-                } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
-                    showAlertDialog(t("error.enterPercentage"));
-                    return;
-                } else if ((!percentPanel || percentPanel.hidden) && directGradeInput && !directGradeInput.value && !gradeValue) {
-                    showAlertDialog(t("error.enterGrade"));
-                    return;
-                }
-
-                // subjectId vom aktiven Fach-Tab übernehmen - sicherstellen, dass immer ein Fach ausgewählt ist
-                const activeSubjectId = currentClass.currentSubjectId;
-                // Wenn kein Fach ausgewählt ist (was nicht vorkommen sollte), verhindere das Hinzufügen
-                if (!activeSubjectId) {
-                    showAlertDialog(t("grade.mustSelectSubject"));
-                    return;
-                }
-                const newGrade = addGrade(studentId, formData.get("categoryId"), gradeValue, formData.get("name"), activeSubjectId);
-
-                if (newGrade) {
-                    // Store percentage info if entered as percentage
-                    if (enteredAsPercent) {
-                        newGrade.enteredAsPercent = true;
-                        newGrade.percentValue = percentValue;
-                    }
-
-                    saveData(t("toast.gradeAdded"), "success");
-                    renderStudents();
-                }
-            });
-
-            // Add dynamic input switching based on category selection
-            const categorySelect = document.getElementById("grade-category-select");
-            const valueContainer = document.getElementById("grade-value-container");
-
-            const updateGradeInput = () => {
-                const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-                const allowPlusMinus = selectedOption.dataset.allowPlusMinus === "true";
-                const onlyPlusMinus = selectedOption.dataset.onlyPlusMinus === "true";
-
-                if (onlyPlusMinus) {
-                    // Only +/- grades allowed - no tabs needed
-                    valueContainer.innerHTML = `
-                        <label class="block mb-2">${t("grade.gradeTab")}</label>
-                        <select name="value" class="select w-full" required>
-                            <option value="">${t("grade.select")}</option>
-                            <option value="+">${t("grade.plus")}</option>
-                            <option value="~">${t("grade.neutral")}</option>
-                            <option value="-">${t("grade.minus")}</option>
-                        </select>
-                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.plusMinusOnlyHint")}</p>
-                    `;
-                } else if (allowPlusMinus) {
-                    // Allow +/- but also numeric - no percentage for mixed
-                    valueContainer.innerHTML = `
-                        <label class="block mb-2">${t("grade.gradeTab")}</label>
-                        <select name="value" class="select w-full" required>
-                            <option value="">${t("grade.selectGradeType")}</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="+">${t("grade.plus")}</option>
-                            <option value="~">${t("grade.neutral")}</option>
-                            <option value="-">${t("grade.minus")}</option>
-                        </select>
-                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.mixedHint")}</p>
-                    `;
-                } else {
-                    // Normal numeric grades - show tabs with percentage option
-                    valueContainer.innerHTML = `
-                        <div class="tabs w-full" id="grade-input-tabs">
-                          <nav role="tablist" aria-orientation="horizontal" class="w-full">
-                            <button type="button" role="tab" id="tab-grade-direct" aria-controls="panel-grade-direct" aria-selected="true" tabindex="0">${t("grade.gradeTab")}</button>
-                            <button type="button" role="tab" id="tab-grade-percent" aria-controls="panel-grade-percent" aria-selected="false" tabindex="0">${t("grade.percentageTab")}</button>
-                          </nav>
-                          <div role="tabpanel" id="panel-grade-direct" aria-labelledby="tab-grade-direct" tabindex="-1" aria-selected="true">
-                            <div class="pt-3">
-                              <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input" placeholder="1-6">
-                              <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterGrade")}</p>
-                            </div>
-                          </div>
-                          <div role="tabpanel" id="panel-grade-percent" aria-labelledby="tab-grade-percent" tabindex="-1" aria-selected="false" hidden>
-                            <div class="pt-3">
-                              <div class="flex items-center gap-2">
-                                <input type="number" id="grade-percent-input" step="0.1" min="0" max="100" class="input flex-1" placeholder="0-100">
-                                <span>%</span>
-                              </div>
-                              <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterPercentage")}</p>
-                              <p class="text-sm mt-1 font-semibold" id="percent-preview"></p>
-                            </div>
-                          </div>
-                        </div>
-                    `;
-
-                    // Add percentage preview listener
-                    setTimeout(() => {
-                        const percentInput = document.getElementById("grade-percent-input");
-                        const percentPreview = document.getElementById("percent-preview");
-                        if (percentInput && percentPreview) {
-                            percentInput.addEventListener("input", () => {
-                                const percent = parseFloat(percentInput.value);
-                                if (!isNaN(percent) && percent >= 0 && percent <= 100) {
-                                    const grade = percentToGrade(percent);
-                                    percentPreview.textContent = t("grade.percentPreview", { grade: grade });
-                                } else {
-                                    percentPreview.textContent = "";
-                                }
-                            });
-                        }
-                    }, 0);
-                }
-            };
-
-            categorySelect.addEventListener("change", updateGradeInput);
-            updateGradeInput(); // Initialize on load
-
-            // Add initial percentage preview listener
-            setTimeout(() => {
-                const percentInput = document.getElementById("grade-percent-input");
-                const percentPreview = document.getElementById("percent-preview");
-                if (percentInput && percentPreview) {
-                    percentInput.addEventListener("input", () => {
-                        const percent = parseFloat(percentInput.value);
-                        if (!isNaN(percent) && percent >= 0 && percent <= 100) {
-                            const grade = percentToGrade(percent);
-                            percentPreview.textContent = t("grade.percentPreview", { grade: grade });
-                        } else {
-                            percentPreview.textContent = "";
-                        }
-                    });
-                }
-            }, 0);
+            openAddGradeDialog(btn.dataset.addGrade, () => renderStudents());
         });
     });
 
@@ -656,15 +592,6 @@ const renderClassStats = () => {
     if (!currentClass) return;
 
     const studentCount = currentClass.students.length;
-
-    // Bei Schnellübersicht: Zeige nur Schüleranzahl, keine fachspezifischen Stats
-    if (currentClass.currentSubjectId === "overview") {
-        document.getElementById("class-stat-average").textContent = "-";
-        document.getElementById("class-stat-students").textContent = studentCount;
-        document.getElementById("class-stat-grades").textContent = "-";
-        document.getElementById("class-stat-pass-rate").textContent = "-";
-        return;
-    }
 
     let totalGrades = 0;
     let passCount = 0;
@@ -1441,6 +1368,12 @@ const renderStudentDetail = (studentId) => {
     renderStudentGradeChart(filteredStudent);
     renderCategoryBreakdown(filteredStudent);
     renderStudentGradesTable(student, filteredGrades);
+
+    // Add Grade button in student detail header
+    const addGradeBtn = document.getElementById("student-detail-add-grade");
+    addGradeBtn.onclick = () => {
+        openAddGradeDialog(studentId, () => renderStudentDetail(studentId));
+    };
 };
 
 /**

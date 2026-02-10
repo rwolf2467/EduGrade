@@ -27,11 +27,15 @@ const addClass = (name) => {
 
     // Neues Klassen-Objekt erstellen
     // Verwende eine wirklich eindeutige ID (Timestamp + Zufallszahl)
+    const defaultSubjectId = Date.now().toString() + '-sub-' + Math.floor(Math.random() * 1000);
     const newClass = {
         id: Date.now().toString() + '-' + Math.floor(Math.random() * 1000),
         name: validation.value,          // Validierter/bereinigter Name
-        subjects: [],                    // Unterrichtsfächer dieser Klasse
-        currentSubjectId: null,          // Aktives Fach-Tab (null = Alle Fächer)
+        subjects: [{                     // Standard-Unterrichtsfach
+            id: defaultSubjectId,
+            name: t("class.defaultSubject")
+        }],
+        currentSubjectId: defaultSubjectId, // Standard-Fach aktiv setzen
         students: []                     // Leeres Array für Schüler
         // Kategorien werden global in appData.categories gespeichert
     };
@@ -82,6 +86,24 @@ const addStudent = (firstName, lastName, middleName) => {
         validatedMiddleName = middleNameValidation.value;
     }
 
+    // Aktuelle Klasse im Array finden
+    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
+    if (!currentClass) {
+        console.error("No current class found!");
+        return;
+    }
+
+    // Duplikat-Prüfung: Vorname + Nachname (case-insensitive)
+    const isDuplicate = currentClass.students.some(s =>
+        s.firstName.toLowerCase() === firstNameValidation.value.toLowerCase() &&
+        s.lastName.toLowerCase() === lastNameValidation.value.toLowerCase()
+    );
+    if (isDuplicate) {
+        const displayName = [firstNameValidation.value, validatedMiddleName, lastNameValidation.value].filter(Boolean).join(' ');
+        showAlertDialog(t("error.studentDuplicate").replace("{name}", displayName));
+        return;
+    }
+
     // Neues Schüler-Objekt erstellen
     const newStudent = {
         id: Date.now().toString() + '-' + Math.floor(Math.random() * 1000),
@@ -92,18 +114,10 @@ const addStudent = (firstName, lastName, middleName) => {
         participation: []        // Für zukünftige Mitarbeits-Funktion
     };
 
-    // Aktuelle Klasse im Array finden
-    // find() durchsucht das Array und gibt das erste passende Element zurück
-    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-
-    if (currentClass) {
-        // Schüler zur Klasse hinzufügen
-        currentClass.students.push(newStudent);
-        saveData(t("toast.studentAdded"));
-        renderStudents();
-    } else {
-        console.error("No current class found!");
-    }
+    // Schüler zur Klasse hinzufügen
+    currentClass.students.push(newStudent);
+    saveData(t("toast.studentAdded"));
+    renderStudents();
 };
 
 /**
@@ -532,9 +546,9 @@ const deleteSubject = (classId, subjectId) => {
         student.grades = student.grades.filter(g => g.subjectId !== subjectId);
     });
 
-    // Wenn das gelöschte Fach das aktive war, zurück zu "Alle Fächer"
+    // Wenn das gelöschte Fach das aktive war, erstes verbleibendes Fach wählen
     if (cls.currentSubjectId === subjectId) {
-        cls.currentSubjectId = null;
+        cls.currentSubjectId = cls.subjects.length > 0 ? cls.subjects[0].id : null;
     }
 
     saveData(t("toast.subjectDeleted"), "success");

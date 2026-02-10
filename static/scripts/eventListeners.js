@@ -224,28 +224,51 @@ document.getElementById("confirm-import-students").addEventListener("click", () 
     const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
     if (!currentClass) return;
 
-    const count = parsedStudentsToImport.length;
+    const skippedNames = [];
+    let addedCount = 0;
 
     for (const student of parsedStudentsToImport) {
         const firstNameVal = validateStringInput(student.firstName || '', 50);
         const lastNameVal = validateStringInput(student.lastName || '', 50);
         const middleNameVal = student.middleName ? validateStringInput(student.middleName, 50) : { isValid: true, value: '' };
 
+        const firstName = firstNameVal.isValid ? firstNameVal.value : '';
+        const lastName = lastNameVal.isValid ? lastNameVal.value : '';
+        const middleName = middleNameVal.isValid ? middleNameVal.value : '';
+
+        // Duplikat-Prüfung: Vorname + Nachname (case-insensitive)
+        const isDuplicate = currentClass.students.some(s =>
+            s.firstName.toLowerCase() === firstName.toLowerCase() &&
+            s.lastName.toLowerCase() === lastName.toLowerCase()
+        );
+
+        if (isDuplicate) {
+            skippedNames.push([firstName, middleName, lastName].filter(Boolean).join(' '));
+            continue;
+        }
+
         currentClass.students.push({
             id: Date.now().toString() + '-' + Math.floor(Math.random() * 10000),
-            firstName: firstNameVal.isValid ? firstNameVal.value : '',
-            lastName: lastNameVal.isValid ? lastNameVal.value : '',
-            middleName: middleNameVal.isValid ? middleNameVal.value : '',
+            firstName,
+            lastName,
+            middleName,
             grades: [],
             participation: []
         });
+        addedCount++;
     }
 
     saveData();
     renderStudents();
     document.getElementById("import-students-dialog").close();
     resetImportStudentsDialog();
-    showToast(t("toast.studentsImported").replace("{count}", count), "success");
+
+    if (addedCount > 0) {
+        showToast(t("toast.studentsImported").replace("{count}", addedCount), "success");
+    }
+    if (skippedNames.length > 0) {
+        showAlertDialog(t("error.studentsDuplicateSkipped").replace("{names}", skippedNames.join("\n")));
+    }
 });
 
 document.getElementById("cancel-import-students").addEventListener("click", () => {
