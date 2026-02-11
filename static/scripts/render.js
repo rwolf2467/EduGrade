@@ -1385,6 +1385,31 @@ const renderStudentDetail = (studentId) => {
     // Populate stat cards
     document.getElementById("student-stat-average").textContent =
         weightedAvg ? weightedAvg.toFixed(2) : "-";
+
+    // Add percentage badge for average
+    const averagePercentEl = document.getElementById("student-stat-average-percent");
+    if (weightedAvg && weightedAvg > 0) {
+        const percentage = Math.round(((6 - weightedAvg) / 5) * 100);
+
+        // Determine badge color based on percentage
+        let badgeClass = 'badge-secondary';
+        if (percentage >= 80) {
+            badgeClass = 'grade-badge grade-1';
+        } else if (percentage >= 60) {
+            badgeClass = 'grade-badge grade-2';
+        } else if (percentage >= 40) {
+            badgeClass = 'grade-badge grade-3';
+        } else if (percentage >= 20) {
+            badgeClass = 'grade-badge grade-4';
+        } else {
+            badgeClass = 'grade-badge grade-5';
+        }
+
+        averagePercentEl.innerHTML = `<span class="badge ${badgeClass} text-xs">${percentage}%</span>`;
+    } else {
+        averagePercentEl.innerHTML = '';
+    }
+
     document.getElementById("student-stat-final").textContent = finalGrade;
     document.getElementById("student-stat-count").textContent = filteredGrades.length;
 
@@ -1618,11 +1643,31 @@ const renderCategoryBreakdown = (student) => {
 
         let avgText = '-';
         let gradeInfo = '';
+        let percentageBadge = '';
 
         if (numericGrades.length > 0) {
             const avg = numericGrades.reduce((sum, g) => sum + g.value, 0) / numericGrades.length;
             avgText = avg.toFixed(2);
             gradeInfo = `${numericGrades.length} grade${numericGrades.length !== 1 ? 's' : ''}`;
+
+            // Calculate percentage: Grade 1 = 100%, Grade 6 = 0%
+            const percentage = Math.round(((6 - avg) / 5) * 100);
+
+            // Determine badge color based on percentage
+            let badgeClass = 'badge-secondary';
+            if (percentage >= 80) {
+                badgeClass = 'grade-badge grade-1'; // Very good (green-ish)
+            } else if (percentage >= 60) {
+                badgeClass = 'grade-badge grade-2'; // Good
+            } else if (percentage >= 40) {
+                badgeClass = 'grade-badge grade-3'; // Satisfactory
+            } else if (percentage >= 20) {
+                badgeClass = 'grade-badge grade-4'; // Sufficient
+            } else {
+                badgeClass = 'grade-badge grade-5'; // Insufficient
+            }
+
+            percentageBadge = `<span class="badge ${badgeClass} text-xs">${percentage}%</span>`;
         }
 
         if (plusMinusGrades.length > 0) {
@@ -1637,7 +1682,10 @@ const renderCategoryBreakdown = (student) => {
             <div class="category-stat-card p-3 rounded-lg border">
                 <div class="flex justify-between items-start mb-2">
                     <span class="font-medium">${escapeHtml(category.name)}</span>
-                    <span class="badge badge-secondary text-xs">${(category.weight * 100).toFixed(0)}%</span>
+                    <div class="flex gap-2">
+                        ${percentageBadge}
+                        <span class="badge badge-secondary text-xs">${(category.weight * 100).toFixed(0)}%</span>
+                    </div>
                 </div>
                 <p class="text-2xl font-bold">${avgText}</p>
                 <p class="text-xs" style="color: oklch(.708 0 0);">${gradeInfo}</p>
