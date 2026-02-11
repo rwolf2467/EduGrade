@@ -146,8 +146,9 @@ const TUTORIAL_STEPS = [
         position: 'right',
         waitFor: {
             check: () => {
-                const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-                const student = currentClass?.students[0];
+                const currentYear = getCurrentYear();
+                if (!currentYear) return false;
+                const student = currentYear.students[0];
                 return student && student.grades && student.grades.length > 0;
             },
             event: 'gradeAdded'
@@ -166,12 +167,51 @@ const TUTORIAL_STEPS = [
         }
     },
     {
-        id: 'edit-grade-dialog',
+        id: 'open-student-detail',
+        get title() { return t("tutorial.studentDetail.title"); },
+        get content() { return t("tutorial.studentDetail.content"); },
+        targetSelector: '.student-table-container tbody tr:first-child',
+        position: 'center',
+        waitFor: {
+            check: () => {
+                const studentDetailView = document.getElementById('student-detail-view');
+                return studentDetailView && !studentDetailView.classList.contains('hidden');
+            },
+            interval: 200
+        }
+    },
+    {
+        id: 'view-grade-list',
+        get title() { return t("tutorial.gradeList.title"); },
+        get content() { return t("tutorial.gradeList.content"); },
+        targetSelector: '#student-grades-table',
+        position: 'top',
+        manualNext: true
+    },
+    {
+        id: 'edit-grade-interactive',
         get title() { return t("tutorial.editGrade.title"); },
         get content() { return t("tutorial.editGrade.content"); },
-        targetSelector: null,
-        position: 'center',
-        manualNext: true
+        targetSelector: '#student-grades-table',
+        position: 'left',
+        waitFor: {
+            check: () => {
+                const editDialog = document.getElementById('edit-dialog');
+                return editDialog && editDialog.open;
+            },
+            interval: 200
+        }
+    },
+    {
+        id: 'years-and-subjects',
+        get title() { return t("tutorial.yearsAndSubjects.title"); },
+        get content() { return t("tutorial.yearsAndSubjects.content"); },
+        targetSelector: '#year-selector',
+        position: 'bottom',
+        manualNext: true,
+        action: () => {
+            closeTutorialDialogs();
+        }
     },
     {
         id: 'complete',
@@ -335,9 +375,49 @@ const renderTutorialStep = (step, stepIndex) => {
         ? `<p class="text-xs mt-2" style="color: #3b82f6;">${escapeHtml(t("tutorial.waiting"))}</p>`
         : '';
 
+    // Prüfe ob das Ziel-Element in einem Dialog ist
+    let targetDialog = null;
+    let isInDialog = false;
+    if (step.targetSelector) {
+        const targetElement = document.querySelector(step.targetSelector);
+        if (targetElement) {
+            targetDialog = targetElement.closest('dialog');
+            isInDialog = targetDialog && targetDialog.open;
+        }
+    }
+
+    // Berechne Position basierend auf targetSelector
+    let positionStyle = '';
+    if (step.targetSelector && step.position !== 'center' && !isInDialog) {
+        const targetElement = document.querySelector(step.targetSelector);
+        if (targetElement) {
+            const targetRect = targetElement.getBoundingClientRect();
+            positionStyle = calculateDialogPosition(targetRect, step.position);
+        }
+    }
+
+    // Wenn keine Position berechnet wurde, verwende default
+    if (!positionStyle) {
+        if (isInDialog) {
+            // Im Dialog: verwende fixed positioning mit hohem z-index, aber außerhalb des Dialogs
+            positionStyle = 'position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 99999;';
+        } else if (step.position === 'center') {
+            positionStyle = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 99999;';
+        } else {
+            positionStyle = 'position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 99999;';
+        }
+    } else {
+        // Füge z-index hinzu
+        positionStyle += ' z-index: 99999;';
+    }
+
+    // Füge pointer-events hinzu
+    positionStyle += ' pointer-events: auto;';
+
     // Erstelle ein fixes div Element statt dialog (kein blocking von anderen Elementen)
     const tutorialBox = document.createElement('div');
     tutorialBox.className = 'tutorial-floating-box';
+    tutorialBox.setAttribute('style', positionStyle);
     tutorialBox.innerHTML = `
         <div class="tutorial-dialog-content">
             <div class="flex justify-between items-center mb-2">
@@ -359,6 +439,8 @@ const renderTutorialStep = (step, stepIndex) => {
         </div>
     `;
 
+    // Füge Tutorial-Box immer zum Body hinzu
+    // (Dialog-Elemente sind im "top layer" und ignorieren z-index, daher besser außerhalb positionieren)
     document.body.appendChild(tutorialBox);
 
     // Event Listeners

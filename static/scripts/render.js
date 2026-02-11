@@ -1173,8 +1173,8 @@ const getGradeColorClass = (grade) => {
  * @returns {number} - Durchschnitt oder 0 wenn keine Noten vorhanden
  */
 const calculateSimpleAverage = (grades) => {
-    // Nur numerische Noten verwenden (keine +/- Noten)
-    const numericGrades = grades.filter(g => !g.isPlusMinus);
+    // Nur numerische Noten verwenden (keine +/- Noten) und nur die, die in die Gesamtnote eingerechnet werden sollen
+    const numericGrades = grades.filter(g => !g.isPlusMinus && !g.excludeFromAverage);
 
     // Wenn keine Noten vorhanden, 0 zurückgeben
     if (numericGrades.length === 0) return 0;
@@ -1229,6 +1229,9 @@ const calculateWeightedAverage = (grades) => {
     const gradesByCategory = {};
 
     grades.forEach(grade => {
+        // Noten, die nicht in die Gesamtnote eingerechnet werden sollen, überspringen
+        if (grade.excludeFromAverage) return;
+
         const catId = grade.categoryId;
         if (!gradesByCategory[catId]) {
             gradesByCategory[catId] = {
@@ -1790,6 +1793,9 @@ const renderStudentDetail = (studentId) => {
     renderCategoryBreakdown(filteredStudent);
     renderStudentGradesTable(student, filteredGrades);
 
+    // Setup grade search functionality
+    setupGradeSearch(student, filteredGrades);
+
     // Add Grade button in student detail header
     const addGradeBtn = document.getElementById("student-detail-add-grade");
     addGradeBtn.onclick = () => {
@@ -2090,11 +2096,17 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
         const gradeColorClass = getGradeColorClass(grade);
         const weightDisplay = grade.isPlusMinus ? '-' : `${(grade.weight * 100).toFixed(0)}%`;
 
+        // Visual indication for grades excluded from average
+        const excludedClass = grade.excludeFromAverage ? 'opacity-50' : '';
+        const excludedBadge = grade.excludeFromAverage
+            ? `<span class="badge badge-secondary text-xs ml-1" data-tooltip="${t("grade.excludedFromAverage")}" data-side="top">⊘</span>`
+            : '';
+
         return `
-            <tr>
+            <tr class="${excludedClass}">
                 <td>${escapeHtml(date)}</td>
                 <td>${escapeHtml(grade.categoryName || '-')}</td>
-                <td>${escapeHtml(grade.name || '-')}</td>
+                <td>${escapeHtml(grade.name || '-')}${excludedBadge}</td>
                 <td><span class="badge ${gradeColorClass}">${escapeHtml(displayValue)}</span></td>
                 <td>${weightDisplay}</td>
                 <td>
@@ -2175,6 +2187,12 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                         <input type="text" name="name" class="input w-full" value="${escapeHtml(grade.name || '')}" maxlength="100">
                     </div>
                     <div class="grid gap-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="includeInAverage" class="checkbox" ${!grade.excludeFromAverage ? 'checked' : ''}>
+                            <span class="text-sm">${t("grade.includeInAverage")}</span>
+                        </label>
+                    </div>
+                    <div class="grid gap-2">
                         <label class="block mb-2">${t("grade.gradeValue")}</label>
                         ${valueInput}
                     </div>
@@ -2182,6 +2200,7 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
 
                 showDialog("edit-dialog", t("grade.editGrade"), content, (formData) => {
                     const newName = formData.get("name");
+                    const includeInAverage = formData.get("includeInAverage");
                     let newValue = formData.get("value");
                     let enteredAsPercent = false;
                     let percentValue = null;
@@ -2219,6 +2238,15 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                         grade.value = parseFloat(newValue);
                     }
                     grade.name = newName;
+
+                    // Update "include in average" setting
+                    if (includeInAverage === "on") {
+                        // Checkbox is checked - remove excludeFromAverage flag
+                        delete grade.excludeFromAverage;
+                    } else {
+                        // Checkbox is not checked - set excludeFromAverage to true
+                        grade.excludeFromAverage = true;
+                    }
 
                     // Update percentage metadata
                     if (enteredAsPercent) {
@@ -2318,4 +2346,65 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
             });
         });
     });
+};
+
+/**
+ * SETUP GRADE SEARCH
+ *
+ * Sets up the search functionality for filtering grades in the student detail view.
+ * The search filters by date, category name, grade name, and grade value.
+ *
+ * @param {object} student - The student object with all grades
+ * @param {Array} filteredGrades - The grades filtered by subject
+ */
+const setupGradeSearch = (student, filteredGrades) => {
+    const searchInput = document.getElementById("student-grades-search");
+    if (!searchInput) return;
+
+    // Store the original filtered grades for searching
+    searchInput.dataset.allGrades = JSON.stringify(filteredGrades);
+
+    // Remove any existing event listener by cloning the element
+    const newSearchInput = searchInput.cloneNode(true);
+    searchInput.parentNode.replaceChild(newSearchInput, searchInput);
+
+    // Add input event listener for search
+    newSearchInput.addEventListener("input", (e) => {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const allGrades = JSON.parse(newSearchInput.dataset.allGrades || "[]");
+
+        if (!searchTerm) {
+            // If search is empty, show all filtered grades
+            renderStudentGradesTable(student, allGrades);
+            return;
+        }
+
+        // Filter grades based on search term
+        const searchedGrades = allGrades.filter(grade => {
+            // Format date for searching
+            const date = grade.createdAt
+                ? new Date(grade.createdAt).toLocaleDateString('de-AT', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                })
+                : '';
+
+            // Get grade value as string
+            const displayValue = grade.isPlusMinus
+                ? grade.value.toString()
+                : grade.value.toString();
+
+            // Search in: date, category name, grade name, grade value
+            return date.toLowerCase().includes(searchTerm) ||
+                   (grade.categoryName || '').toLowerCase().includes(searchTerm) ||
+                   (grade.name || '').toLowerCase().includes(searchTerm) ||
+                   displayValue.toLowerCase().includes(searchTerm);
+        });
+
+        renderStudentGradesTable(student, searchedGrades);
+    });
+
+    // Clear search when view changes
+    newSearchInput.value = '';
 };

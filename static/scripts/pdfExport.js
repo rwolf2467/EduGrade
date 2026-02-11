@@ -264,14 +264,45 @@ const exportStudentDetailPDF = async (studentId) => {
                 const gradeValue = grade.isPlusMinus ? grade.value : grade.value.toString();
                 const gradeName = grade.name || '-';
 
-                pdf.text(date, colPositions[0] + 2, yPosition);
-                pdf.text(grade.categoryName || '-', colPositions[1] + 2, yPosition);
-                pdf.text(gradeValue, colPositions[2] + 2, yPosition);
+                // Set text color to gray if excluded from average
+                if (grade.excludeFromAverage) {
+                    pdf.setTextColor(150, 150, 150);
+                }
+
+                const dateX = colPositions[0] + 2;
+                const categoryX = colPositions[1] + 2;
+                const gradeValueX = colPositions[2] + 2;
+                const gradeNameX = colPositions[3] + 2;
+
+                pdf.text(date, dateX, yPosition);
+                pdf.text(grade.categoryName || '-', categoryX, yPosition);
+                pdf.text(gradeValue, gradeValueX, yPosition);
 
                 // Truncate long grade names
                 const maxWidth = colWidths[3] - 4;
                 const truncatedName = gradeName.length > 30 ? gradeName.substring(0, 27) + '...' : gradeName;
-                pdf.text(truncatedName, colPositions[3] + 2, yPosition);
+                pdf.text(truncatedName, gradeNameX, yPosition);
+
+                // Add strikethrough if excluded from average
+                if (grade.excludeFromAverage) {
+                    const dateWidth = pdf.getTextWidth(date);
+                    const categoryWidth = pdf.getTextWidth(grade.categoryName || '-');
+                    const gradeValueWidth = pdf.getTextWidth(gradeValue);
+                    const gradeNameWidth = pdf.getTextWidth(truncatedName);
+
+                    pdf.setDrawColor(150, 150, 150);
+                    pdf.setLineWidth(0.2);
+
+                    // Strikethrough for each column
+                    pdf.line(dateX, yPosition - 1.5, dateX + dateWidth, yPosition - 1.5);
+                    pdf.line(categoryX, yPosition - 1.5, categoryX + categoryWidth, yPosition - 1.5);
+                    pdf.line(gradeValueX, yPosition - 1.5, gradeValueX + gradeValueWidth, yPosition - 1.5);
+                    pdf.line(gradeNameX, yPosition - 1.5, gradeNameX + gradeNameWidth, yPosition - 1.5);
+
+                    // Reset color
+                    pdf.setTextColor(0, 0, 0);
+                    pdf.setDrawColor(0, 0, 0);
+                }
 
                 yPosition += 6;
             });
