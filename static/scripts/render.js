@@ -223,7 +223,12 @@ const showAddYearDialog = (classId) => {
     if (!cls) return;
 
     const currentYear = new Date().getFullYear();
-    const defaultName = `${currentYear}/${currentYear + 1}`;
+
+    // Generate year options (from 5 years ago to 10 years in the future)
+    const yearOptions = [];
+    for (let year = currentYear - 5; year <= currentYear + 10; year++) {
+        yearOptions.push(year);
+    }
 
     // Get previous year for copy option
     const sortedYears = [...cls.years].sort((a, b) =>
@@ -233,9 +238,19 @@ const showAddYearDialog = (classId) => {
 
     const content = `
         <div class="grid gap-2">
-            <label class="block mb-2">${t("year.yearName")}</label>
-            <input type="text" name="name" class="input w-full" value="${defaultName}" required maxlength="50">
-            <p class="text-sm" style="color: oklch(.708 0 0);">${t("year.yearNameHint")}</p>
+            <label class="block mb-2">${t("year.selectStartYear")}</label>
+            <select name="startYear" id="year-start-select" class="select w-full" required>
+                ${yearOptions.map(year => `
+                    <option value="${year}" ${year === currentYear ? 'selected' : ''}>${year}</option>
+                `).join('')}
+            </select>
+        </div>
+        <div class="grid gap-2 mt-3">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="useSchoolYearFormat" id="use-school-year-format" class="checkbox" checked>
+                <span>${t("year.useSchoolYearFormat")}</span>
+            </label>
+            <p class="text-sm" style="color: oklch(.708 0 0);">${t("year.schoolYearFormatHint")}</p>
         </div>
         ${previousYear ? `
             <div class="grid gap-2 mt-3">
@@ -249,10 +264,14 @@ const showAddYearDialog = (classId) => {
     `;
 
     showDialog("edit-dialog", t("year.addYear"), content, (formData) => {
+        const startYear = parseInt(formData.get("startYear"));
+        const useSchoolYearFormat = formData.get("useSchoolYearFormat") === "on";
+        const yearName = useSchoolYearFormat ? `${startYear}/${startYear + 1}` : `${startYear}`;
+
         const copyFromPreviousId = formData.get("copyFromPrevious") === "on" && previousYear
             ? previousYear.id
             : null;
-        addYear(classId, formData.get("name"), copyFromPreviousId);
+        addYear(classId, yearName, copyFromPreviousId);
     });
 };
 
