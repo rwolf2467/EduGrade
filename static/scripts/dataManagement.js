@@ -342,50 +342,47 @@ const deleteClass = (classId) => {
 };
 
 /**
- * PLUS/MINUS-EINSTELLUNGEN AKTUALISIEREN
+ * PLUS/MINUS-PROZENT-EINSTELLUNGEN AKTUALISIEREN
  *
- * Für Kategorien die nur +/- Noten verwenden (z.B. Mitarbeit),
- * wird aus den Plus- und Minus-Einträgen eine Note berechnet.
+ * Definiert die Prozentwerte für +/~/- Noten.
+ * Diese werden verwendet, um +/~/- Noten in eine Note umzuwandeln.
  *
- * Beispiel mit Standardwerten (startGrade=3, plusValue=0.5, minusValue=0.5):
- * - 0 Plus, 0 Minus = Note 3.0
- * - 2 Plus, 0 Minus = Note 2.0 (3 - 2*0.5)
- * - 0 Plus, 2 Minus = Note 4.0 (3 + 2*0.5)
- * - 3 Plus, 1 Minus = Note 2.0 (3 - 3*0.5 + 1*0.5)
+ * Beispiel mit Standardwerten (+ = 100%, ~ = 50%, - = 0%):
+ * - 2+, 1~, 1- = (200 + 50 + 0) / 4 = 62.5% → Note 2 (bei Standard-Prozentbereichen)
+ * - 3+, 0~, 1- = (300 + 0 + 0) / 4 = 75% → Note 2
+ * - 1+, 2~, 2- = (100 + 100 + 0) / 5 = 40% → Note 4
  *
- * @param {number} startGrade - Ausgangsnote (Standard: 3)
- * @param {number} plusValue - Wert pro Plus (verbessert Note)
- * @param {number} minusValue - Wert pro Minus (verschlechtert Note)
+ * @param {number} plusPercent - Prozentwert für Plus (Standard: 100)
+ * @param {number} neutralPercent - Prozentwert für Neutral (Standard: 50)
+ * @param {number} minusPercent - Prozentwert für Minus (Standard: 0)
  */
-const updatePlusMinusGradeSettings = (startGrade, plusValue, minusValue) => {
+const updatePlusMinusPercentages = (plusPercent, neutralPercent, minusPercent) => {
     // Alle Werte zu Zahlen konvertieren
-    const start = parseFloat(startGrade);
-    const plus = parseFloat(plusValue);
-    const minus = parseFloat(minusValue);
+    const plus = parseFloat(plusPercent);
+    const neutral = parseFloat(neutralPercent);
+    const minus = parseFloat(minusPercent);
 
-    // VALIDIERUNG: Startnote muss zwischen 1 und 5 liegen
-    if (isNaN(start) || start < 1 || start > 5) {
-        showAlertDialog(t("validation.startGradeRange"));
+    // VALIDIERUNG: Alle Werte müssen zwischen 0 und 100 liegen
+    if (isNaN(plus) || plus < 0 || plus > 100) {
+        showAlertDialog(t("validation.percentRange"));
         return;
     }
 
-    // VALIDIERUNG: Plus-Wert muss zwischen 0.1 und 2 liegen
-    if (isNaN(plus) || plus < 0.1 || plus > 2) {
-        showAlertDialog(t("validation.plusValueRange"));
+    if (isNaN(neutral) || neutral < 0 || neutral > 100) {
+        showAlertDialog(t("validation.percentRange"));
         return;
     }
 
-    // VALIDIERUNG: Minus-Wert muss zwischen 0.1 und 2 liegen
-    if (isNaN(minus) || minus < 0.1 || minus > 2) {
-        showAlertDialog(t("validation.minusValueRange"));
+    if (isNaN(minus) || minus < 0 || minus > 100) {
+        showAlertDialog(t("validation.percentRange"));
         return;
     }
 
     // Einstellungen speichern
-    appData.plusMinusGradeSettings = {
-        startGrade: start,
-        plusValue: plus,
-        minusValue: minus
+    appData.plusMinusPercentages = {
+        plus: plus,
+        neutral: neutral,
+        minus: minus
     };
 
     saveData();

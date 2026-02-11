@@ -22,6 +22,8 @@
     <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/js/all.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
     <script src="/static/scripts/theme.js"></script>
 </head>
@@ -751,15 +753,27 @@
                                 </button>
                                 <h2 class="text-xl font-semibold" id="student-detail-name"></h2>
                             </div>
-                            <button id="student-detail-add-grade" class="btn-primary">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round">
-                                    <path d="M5 12h14" />
-                                    <path d="M12 5v14" />
-                                </svg>
-                                <span data-i18n="grade.addGrade">Add Grade</span>
-                            </button>
+                            <div class="flex gap-2">
+                                <button id="student-detail-print" class="btn-outline">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                        <rect x="6" y="14" width="12" height="8"></rect>
+                                    </svg>
+                                    <span data-i18n="student.print">Print</span>
+                                </button>
+                                <button id="student-detail-add-grade" class="btn-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M5 12h14" />
+                                        <path d="M12 5v14" />
+                                    </svg>
+                                    <span data-i18n="grade.addGrade">Add Grade</span>
+                                </button>
+                            </div>
                         </header>
 
                         <section class="p-7">
@@ -950,27 +964,43 @@
                                     aria-selected="false" hidden>
                                     <div class="py-4">
                                         <p class="text-sm mb-3" style="color: oklch(.708 0 0);"
-                                            data-i18n="category.plusMinusSettingsHint">Settings for categories
-                                            that use only +/~/- grades instead of numeric grades. The grade is calculated
-                                            from a starting grade, adjusted by each + and -. ~ (Neutral) has no effect.</p>
-                                        <div class="grid grid-cols-3 gap-3">
-                                            <div>
-                                                <label class="block text-sm mb-1" data-i18n="category.startGrade">Start
-                                                    grade</label>
-                                                <input type="number" id="plusminus-start-grade" step="0.5" min="1"
-                                                    max="5" class="input w-full" value="3">
+                                            data-i18n="category.plusMinusSettingsHint">Configure the percentage values for +/~/- grades. These values are used to calculate the grade average for categories with +/~/- grades.</p>
+                                        <div class="space-y-3">
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-2xl font-bold text-green-600 w-12 text-center">+</span>
+                                                <div class="flex-1">
+                                                    <label class="block text-sm mb-1" data-i18n="category.plusPercent">Plus percentage</label>
+                                                    <div class="flex items-center gap-2">
+                                                        <input type="number" id="plusminus-plus-percent" step="1" min="0"
+                                                            max="100" class="input w-32" value="100">
+                                                        <span class="text-sm">%</span>
+                                                        <span class="text-xs" style="color: oklch(.708 0 0);" data-i18n="category.plusHint">(Excellent performance)</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <label class="block text-sm mb-1" data-i18n="category.perPlus">Per +
-                                                    (better)</label>
-                                                <input type="number" id="plusminus-plus-value" step="0.1" min="0.1"
-                                                    max="2" class="input w-full" value="0.5">
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-2xl font-bold text-yellow-600 w-12 text-center">~</span>
+                                                <div class="flex-1">
+                                                    <label class="block text-sm mb-1" data-i18n="category.neutralPercent">Neutral percentage</label>
+                                                    <div class="flex items-center gap-2">
+                                                        <input type="number" id="plusminus-neutral-percent" step="1" min="0"
+                                                            max="100" class="input w-32" value="50">
+                                                        <span class="text-sm">%</span>
+                                                        <span class="text-xs" style="color: oklch(.708 0 0);" data-i18n="category.neutralHint">(Average performance)</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <label class="block text-sm mb-1" data-i18n="category.perMinus">Per -
-                                                    (worse)</label>
-                                                <input type="number" id="plusminus-minus-value" step="0.1" min="0.1"
-                                                    max="2" class="input w-full" value="0.5">
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-2xl font-bold text-red-600 w-12 text-center">-</span>
+                                                <div class="flex-1">
+                                                    <label class="block text-sm mb-1" data-i18n="category.minusPercent">Minus percentage</label>
+                                                    <div class="flex items-center gap-2">
+                                                        <input type="number" id="plusminus-minus-percent" step="1" min="0"
+                                                            max="100" class="input w-32" value="0">
+                                                        <span class="text-sm">%</span>
+                                                        <span class="text-xs" style="color: oklch(.708 0 0);" data-i18n="category.minusHint">(Poor performance)</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         <button id="save-plusminus-settings" class="btn-primary mt-4 w-full"
@@ -1216,6 +1246,7 @@
     <script src="/static/scripts/ui.js"></script>
     <script src="/static/scripts/dataManagement.js"></script>
     <script src="/static/scripts/render.js"></script>
+    <script src="/static/scripts/pdfExport.js"></script>
     <script src="/static/scripts/exportImport.js"></script>
     <script src="/static/scripts/tutorial.js"></script>
     <script src="/static/scripts/eventListeners.js"></script>

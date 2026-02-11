@@ -1,0 +1,283 @@
+/**
+ * PDF Export Module for EduGrade
+ * Exports student detail view as PDF using jsPDF
+ */
+
+/**
+ * Export student detail view as PDF
+ * @param {string} studentId - ID of the student to export
+ */
+const exportStudentDetailPDF = async (studentId) => {
+    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
+    if (!currentClass) {
+        showAlertDialog(t("pdf.noClassSelected"));
+        return;
+    }
+
+    const student = currentClass.students.find(s => s.id === studentId);
+    if (!student) {
+        showAlertDialog(t("pdf.studentNotFound"));
+        return;
+    }
+
+    // Get current subject
+    const currentSubject = currentClass.subjects?.find(s => s.id === currentClass.currentSubjectId);
+    const subjectName = currentSubject ? currentSubject.name : t("common.allSubjects");
+
+    // Show loading overlay
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    loadingOverlay.innerHTML = `
+        <div class="bg-white rounded-lg p-6 max-w-sm">
+            <div class="flex items-center gap-3">
+                <div class="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+                <div>
+                    <p class="font-semibold">${escapeHtml(t("pdf.generating"))}</p>
+                    <p class="text-sm text-gray-600">${escapeHtml(t("pdf.pleaseWait"))}</p>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(loadingOverlay);
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        // PDF dimensions
+        const pageWidth = 210; // A4 width in mm
+        const pageHeight = 297; // A4 height in mm
+        const margin = 15;
+        let yPosition = margin;
+
+        // Helper function to check if we need a new page
+        const checkNewPage = (requiredSpace) => {
+            if (yPosition + requiredSpace > pageHeight - margin) {
+                pdf.addPage();
+                yPosition = margin;
+                return true;
+            }
+            return false;
+        };
+
+        // 1. Header - Student Name
+        pdf.setFontSize(20);
+        pdf.setFont('helvetica', 'bold');
+        const studentName = getStudentDisplayName(student);
+        pdf.text(studentName, margin, yPosition);
+        yPosition += 8;
+
+        // Metadata
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(100, 100, 100);
+        pdf.text(`${t("common.class")}: ${currentClass.name}`, margin, yPosition);
+        yPosition += 5;
+        pdf.text(`${t("common.subject")}: ${subjectName}`, margin, yPosition);
+        yPosition += 5;
+        pdf.text(`${t("pdf.generatedOn")}: ${new Date().toLocaleDateString()}`, margin, yPosition);
+        yPosition += 12;
+        pdf.setTextColor(0, 0, 0);
+
+        // 2. Statistics Section
+        const filteredGrades = filterGradesBySubject(student.grades, currentClass.currentSubjectId);
+        const weightedAvg = calculateWeightedAverage(filteredGrades);
+        const finalGrade = calculateFinalGrade(weightedAvg);
+        const trend = calculateTrend(filteredGrades);
+        const classAvg = calculateClassAverage();
+        const gradePercentage = weightedAvg ? ((6 - weightedAvg) / 5) * 100 : null;
+
+        checkNewPage(40);
+
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(t("student.statistics"), margin, yPosition);
+        yPosition += 8;
+
+        // Statistics grid (2 columns)
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+
+        const stats = [
+            {
+                label: t("student.average"),
+                value: weightedAvg ? `${weightedAvg.toFixed(2)} (${gradePercentage.toFixed(0)}%)` : "-"
+            },
+            {
+                label: t("student.finalGrade"),
+                value: finalGrade
+            },
+            {
+                label: t("student.trend"),
+                value: t(`student.${trend.trend}`)
+            },
+            {
+                label: t("student.gradeCount"),
+                value: filteredGrades.length.toString()
+            },
+            {
+                label: t("student.vsClassAverage"),
+                value: classAvg && weightedAvg ? `${(weightedAvg - classAvg).toFixed(2)}` : "-"
+            }
+        ];
+
+        stats.forEach((stat, idx) => {
+            const col = idx % 2;
+            const row = Math.floor(idx / 2);
+            const xPos = margin + (col * 95);
+            const yPos = yPosition + (row * 10);
+
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(stat.label + ":", xPos, yPos);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(stat.value, xPos + 40, yPos);
+        });
+
+        yPosition += Math.ceil(stats.length / 2) * 10 + 5;
+
+        // 3. Chart - Capture Chart.js canvas
+        const canvas = document.getElementById("student-grade-chart");
+        console.log("PDF Export - Canvas exists:", !!canvas);
+        console.log("PDF Export - Chart instance exists:", !!window.studentGradeChartInstance);
+        console.log("PDF Export - Filtered grades count:", filteredGrades.length);
+
+        if (canvas && window.studentGradeChartInstance) {
+            checkNewPage(100);
+
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(t("student.gradeProgression"), margin, yPosition);
+            yPosition += 8;
+
+            try {
+                const chartImage = canvas.toDataURL('image/png', 1.0);
+                const chartWidth = pageWidth - (margin * 2);
+                const chartHeight = 80;
+
+                pdf.addImage(chartImage, 'PNG', margin, yPosition, chartWidth, chartHeight);
+                yPosition += chartHeight + 10;
+                console.log("PDF Export - Chart added successfully");
+            } catch (error) {
+                console.error("PDF Export - Error capturing chart:", error);
+                // Skip chart if there's an error
+            }
+        } else {
+            console.log("PDF Export - Chart skipped (canvas or instance missing)");
+        }
+
+        // 4. Category Breakdown
+        if (filteredGrades.length > 0) {
+            checkNewPage(50);
+
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(t("student.categoryBreakdown"), margin, yPosition);
+            yPosition += 8;
+
+            // Group grades by category
+            const gradesByCategory = {};
+            filteredGrades.forEach(grade => {
+                const catId = grade.categoryId;
+                if (!gradesByCategory[catId]) {
+                    gradesByCategory[catId] = {
+                        name: grade.categoryName,
+                        weight: grade.weight,
+                        grades: []
+                    };
+                }
+                gradesByCategory[catId].grades.push(grade);
+            });
+
+            pdf.setFontSize(10);
+            Object.entries(gradesByCategory).forEach(([catId, category]) => {
+                checkNewPage(8);
+
+                const numericGrades = category.grades.filter(g => !g.isPlusMinus);
+                const avg = numericGrades.length > 0
+                    ? (numericGrades.reduce((sum, g) => sum + g.value, 0) / numericGrades.length).toFixed(2)
+                    : '-';
+
+                const percentage = avg !== '-' ? `(${(((6 - parseFloat(avg)) / 5) * 100).toFixed(0)}%)` : '';
+
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(category.name, margin, yPosition);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(`${avg} ${percentage}`, margin + 70, yPosition);
+                pdf.text(`${(category.weight * 100).toFixed(0)}% ${t("common.weight")}`, margin + 120, yPosition);
+                pdf.text(`${category.grades.length} ${t("student.grades")}`, margin + 160, yPosition);
+
+                yPosition += 6;
+            });
+
+            yPosition += 8;
+        }
+
+        // 5. Grades Table
+        if (filteredGrades.length > 0) {
+            checkNewPage(40);
+
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(t("student.gradesHistory"), margin, yPosition);
+            yPosition += 8;
+
+            const sortedGrades = [...filteredGrades].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+            // Table headers
+            pdf.setFontSize(9);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFillColor(240, 240, 240);
+            pdf.rect(margin, yPosition - 4, pageWidth - (margin * 2), 6, 'F');
+
+            const colWidths = [35, 50, 25, 70];
+            const colPositions = [margin, margin + colWidths[0], margin + colWidths[0] + colWidths[1], margin + colWidths[0] + colWidths[1] + colWidths[2]];
+            const headers = [t("grade.date"), t("grade.category"), t("grade.value"), t("grade.name")];
+
+            headers.forEach((header, i) => {
+                pdf.text(header, colPositions[i] + 2, yPosition);
+            });
+            yPosition += 7;
+
+            // Table rows
+            pdf.setFont('helvetica', 'normal');
+            sortedGrades.forEach((grade, idx) => {
+                checkNewPage(10);
+
+                // Alternating row colors
+                if (idx % 2 === 0) {
+                    pdf.setFillColor(250, 250, 250);
+                    pdf.rect(margin, yPosition - 4, pageWidth - (margin * 2), 6, 'F');
+                }
+
+                const date = grade.createdAt ? new Date(grade.createdAt).toLocaleDateString() : '-';
+                const gradeValue = grade.isPlusMinus ? grade.value : grade.value.toString();
+                const gradeName = grade.name || '-';
+
+                pdf.text(date, colPositions[0] + 2, yPosition);
+                pdf.text(grade.categoryName || '-', colPositions[1] + 2, yPosition);
+                pdf.text(gradeValue, colPositions[2] + 2, yPosition);
+
+                // Truncate long grade names
+                const maxWidth = colWidths[3] - 4;
+                const truncatedName = gradeName.length > 30 ? gradeName.substring(0, 27) + '...' : gradeName;
+                pdf.text(truncatedName, colPositions[3] + 2, yPosition);
+
+                yPosition += 6;
+            });
+        }
+
+        // Save PDF
+        const sanitizedStudentName = studentName.replace(/[^a-zA-Z0-9]/g, '_');
+        const sanitizedSubjectName = subjectName.replace(/[^a-zA-Z0-9]/g, '_');
+        const filename = `${sanitizedStudentName}_${sanitizedSubjectName}_${new Date().toISOString().slice(0, 10)}.pdf`;
+        pdf.save(filename);
+
+        showToast(t("toast.pdfExported"), "success");
+    } catch (error) {
+        console.error("PDF export error:", error);
+        showAlertDialog(t("pdf.exportError"));
+    } finally {
+        // Remove loading overlay
+        loadingOverlay.remove();
+    }
+};

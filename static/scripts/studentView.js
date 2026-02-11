@@ -46,19 +46,19 @@
         return numeric.reduce((sum, g) => sum + g.value, 0) / numeric.length;
     };
 
-    const calculateWeightedAverage = (grades, plusMinusSettings) => {
-        const settings = plusMinusSettings || { startGrade: 3, plusValue: 0.5, minusValue: 0.5 };
+    const calculateWeightedAverage = (grades, plusMinusPercentages) => {
+        const percentages = plusMinusPercentages || { plus: 100, neutral: 50, minus: 0 };
         const byCategory = {};
 
         grades.forEach(grade => {
             const catId = grade.categoryId;
             if (!byCategory[catId]) {
-                byCategory[catId] = { weight: grade.weight, numericGrades: [], plusCount: 0, minusCount: 0 };
+                byCategory[catId] = { weight: grade.weight, numericGrades: [], plusCount: 0, neutralCount: 0, minusCount: 0 };
             }
             if (grade.isPlusMinus) {
                 if (grade.value === '+') byCategory[catId].plusCount++;
+                else if (grade.value === '~') byCategory[catId].neutralCount++;
                 else if (grade.value === '-') byCategory[catId].minusCount++;
-                // "~" (neutral) has no effect
             } else {
                 byCategory[catId].numericGrades.push(grade.value);
             }
@@ -71,15 +71,38 @@
             if (cat.numericGrades.length > 0) {
                 avg = cat.numericGrades.reduce((a, b) => a + b, 0) / cat.numericGrades.length;
             }
-            if (cat.plusCount > 0 || cat.minusCount > 0) {
-                let pmGrade = settings.startGrade - cat.plusCount * settings.plusValue + cat.minusCount * settings.minusValue;
-                pmGrade = Math.max(1, Math.min(5, pmGrade));
-                if (avg !== null) {
-                    avg = (avg * cat.numericGrades.length + pmGrade) / (cat.numericGrades.length + 1);
+
+            const totalPlusMinusGrades = cat.plusCount + cat.neutralCount + cat.minusCount;
+            if (totalPlusMinusGrades > 0) {
+                // Prozentbasierte Berechnung für +/~/- Noten
+                const totalPoints = (cat.plusCount * percentages.plus) +
+                                   (cat.neutralCount * percentages.neutral) +
+                                   (cat.minusCount * percentages.minus);
+                const percentage = totalPoints / totalPlusMinusGrades;
+
+                let pmGrade;
+                // Prozent in Note umwandeln (mit percentToGrade falls verfügbar)
+                if (typeof percentToGrade === 'function') {
+                    pmGrade = percentToGrade(percentage);
+                    if (pmGrade === null) pmGrade = 3;
                 } else {
+                    // Fallback: Einfache Umrechnung wenn percentToGrade nicht verfügbar
+                    if (percentage >= 85) pmGrade = 1;
+                    else if (percentage >= 70) pmGrade = 2;
+                    else if (percentage >= 55) pmGrade = 3;
+                    else if (percentage >= 40) pmGrade = 4;
+                    else pmGrade = 5;
+                }
+
+                if (cat.numericGrades.length === 0) {
+                    // Nur +/~/- Noten
                     avg = pmGrade;
+                } else {
+                    // Gemischte Kategorie: +/~/- zählt als eine zusätzliche "Note"
+                    avg = (avg * cat.numericGrades.length + pmGrade) / (cat.numericGrades.length + 1);
                 }
             }
+
             if (avg !== null) {
                 weightedSum += avg * cat.weight;
                 totalWeight += cat.weight;

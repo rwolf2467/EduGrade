@@ -603,6 +603,13 @@ const renderStudents = () => {
                 <button class="btn-icon btn-secondary mr-1" data-view-student="${safeAttr(student.id)}" data-tooltip="${t("class.viewDetails")}" data-side="top">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
+                <button class="btn-icon btn-secondary mr-1" data-print-student="${safeAttr(student.id)}" data-tooltip="${t("student.print")}" data-side="top">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                  </svg>
+                </button>
                 <button class="btn-icon btn-primary mr-1" data-add-grade="${safeAttr(student.id)}" data-tooltip="${t("grade.addGrade")}" data-side="top">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-icon lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                 </button>
@@ -636,6 +643,13 @@ const renderStudents = () => {
     document.querySelectorAll("[data-add-grade]").forEach(btn => {
         btn.addEventListener("click", () => {
             openAddGradeDialog(btn.dataset.addGrade, () => renderStudents());
+        });
+    });
+
+    document.querySelectorAll("[data-print-student]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const studentId = btn.dataset.printStudent;
+            exportStudentDetailPDF(studentId);
         });
     });
 
@@ -950,11 +964,11 @@ const calculateSimpleAverage = (grades) => {
  * @returns {number} - Gewichteter Durchschnitt (1-5) oder 0
  */
 const calculateWeightedAverage = (grades) => {
-    // Einstellungen für Plus/Minus-Berechnung laden
-    const plusMinusSettings = appData.plusMinusGradeSettings || {
-        startGrade: 3,
-        plusValue: 0.5,
-        minusValue: 0.5
+    // Prozentwerte für Plus/Minus/Neutral laden
+    const plusMinusPercentages = appData.plusMinusPercentages || {
+        plus: 100,
+        neutral: 50,
+        minus: 0
     };
 
     // SCHRITT 1: Noten nach Kategorie gruppieren
@@ -967,6 +981,7 @@ const calculateWeightedAverage = (grades) => {
                 weight: grade.weight,
                 numericGrades: [],
                 plusCount: 0,
+                neutralCount: 0,
                 minusCount: 0
             };
         }
@@ -974,10 +989,11 @@ const calculateWeightedAverage = (grades) => {
         if (grade.isPlusMinus) {
             if (grade.value === "+") {
                 gradesByCategory[catId].plusCount++;
+            } else if (grade.value === "~") {
+                gradesByCategory[catId].neutralCount++;
             } else if (grade.value === "-") {
                 gradesByCategory[catId].minusCount++;
             }
-            // "~" (neutral) has no effect on the grade
         } else {
             gradesByCategory[catId].numericGrades.push(grade.value);
         }
@@ -996,20 +1012,26 @@ const calculateWeightedAverage = (grades) => {
             categoryAverage = sum / category.numericGrades.length;
         }
 
-        // Plus/Minus Noten: aus Startnote berechnen
-        if (category.plusCount > 0 || category.minusCount > 0) {
-            let pmGrade = plusMinusSettings.startGrade;
-            pmGrade -= category.plusCount * plusMinusSettings.plusValue;
-            pmGrade += category.minusCount * plusMinusSettings.minusValue;
-            pmGrade = Math.max(1, Math.min(5, pmGrade));
+        // Plus/Minus/Neutral Noten
+        const totalPlusMinusGrades = category.plusCount + category.neutralCount + category.minusCount;
+        if (totalPlusMinusGrades > 0) {
+            // Prozentbasierte Berechnung für +/~/- Noten (immer, auch bei gemischten Kategorien)
+            const totalPoints = (category.plusCount * plusMinusPercentages.plus) +
+                               (category.neutralCount * plusMinusPercentages.neutral) +
+                               (category.minusCount * plusMinusPercentages.minus);
+            const percentage = totalPoints / totalPlusMinusGrades;
 
-            if (categoryAverage !== null) {
-                // Wenn es auch numerische Noten gibt, kombinieren
-                // +/- zählt als eine zusätzliche "Note"
+            // Prozent in Note umwandeln (verwendet gradePercentageRanges)
+            let pmGrade = percentToGrade(percentage);
+            if (pmGrade === null) pmGrade = 3; // Fallback
+
+            if (category.numericGrades.length === 0) {
+                // Nur +/~/- Noten: verwende die berechnete Note direkt
+                categoryAverage = pmGrade;
+            } else {
+                // Gemischte Kategorie: +/- zählt als eine zusätzliche "Note"
                 const totalGrades = category.numericGrades.length + 1;
                 categoryAverage = (categoryAverage * category.numericGrades.length + pmGrade) / totalGrades;
-            } else {
-                categoryAverage = pmGrade;
             }
         }
 
@@ -1170,9 +1192,9 @@ const showHomeView = () => {
     const studentDetailView = document.getElementById("student-detail-view");
 
     // Destroy chart instance if exists
-    if (studentGradeChartInstance) {
-        studentGradeChartInstance.destroy();
-        studentGradeChartInstance = null;
+    if (window.studentGradeChartInstance) {
+        window.studentGradeChartInstance.destroy();
+        window.studentGradeChartInstance = null;
     }
 
     // Find which view is currently visible
@@ -1221,9 +1243,9 @@ const showClassView = () => {
     const studentDetailView = document.getElementById("student-detail-view");
 
     // Destroy chart instance if exists
-    if (studentGradeChartInstance) {
-        studentGradeChartInstance.destroy();
-        studentGradeChartInstance = null;
+    if (window.studentGradeChartInstance) {
+        window.studentGradeChartInstance.destroy();
+        window.studentGradeChartInstance = null;
     }
 
     // Find which view is currently visible
@@ -1280,8 +1302,8 @@ const showClassView = () => {
 
 // ========== STUDENT DETAIL VIEW FUNCTIONS ==========
 
-// Store the Chart.js instance for cleanup
-let studentGradeChartInstance = null;
+// Store the Chart.js instance for cleanup (global so PDF export can access it)
+window.window.studentGradeChartInstance = null;
 
 /**
  * SHOW STUDENT DETAIL VIEW
@@ -1324,9 +1346,9 @@ const backToClassView = () => {
     const studentDetailView = document.getElementById("student-detail-view");
 
     // Destroy chart instance if exists
-    if (studentGradeChartInstance) {
-        studentGradeChartInstance.destroy();
-        studentGradeChartInstance = null;
+    if (window.studentGradeChartInstance) {
+        window.studentGradeChartInstance.destroy();
+        window.studentGradeChartInstance = null;
     }
 
     studentDetailView.style.animation = 'viewFadeOut 0.15s ease-in forwards';
@@ -1501,6 +1523,12 @@ const renderStudentDetail = (studentId) => {
     addGradeBtn.onclick = () => {
         openAddGradeDialog(studentId, () => renderStudentDetail(studentId));
     };
+
+    // Print button in student detail header
+    const printBtn = document.getElementById("student-detail-print");
+    if (printBtn) {
+        printBtn.onclick = () => exportStudentDetailPDF(studentId);
+    }
 };
 
 /**
@@ -1514,8 +1542,8 @@ const renderStudentGradeChart = (student) => {
     const ctx = document.getElementById("student-grade-chart").getContext("2d");
 
     // Destroy existing chart if any
-    if (studentGradeChartInstance) {
-        studentGradeChartInstance.destroy();
+    if (window.studentGradeChartInstance) {
+        window.studentGradeChartInstance.destroy();
     }
 
     // Group grades by category
@@ -1529,13 +1557,6 @@ const renderStudentGradeChart = (student) => {
         { bg: 'rgba(234, 179, 8, 0.2)', border: 'rgb(234, 179, 8)' },     // Yellow
     ];
 
-    // Plus/Minus settings for converting +/~/- to numeric values
-    const plusMinusSettings = appData.plusMinusGradeSettings || {
-        startGrade: 3,
-        plusValue: 0.5,
-        minusValue: 0.5
-    };
-
     // Include all grades (numeric and +/~/-)
     student.grades.forEach(grade => {
         const catName = grade.categoryName || 'Unknown';
@@ -1546,14 +1567,15 @@ const renderStudentGradeChart = (student) => {
         let yValue;
         let displayLabel;
         if (grade.isPlusMinus) {
+            // For chart visualization: fixed Y-values for better readability
             if (grade.value === '+') {
-                yValue = plusMinusSettings.startGrade - plusMinusSettings.plusValue;
+                yValue = 1.5;  // Display near "Very Good"
                 displayLabel = '+';
             } else if (grade.value === '~') {
-                yValue = plusMinusSettings.startGrade;
+                yValue = 3;    // Display at "Satisfactory"
                 displayLabel = '~';
             } else {
-                yValue = plusMinusSettings.startGrade + plusMinusSettings.minusValue;
+                yValue = 4.5;  // Display near "Sufficient"
                 displayLabel = '-';
             }
         } else {
@@ -1605,7 +1627,7 @@ const renderStudentGradeChart = (student) => {
         return;
     }
 
-    studentGradeChartInstance = new Chart(ctx, {
+    window.studentGradeChartInstance = new Chart(ctx, {
         type: 'line',
         data: { datasets },
         options: {
@@ -1728,6 +1750,22 @@ const renderCategoryBreakdown = (student) => {
             const minusCount = plusMinusGrades.filter(g => g.value === '-').length;
             if (gradeInfo) gradeInfo += ', ';
             gradeInfo += `${plusCount}+ / ${neutralCount}~ / ${minusCount}-`;
+
+            // If this category has ONLY +/~/- grades (no numeric grades), show the tendency
+            if (numericGrades.length === 0) {
+                // Determine the dominant tendency
+                if (plusCount > minusCount) {
+                    avgText = '+';
+                    percentageBadge = '<span class="badge grade-badge grade-1 text-xs">+</span>';
+                } else if (minusCount > plusCount) {
+                    avgText = '-';
+                    percentageBadge = '<span class="badge grade-badge grade-5 text-xs">-</span>';
+                } else {
+                    // Equal or neutral dominates
+                    avgText = '~';
+                    percentageBadge = '<span class="badge grade-badge grade-3 text-xs">~</span>';
+                }
+            }
         }
 
         return `

@@ -72,5 +72,10 @@ let appData = {
         { grade: 3, minPercent: 55, maxPercent: 69 },   // Befriedigend
         { grade: 4, minPercent: 40, maxPercent: 54 },   // Genügend
         { grade: 5, minPercent: 0, maxPercent: 39 }     // Nicht Genügend
-    ]
+    ],
+    plusMinusPercentages: {       // Prozentwerte für +/~/- Noten
+        plus: 100,                // Plus = 100% (Sehr gute Leistung)
+        neutral: 50,              // Neutral = 50% (Durchschnittliche Leistung)
+        minus: 0                  // Minus = 0% (Schwache Leistung)
+    }
 };

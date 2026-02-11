@@ -378,13 +378,17 @@ const migrateData = () => {
         appData.language = I18n.getCurrentLanguage();
     }
 
-    // MIGRATION: plusMinusGradeSettings
-    if (!appData.plusMinusGradeSettings) {
-        appData.plusMinusGradeSettings = {
-            startGrade: 3,
-            plusValue: 0.5,
-            minusValue: 0.5
+    // MIGRATION: plusMinusPercentages (replaces old plusMinusGradeSettings)
+    if (!appData.plusMinusPercentages) {
+        appData.plusMinusPercentages = {
+            plus: 100,
+            neutral: 50,
+            minus: 0
         };
+    }
+    // Remove old plusMinusGradeSettings if it exists
+    if (appData.plusMinusGradeSettings) {
+        delete appData.plusMinusGradeSettings;
     }
 
     // MIGRATION: Ensure all grades have the correct structure

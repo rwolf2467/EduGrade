@@ -293,11 +293,15 @@ document.getElementById("manage-categories").addEventListener("click", () => {
     renderCategoryManagement();
     settingsDirty = false;
 
-    // Load current plus/minus grade settings
-    const pmSettings = appData.plusMinusGradeSettings || { startGrade: 3, plusValue: 0.5, minusValue: 0.5 };
-    document.getElementById("plusminus-start-grade").value = pmSettings.startGrade;
-    document.getElementById("plusminus-plus-value").value = pmSettings.plusValue;
-    document.getElementById("plusminus-minus-value").value = pmSettings.minusValue;
+    // Load current plus/minus percentage settings
+    const pmPercentages = appData.plusMinusPercentages || { plus: 100, neutral: 50, minus: 0 };
+    const plusInput = document.getElementById("plusminus-plus-percent");
+    const neutralInput = document.getElementById("plusminus-neutral-percent");
+    const minusInput = document.getElementById("plusminus-minus-percent");
+
+    if (plusInput) plusInput.value = pmPercentages.plus;
+    if (neutralInput) neutralInput.value = pmPercentages.neutral;
+    if (minusInput) minusInput.value = pmPercentages.minus;
 
     // Load current percentage ranges
     const defaultRanges = [
@@ -317,7 +321,7 @@ document.getElementById("manage-categories").addEventListener("click", () => {
 
     // Dirty-Tracking für Settings-Inputs
     const settingsInputs = [
-        'plusminus-start-grade', 'plusminus-plus-value', 'plusminus-minus-value',
+        'plusminus-plus-percent', 'plusminus-neutral-percent', 'plusminus-minus-percent',
         'grade-1-min', 'grade-1-max', 'grade-2-min', 'grade-2-max',
         'grade-3-min', 'grade-3-max', 'grade-4-min', 'grade-4-max',
         'grade-5-min', 'grade-5-max'
@@ -351,10 +355,10 @@ document.getElementById("manage-categories-dialog").addEventListener("cancel", (
 // cancel-edit is now handled inside showDialog() with unsaved-changes protection
 
 document.getElementById("save-plusminus-settings").addEventListener("click", () => {
-    const startGrade = document.getElementById("plusminus-start-grade").value;
-    const plusValue = document.getElementById("plusminus-plus-value").value;
-    const minusValue = document.getElementById("plusminus-minus-value").value;
-    updatePlusMinusGradeSettings(startGrade, plusValue, minusValue);
+    const plusPercent = document.getElementById("plusminus-plus-percent").value;
+    const neutralPercent = document.getElementById("plusminus-neutral-percent").value;
+    const minusPercent = document.getElementById("plusminus-minus-percent").value;
+    updatePlusMinusPercentages(plusPercent, neutralPercent, minusPercent);
     settingsDirty = false;
     showToast(t("toast.plusMinusSettingsSaved"), "success");
 });
