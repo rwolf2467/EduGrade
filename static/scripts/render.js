@@ -233,6 +233,48 @@ const renderSubjectTabs = () => {
  */
 
 /**
+ * INITIALIZE TABS IN DIALOG
+ *
+ * Helper function to initialize tab functionality for dynamically created tabs.
+ * Handles switching between tabs when clicked.
+ *
+ * @param {string} tabsContainerId - ID of the tabs container element
+ */
+const initializeTabs = (tabsContainerId) => {
+    const container = document.getElementById(tabsContainerId);
+    if (!container) return;
+
+    const tabs = container.querySelectorAll('[role="tab"]');
+    const panels = container.querySelectorAll('[role="tabpanel"]');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+
+            // Deactivate all tabs and panels
+            tabs.forEach(t => {
+                t.setAttribute('aria-selected', 'false');
+                t.setAttribute('tabindex', '-1');
+            });
+            panels.forEach(p => {
+                p.setAttribute('aria-selected', 'false');
+                p.hidden = true;
+            });
+
+            // Activate clicked tab and its panel
+            tab.setAttribute('aria-selected', 'true');
+            tab.setAttribute('tabindex', '0');
+            const panelId = tab.getAttribute('aria-controls');
+            const panel = document.getElementById(panelId);
+            if (panel) {
+                panel.setAttribute('aria-selected', 'true');
+                panel.hidden = false;
+            }
+        });
+    });
+};
+
+/**
  * OPEN ADD GRADE DIALOG
  *
  * Opens the dialog for adding a grade to a student. Reusable from class view and student detail view.
@@ -426,6 +468,11 @@ const openAddGradeDialog = (studentId, onSuccess) => {
                 </div>
             `;
 
+            // Initialize tabs
+            setTimeout(() => {
+                initializeTabs("grade-input-tabs");
+            }, 0);
+
             // Add percentage preview listener
             setTimeout(() => {
                 const percentInput = document.getElementById("grade-percent-input");
@@ -447,6 +494,11 @@ const openAddGradeDialog = (studentId, onSuccess) => {
 
     categorySelect.addEventListener("change", updateGradeInput);
     updateGradeInput(); // Initialize on load
+
+    // Initialize tabs functionality
+    setTimeout(() => {
+        initializeTabs("grade-input-tabs");
+    }, 0);
 
     // Add initial percentage preview listener
     setTimeout(() => {
@@ -1762,6 +1814,7 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
             const grade = student.grades.find(g => g.id === gradeId);
             if (grade) {
                 const isPlusMinus = grade.isPlusMinus;
+                const wasEnteredAsPercent = grade.enteredAsPercent === true;
 
                 let valueInput;
                 if (isPlusMinus) {
@@ -1773,7 +1826,37 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                         </select>
                     `;
                 } else {
-                    valueInput = `<input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" value="${escapeHtml(grade.value)}" required>`;
+                    // Always show tabs with percentage option for numeric grades
+                    // Calculate initial percentage value
+                    const initialPercent = wasEnteredAsPercent ? grade.percentValue : gradeToPercent(grade.value);
+                    // Determine which tab should be selected initially
+                    const gradeSelected = !wasEnteredAsPercent;
+                    const percentSelected = wasEnteredAsPercent;
+
+                    valueInput = `
+                        <div class="tabs w-full" id="grade-input-tabs-edit">
+                          <nav role="tablist" aria-orientation="horizontal" class="w-full">
+                            <button type="button" role="tab" id="tab-grade-direct-edit" aria-controls="panel-grade-direct-edit" aria-selected="${gradeSelected}" tabindex="0">${t("grade.gradeTab")}</button>
+                            <button type="button" role="tab" id="tab-grade-percent-edit" aria-controls="panel-grade-percent-edit" aria-selected="${percentSelected}" tabindex="0">${t("grade.percentageTab")}</button>
+                          </nav>
+                          <div role="tabpanel" id="panel-grade-direct-edit" aria-labelledby="tab-grade-direct-edit" tabindex="-1" aria-selected="${gradeSelected}" ${gradeSelected ? '' : 'hidden'}>
+                            <div class="pt-3">
+                              <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input-edit" value="${escapeHtml(grade.value)}" placeholder="1-6">
+                              <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterGrade")}</p>
+                            </div>
+                          </div>
+                          <div role="tabpanel" id="panel-grade-percent-edit" aria-labelledby="tab-grade-percent-edit" tabindex="-1" aria-selected="${percentSelected}" ${percentSelected ? '' : 'hidden'}>
+                            <div class="pt-3">
+                              <div class="flex items-center gap-2">
+                                <input type="number" id="grade-percent-input-edit" step="0.1" min="0" max="100" class="input flex-1" value="${escapeHtml(initialPercent || '')}" placeholder="0-100">
+                                <span>%</span>
+                              </div>
+                              <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterPercentage")}</p>
+                              <p class="text-sm mt-1 font-semibold" id="percent-preview-edit"></p>
+                            </div>
+                          </div>
+                        </div>
+                    `;
                 }
 
                 const content = `
@@ -1788,8 +1871,37 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                 `;
 
                 showDialog("edit-dialog", t("grade.editGrade"), content, (formData) => {
-                    const newValue = formData.get("value");
                     const newName = formData.get("name");
+                    let newValue = formData.get("value");
+                    let enteredAsPercent = false;
+                    let percentValue = null;
+
+                    // Check if percentage tab exists and is active (for numeric grades)
+                    if (!isPlusMinus) {
+                        const percentPanel = document.getElementById("panel-grade-percent-edit");
+                        const percentInput = document.getElementById("grade-percent-input-edit");
+                        const directGradeInput = document.getElementById("grade-value-input-edit");
+
+                        // If percentage panel is visible and has a value, convert it
+                        if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
+                            percentValue = parseFloat(percentInput.value);
+                            const convertedGrade = percentToGrade(percentValue);
+                            if (convertedGrade !== null) {
+                                newValue = convertedGrade.toString();
+                                enteredAsPercent = true;
+                            } else {
+                                showAlertDialog(t("error.invalidPercentage"));
+                                return;
+                            }
+                        } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
+                            showAlertDialog(t("error.enterPercentage"));
+                            return;
+                        } else if (directGradeInput && directGradeInput.value) {
+                            // User switched to grade tab
+                            newValue = directGradeInput.value;
+                            enteredAsPercent = false;
+                        }
+                    }
 
                     if (isPlusMinus) {
                         grade.value = newValue;
@@ -1798,9 +1910,86 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                     }
                     grade.name = newName;
 
+                    // Update percentage metadata
+                    if (enteredAsPercent) {
+                        grade.enteredAsPercent = true;
+                        grade.percentValue = percentValue;
+                    } else {
+                        // Remove percentage metadata if user switched to direct grade input
+                        delete grade.enteredAsPercent;
+                        delete grade.percentValue;
+                    }
+
                     saveData(t("toast.gradeUpdated"), "success");
                     renderStudentDetail(student.id);
                 });
+
+                // Add percentage preview listener and tab functionality for edit dialog (for numeric grades)
+                if (!isPlusMinus) {
+                    setTimeout(() => {
+                        // Initialize tabs
+                        initializeTabs("grade-input-tabs-edit");
+
+                        const percentInput = document.getElementById("grade-percent-input-edit");
+                        const percentPreview = document.getElementById("percent-preview-edit");
+                        const gradeInput = document.getElementById("grade-value-input-edit");
+
+                        if (percentInput && percentPreview) {
+                            // Initial preview
+                            const initialPercent = parseFloat(percentInput.value);
+                            if (!isNaN(initialPercent) && initialPercent >= 0 && initialPercent <= 100) {
+                                const gradeValue = percentToGrade(initialPercent);
+                                percentPreview.textContent = t("grade.percentPreview", { grade: gradeValue });
+                            }
+
+                            // Update on input
+                            percentInput.addEventListener("input", () => {
+                                const percent = parseFloat(percentInput.value);
+                                if (!isNaN(percent) && percent >= 0 && percent <= 100) {
+                                    const gradeValue = percentToGrade(percent);
+                                    percentPreview.textContent = t("grade.percentPreview", { grade: gradeValue });
+                                } else {
+                                    percentPreview.textContent = "";
+                                }
+                            });
+                        }
+
+                        // When switching from grade tab to percent tab, auto-fill percentage
+                        const percentTab = document.getElementById("tab-grade-percent-edit");
+                        if (percentTab && gradeInput && percentInput) {
+                            percentTab.addEventListener("click", () => {
+                                const currentGrade = parseFloat(gradeInput.value);
+                                // Only auto-fill if percent input is empty
+                                if (!percentInput.value && !isNaN(currentGrade) && currentGrade >= 1 && currentGrade <= 6) {
+                                    const calculatedPercent = gradeToPercent(currentGrade);
+                                    if (calculatedPercent !== null) {
+                                        percentInput.value = calculatedPercent;
+                                        // Trigger preview update
+                                        const gradeValue = percentToGrade(calculatedPercent);
+                                        if (percentPreview) {
+                                            percentPreview.textContent = t("grade.percentPreview", { grade: gradeValue });
+                                        }
+                                    }
+                                }
+                            });
+                        }
+
+                        // When switching from percent tab to grade tab, optionally update grade
+                        const gradeTab = document.getElementById("tab-grade-direct-edit");
+                        if (gradeTab && gradeInput && percentInput) {
+                            gradeTab.addEventListener("click", () => {
+                                const currentPercent = parseFloat(percentInput.value);
+                                // Only auto-fill if grade input is empty and we have a valid percent
+                                if (!gradeInput.value && !isNaN(currentPercent) && currentPercent >= 0 && currentPercent <= 100) {
+                                    const calculatedGrade = percentToGrade(currentPercent);
+                                    if (calculatedGrade !== null) {
+                                        gradeInput.value = calculatedGrade;
+                                    }
+                                }
+                            });
+                        }
+                    }, 0);
+                }
             }
         });
     });

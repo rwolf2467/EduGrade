@@ -464,6 +464,68 @@ const percentToGrade = (percent) => {
     return 5;
 };
 
+/**
+ * NOTE ZU PROZENT KONVERTIEREN (REVERSE)
+ *
+ * Wandelt eine Note zurück in einen Prozentwert um, basierend auf den
+ * konfigurierten Prozentbereichen. Gibt die Mitte des Bereichs zurück.
+ *
+ * @param {number} grade - Note (1-6)
+ * @returns {number} - Prozentwert (0-100) oder null wenn ungültig
+ */
+const gradeToPercent = (grade) => {
+    const g = parseFloat(grade);
+    if (isNaN(g) || g < 1 || g > 6) {
+        return null;
+    }
+
+    // Standardbereiche falls keine konfiguriert
+    const ranges = appData.gradePercentageRanges || [
+        { grade: 1, minPercent: 85, maxPercent: 100 },
+        { grade: 2, minPercent: 70, maxPercent: 84 },
+        { grade: 3, minPercent: 55, maxPercent: 69 },
+        { grade: 4, minPercent: 40, maxPercent: 54 },
+        { grade: 5, minPercent: 0, maxPercent: 39 }
+    ];
+
+    // Finde den passenden Bereich für die Note
+    // Bei Note 6 (Nicht beurteilt) gibt es keinen Prozentbereich, return null
+    if (g === 6) {
+        return null;
+    }
+
+    // Suche nach dem Bereich für die Note (z.B. Note 2 -> 70-84%)
+    const range = ranges.find(r => r.grade === Math.floor(g));
+    if (!range) {
+        return null;
+    }
+
+    // Berechne die Mitte des Bereichs als Startwert
+    // Bei Dezimalnoten (z.B. 2.3) interpolieren wir zwischen den Bereichen
+    const gradeInt = Math.floor(g);
+    const gradeFraction = g - gradeInt;
+
+    if (gradeFraction === 0) {
+        // Ganzzahlige Note: Mitte des Bereichs
+        return Math.round((range.minPercent + range.maxPercent) / 2);
+    } else {
+        // Dezimale Note: Interpolation
+        // z.B. Note 2.3 liegt zwischen Note 2 (70-84%) und Note 3 (55-69%)
+        const currentRange = range;
+        const nextRange = ranges.find(r => r.grade === gradeInt + 1);
+
+        if (!nextRange) {
+            // Kein nächster Bereich (z.B. Note 5.x), nutze die untere Grenze
+            return Math.round(currentRange.minPercent + (currentRange.maxPercent - currentRange.minPercent) * (1 - gradeFraction));
+        }
+
+        // Interpoliere zwischen Mitte des aktuellen Bereichs und Mitte des nächsten Bereichs
+        const currentMid = (currentRange.minPercent + currentRange.maxPercent) / 2;
+        const nextMid = (nextRange.minPercent + nextRange.maxPercent) / 2;
+        return Math.round(currentMid + (nextMid - currentMid) * gradeFraction);
+    }
+};
+
 // ========== FÄCHER-VERWALTUNG (Subjects) ==========
 
 /**
