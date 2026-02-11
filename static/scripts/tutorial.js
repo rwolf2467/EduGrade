@@ -117,8 +117,8 @@ const TUTORIAL_STEPS = [
         position: 'right',
         waitFor: {
             check: () => {
-                const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-                return currentClass && currentClass.students.length > 0;
+                const currentYear = getCurrentYear();
+                return currentYear && currentYear.students.length > 0;
             },
             event: 'studentAdded'
         }

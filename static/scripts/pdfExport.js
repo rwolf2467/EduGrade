@@ -8,20 +8,26 @@
  * @param {string} studentId - ID of the student to export
  */
 const exportStudentDetailPDF = async (studentId) => {
-    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
+    const currentClass = getCurrentClass();
     if (!currentClass) {
         showAlertDialog(t("pdf.noClassSelected"));
         return;
     }
 
-    const student = currentClass.students.find(s => s.id === studentId);
+    const currentYear = getCurrentYear();
+    if (!currentYear) {
+        showAlertDialog(t("pdf.noYearSelected"));
+        return;
+    }
+
+    const student = currentYear.students.find(s => s.id === studentId);
     if (!student) {
         showAlertDialog(t("pdf.studentNotFound"));
         return;
     }
 
     // Get current subject
-    const currentSubject = currentClass.subjects?.find(s => s.id === currentClass.currentSubjectId);
+    const currentSubject = currentYear.subjects?.find(s => s.id === currentYear.currentSubjectId);
     const subjectName = currentSubject ? currentSubject.name : t("common.allSubjects");
 
     // Show loading overlay
@@ -80,7 +86,7 @@ const exportStudentDetailPDF = async (studentId) => {
         pdf.setTextColor(0, 0, 0);
 
         // 2. Statistics Section
-        const filteredGrades = filterGradesBySubject(student.grades, currentClass.currentSubjectId);
+        const filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
         const weightedAvg = calculateWeightedAverage(filteredGrades);
         const finalGrade = calculateFinalGrade(weightedAvg);
         const trend = calculateTrend(filteredGrades);

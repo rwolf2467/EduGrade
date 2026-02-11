@@ -221,8 +221,8 @@ document.getElementById("import-students-file").addEventListener("change", async
 document.getElementById("confirm-import-students").addEventListener("click", () => {
     if (parsedStudentsToImport.length === 0) return;
 
-    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-    if (!currentClass) return;
+    const currentYear = getCurrentYear();
+    if (!currentYear) return;
 
     const skippedNames = [];
     let addedCount = 0;
@@ -237,7 +237,7 @@ document.getElementById("confirm-import-students").addEventListener("click", () 
         const middleName = middleNameVal.isValid ? middleNameVal.value : '';
 
         // Duplikat-Prüfung: Vorname + Nachname (case-insensitive)
-        const isDuplicate = currentClass.students.some(s =>
+        const isDuplicate = currentYear.students.some(s =>
             s.firstName.toLowerCase() === firstName.toLowerCase() &&
             s.lastName.toLowerCase() === lastName.toLowerCase()
         );
@@ -247,7 +247,7 @@ document.getElementById("confirm-import-students").addEventListener("click", () 
             continue;
         }
 
-        currentClass.students.push({
+        currentYear.students.push({
             id: Date.now().toString() + '-' + Math.floor(Math.random() * 10000),
             firstName,
             lastName,

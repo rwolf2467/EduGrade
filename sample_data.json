@@ -1,314 +1,399 @@
 {
-  "categories": [
-    {
-      "allowPlusMinus": false,
-      "id": "1770280104735",
-      "name": "Test",
-      "onlyPlusMinus": false,
-      "weight": 0.5
-    },
-    {
-      "allowPlusMinus": false,
-      "id": "1770280110975",
-      "name": "Sa",
-      "onlyPlusMinus": false,
-      "weight": 0.5
-    },
-    {
-      "allowPlusMinus": true,
-      "id": "1770280110976",
-      "name": "Mitarbeit",
-      "onlyPlusMinus": false,
-      "weight": 0.3
-    },
-    {
-      "allowPlusMinus": false,
-      "id": "1770280110977",
-      "name": "Hausübung",
-      "onlyPlusMinus": false,
-      "weight": 0.2
-    }
-  ],
+  "teacherName": "Mag. Beispiellehrer",
+  "currentClassId": "class-1a-2025",
   "classes": [
     {
-      "id": "class-1a",
+      "id": "class-1a-2025",
       "name": "1A",
-      "subjects": [
+      "currentYearId": "year-2024-2025",
+      "years": [
         {
-          "id": "math-subject-1",
-          "name": "Mathematik"
-        },
-        {
-          "id": "english-subject-2",
-          "name": "Englisch"
-        },
-        {
-          "id": "german-subject-3",
-          "name": "Deutsch"
-        }
-      ],
-      "currentSubjectId": "math-subject-1",
-      "students": [
-        {
-          "grades": [
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1704067200000, "id": "grade-1a-0-0", "isPlusMinus": false, "name": "Mathetest 1", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1706745600000, "id": "grade-1a-0-1", "isPlusMinus": false, "name": "Mathetest 2", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1709337600000, "id": "grade-1a-0-2", "isPlusMinus": false, "name": "SA Algebra", "value": 4, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1712016000000, "id": "grade-1a-0-3", "isPlusMinus": false, "name": "Geometrie", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1714608000000, "id": "grade-1a-0-4", "isPlusMinus": false, "name": "SA Funktionen", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1717286400000, "id": "grade-1a-0-5", "isPlusMinus": false, "name": "Bruchrechnen", "value": 1, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1719878400000, "id": "grade-1a-0-6", "isPlusMinus": false, "name": "Prozentrechnung", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1722556800000, "id": "grade-1a-0-7", "isPlusMinus": false, "name": "Mündlich", "value": 2, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1725235200000, "id": "grade-1a-0-8", "isPlusMinus": false, "name": "HÜ 1", "value": 1, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1727827200000, "id": "grade-1a-0-9", "isPlusMinus": false, "name": "HÜ 2", "value": 2, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1730505600000, "id": "grade-1a-0-10", "isPlusMinus": false, "name": "Zahlentheorie", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1733097600000, "id": "grade-1a-0-11", "isPlusMinus": false, "name": "SA Stochastik", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1735776000000, "id": "grade-1a-0-12", "isPlusMinus": false, "name": "Gruppenarbeit", "value": 1, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1738454400000, "id": "grade-1a-0-13", "isPlusMinus": false, "name": "Wiederholung", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1741046400000, "id": "grade-1a-0-14", "isPlusMinus": false, "name": "HÜ 3", "value": 1, "weight": 0.2, "subjectId": "math-subject-1"}
+          "id": "year-2024-2025",
+          "name": "2024/2025",
+          "currentSubjectId": "math-subject-1",
+          "subjects": [
+            {
+              "id": "math-subject-1",
+              "name": "Mathematik"
+            },
+            {
+              "id": "german-subject-2",
+              "name": "Deutsch"
+            },
+            {
+              "id": "english-subject-3",
+              "name": "Englisch"
+            }
           ],
-          "id": "student-1a-0",
-          "name": "Anna Müller",
-          "participation": []
-        },
-        {
-          "grades": [
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1704153600000, "id": "grade-1a-1-0", "isPlusMinus": false, "name": "Mathetest 1", "value": 1, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1706832000000, "id": "grade-1a-1-1", "isPlusMinus": false, "name": "Mathetest 2", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1709424000000, "id": "grade-1a-1-2", "isPlusMinus": false, "name": "SA Algebra", "value": 1, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1712102400000, "id": "grade-1a-1-3", "isPlusMinus": false, "name": "Geometrie", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1714694400000, "id": "grade-1a-1-4", "isPlusMinus": false, "name": "SA Funktionen", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1717372800000, "id": "grade-1a-1-5", "isPlusMinus": false, "name": "Bruchrechnen", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1719964800000, "id": "grade-1a-1-6", "isPlusMinus": false, "name": "Prozentrechnung", "value": 1, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1722643200000, "id": "grade-1a-1-7", "isPlusMinus": false, "name": "Mündlich", "value": 3, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1725321600000, "id": "grade-1a-1-8", "isPlusMinus": false, "name": "HÜ 1", "value": 2, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1727913600000, "id": "grade-1a-1-9", "isPlusMinus": false, "name": "HÜ 2", "value": 1, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1730592000000, "id": "grade-1a-1-10", "isPlusMinus": false, "name": "Zahlentheorie", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1733184000000, "id": "grade-1a-1-11", "isPlusMinus": false, "name": "SA Stochastik", "value": 1, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1735862400000, "id": "grade-1a-1-12", "isPlusMinus": false, "name": "Gruppenarbeit", "value": 2, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1738540800000, "id": "grade-1a-1-13", "isPlusMinus": false, "name": "Wiederholung", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1741132800000, "id": "grade-1a-1-14", "isPlusMinus": false, "name": "HÜ 3", "value": 2, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1743811200000, "id": "grade-1a-1-15", "isPlusMinus": false, "name": "Extra Test", "value": 1, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1746403200000, "id": "grade-1a-1-16", "isPlusMinus": false, "name": "Präsentation", "value": 2, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1749081600000, "id": "grade-1a-1-17", "isPlusMinus": false, "name": "HÜ 4", "value": 3, "weight": 0.2, "subjectId": "math-subject-1"}
-          ],
-          "id": "student-1a-1",
-          "name": "Ben Schmidt",
-          "participation": []
-        },
-        {
-          "grades": [
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1704240000000, "id": "grade-1a-2-0", "isPlusMinus": false, "name": "Mathetest 1", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1706918400000, "id": "grade-1a-2-1", "isPlusMinus": false, "name": "Mathetest 2", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1709510400000, "id": "grade-1a-2-2", "isPlusMinus": false, "name": "SA Algebra", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1712188800000, "id": "grade-1a-2-3", "isPlusMinus": false, "name": "Geometrie", "value": 4, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1714780800000, "id": "grade-1a-2-4", "isPlusMinus": false, "name": "SA Funktionen", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1717459200000, "id": "grade-1a-2-5", "isPlusMinus": false, "name": "Bruchrechnen", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1720051200000, "id": "grade-1a-2-6", "isPlusMinus": false, "name": "Prozentrechnung", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1722729600000, "id": "grade-1a-2-7", "isPlusMinus": false, "name": "Mündlich", "value": 3, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1725408000000, "id": "grade-1a-2-8", "isPlusMinus": false, "name": "HÜ 1", "value": 2, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1728000000000, "id": "grade-1a-2-9", "isPlusMinus": false, "name": "HÜ 2", "value": 3, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1730678400000, "id": "grade-1a-2-10", "isPlusMinus": false, "name": "Zahlentheorie", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1733270400000, "id": "grade-1a-2-11", "isPlusMinus": false, "name": "SA Stochastik", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1735948800000, "id": "grade-1a-2-12", "isPlusMinus": false, "name": "Gruppenarbeit", "value": 4, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1738627200000, "id": "grade-1a-2-13", "isPlusMinus": false, "name": "Wiederholung", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1741219200000, "id": "grade-1a-2-14", "isPlusMinus": false, "name": "HÜ 3", "value": 3, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1743897600000, "id": "grade-1a-2-15", "isPlusMinus": false, "name": "Extra Test", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1746489600000, "id": "grade-1a-2-16", "isPlusMinus": false, "name": "Präsentation", "value": 3, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1749168000000, "id": "grade-1a-2-17", "isPlusMinus": false, "name": "HÜ 4", "value": 2, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1751760000000, "id": "grade-1a-2-18", "isPlusMinus": false, "name": "Nachtest", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1754438400000, "id": "grade-1a-2-19", "isPlusMinus": false, "name": "SA Finale", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"}
-          ],
-          "id": "student-1a-2",
-          "name": "Clara Weber",
-          "participation": []
-        },
-        {
-          "grades": [
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1704326400000, "id": "grade-1a-3-0", "isPlusMinus": false, "name": "Mathetest 1", "value": 4, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1707004800000, "id": "grade-1a-3-1", "isPlusMinus": false, "name": "Mathetest 2", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1709596800000, "id": "grade-1a-3-2", "isPlusMinus": false, "name": "SA Algebra", "value": 4, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1712275200000, "id": "grade-1a-3-3", "isPlusMinus": false, "name": "Geometrie", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1714867200000, "id": "grade-1a-3-4", "isPlusMinus": false, "name": "SA Funktionen", "value": 4, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1717545600000, "id": "grade-1a-3-5", "isPlusMinus": false, "name": "Bruchrechnen", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1720137600000, "id": "grade-1a-3-6", "isPlusMinus": false, "name": "Prozentrechnung", "value": 4, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1722816000000, "id": "grade-1a-3-7", "isPlusMinus": false, "name": "Mündlich", "value": 3, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1725494400000, "id": "grade-1a-3-8", "isPlusMinus": false, "name": "HÜ 1", "value": 4, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1728086400000, "id": "grade-1a-3-9", "isPlusMinus": false, "name": "HÜ 2", "value": 3, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1730764800000, "id": "grade-1a-3-10", "isPlusMinus": false, "name": "Zahlentheorie", "value": 4, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1733356800000, "id": "grade-1a-3-11", "isPlusMinus": false, "name": "SA Stochastik", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1736035200000, "id": "grade-1a-3-12", "isPlusMinus": false, "name": "Gruppenarbeit", "value": 4, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1738713600000, "id": "grade-1a-3-13", "isPlusMinus": false, "name": "Wiederholung", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1741305600000, "id": "grade-1a-3-14", "isPlusMinus": false, "name": "HÜ 3", "value": 4, "weight": 0.2, "subjectId": "math-subject-1"}
-          ],
-          "id": "student-1a-3",
-          "name": "David Fischer",
-          "participation": []
-        },
-        {
-          "grades": [
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1704412800000, "id": "grade-1a-4-0", "isPlusMinus": false, "name": "Mathetest 1", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1707091200000, "id": "grade-1a-4-1", "isPlusMinus": false, "name": "Mathetest 2", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1709683200000, "id": "grade-1a-4-2", "isPlusMinus": false, "name": "SA Algebra", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1712361600000, "id": "grade-1a-4-3", "isPlusMinus": false, "name": "Geometrie", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1714953600000, "id": "grade-1a-4-4", "isPlusMinus": false, "name": "SA Funktionen", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1717632000000, "id": "grade-1a-4-5", "isPlusMinus": false, "name": "Bruchrechnen", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1720224000000, "id": "grade-1a-4-6", "isPlusMinus": false, "name": "Prozentrechnung", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1722902400000, "id": "grade-1a-4-7", "isPlusMinus": false, "name": "Mündlich", "value": 3, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1725580800000, "id": "grade-1a-4-8", "isPlusMinus": false, "name": "HÜ 1", "value": 2, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1728172800000, "id": "grade-1a-4-9", "isPlusMinus": false, "name": "HÜ 2", "value": 3, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1730851200000, "id": "grade-1a-4-10", "isPlusMinus": false, "name": "Zahlentheorie", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1733443200000, "id": "grade-1a-4-11", "isPlusMinus": false, "name": "SA Stochastik", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1736121600000, "id": "grade-1a-4-12", "isPlusMinus": false, "name": "Gruppenarbeit", "value": 2, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1738800000000, "id": "grade-1a-4-13", "isPlusMinus": false, "name": "Wiederholung", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1741392000000, "id": "grade-1a-4-14", "isPlusMinus": false, "name": "HÜ 3", "value": 2, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1744070400000, "id": "grade-1a-4-15", "isPlusMinus": false, "name": "Extra Test", "value": 3, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1746662400000, "id": "grade-1a-4-16", "isPlusMinus": false, "name": "Präsentation", "value": 2, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1749340800000, "id": "grade-1a-4-17", "isPlusMinus": false, "name": "HÜ 4", "value": 3, "weight": 0.2, "subjectId": "math-subject-1"}
-          ],
-          "id": "student-1a-4",
-          "name": "Emma Wagner",
-          "participation": []
-        },
-        {
-          "grades": [
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1704499200000, "id": "grade-1a-5-0", "isPlusMinus": false, "name": "Mathetest 1", "value": 1, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1707177600000, "id": "grade-1a-5-1", "isPlusMinus": false, "name": "Mathetest 2", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1709769600000, "id": "grade-1a-5-2", "isPlusMinus": false, "name": "SA Algebra", "value": 1, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1712448000000, "id": "grade-1a-5-3", "isPlusMinus": false, "name": "Geometrie", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1715040000000, "id": "grade-1a-5-4", "isPlusMinus": false, "name": "SA Funktionen", "value": 1, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1717718400000, "id": "grade-1a-5-5", "isPlusMinus": false, "name": "Bruchrechnen", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1720310400000, "id": "grade-1a-5-6", "isPlusMinus": false, "name": "Prozentrechnung", "value": 1, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1722988800000, "id": "grade-1a-5-7", "isPlusMinus": false, "name": "Mündlich", "value": 2, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1725667200000, "id": "grade-1a-5-8", "isPlusMinus": false, "name": "HÜ 1", "value": 1, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1728259200000, "id": "grade-1a-5-9", "isPlusMinus": false, "name": "HÜ 2", "value": 2, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1730937600000, "id": "grade-1a-5-10", "isPlusMinus": false, "name": "Zahlentheorie", "value": 1, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1733529600000, "id": "grade-1a-5-11", "isPlusMinus": false, "name": "SA Stochastik", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1736208000000, "id": "grade-1a-5-12", "isPlusMinus": false, "name": "Gruppenarbeit", "value": 1, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1738886400000, "id": "grade-1a-5-13", "isPlusMinus": false, "name": "Wiederholung", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1741478400000, "id": "grade-1a-5-14", "isPlusMinus": false, "name": "HÜ 3", "value": 1, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1744156800000, "id": "grade-1a-5-15", "isPlusMinus": false, "name": "Extra Test", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1746748800000, "id": "grade-1a-5-16", "isPlusMinus": false, "name": "Präsentation", "value": 1, "weight": 0.3, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1749427200000, "id": "grade-1a-5-17", "isPlusMinus": false, "name": "HÜ 4", "value": 2, "weight": 0.2, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1752019200000, "id": "grade-1a-5-18", "isPlusMinus": false, "name": "Nachtest", "value": 1, "weight": 0.5, "subjectId": "math-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1754697600000, "id": "grade-1a-5-19", "isPlusMinus": false, "name": "SA Finale", "value": 2, "weight": 0.5, "subjectId": "math-subject-1"}
-          ],
-          "id": "student-1a-5",
-          "name": "Felix Hoffmann",
-          "participation": []
+          "students": [
+            {
+              "id": "student-1a-1",
+              "firstName": "Anna",
+              "lastName": "Müller",
+              "middleName": "",
+              "grades": [
+                {"id": "g1", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
+                {"id": "g2", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 1, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
+                {"id": "g3", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
+                {"id": "g4", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"},
+                {"id": "g5", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-1a-2",
+              "firstName": "Ben",
+              "lastName": "Schmidt",
+              "middleName": "",
+              "grades": [
+                {"id": "g6", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
+                {"id": "g7", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
+                {"id": "g8", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
+                {"id": "g9", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-1a-3",
+              "firstName": "Clara",
+              "lastName": "Weber",
+              "middleName": "",
+              "grades": [
+                {"id": "g10", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
+                {"id": "g11", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
+                {"id": "g12", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
+                {"id": "g13", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"},
+                {"id": "g14", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 1, "weight": 0.5, "isPlusMinus": false, "name": "SA 2", "subjectId": "math-subject-1"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-1a-4",
+              "firstName": "David",
+              "lastName": "Fischer",
+              "middleName": "",
+              "grades": [
+                {"id": "g15", "categoryId": "cat-test", "categoryName": "Test", "value": 4, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
+                {"id": "g16", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
+                {"id": "g17", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "-", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
+                {"id": "g18", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-1a-5",
+              "firstName": "Emma",
+              "lastName": "Wagner",
+              "middleName": "",
+              "grades": [
+                {"id": "g19", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
+                {"id": "g20", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
+                {"id": "g21", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
+                {"id": "g22", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"},
+                {"id": "g23", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-1a-6",
+              "firstName": "Felix",
+              "lastName": "Hoffmann",
+              "middleName": "",
+              "grades": [
+                {"id": "g24", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
+                {"id": "g25", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
+                {"id": "g26", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
+                {"id": "g27", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-1a-7",
+              "firstName": "Hannah",
+              "lastName": "Klein",
+              "middleName": "",
+              "grades": [
+                {"id": "g28", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
+                {"id": "g29", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 1, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
+                {"id": "g30", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
+                {"id": "g31", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"},
+                {"id": "g32", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 2", "subjectId": "math-subject-1"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-1a-8",
+              "firstName": "Jonas",
+              "lastName": "Bauer",
+              "middleName": "",
+              "grades": [
+                {"id": "g33", "categoryId": "cat-test", "categoryName": "Test", "value": 4, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
+                {"id": "g34", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 4, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
+                {"id": "g35", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "-", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
+                {"id": "g36", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-1a-9",
+              "firstName": "Laura",
+              "lastName": "Richter",
+              "middleName": "",
+              "grades": [
+                {"id": "g37", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
+                {"id": "g38", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
+                {"id": "g39", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
+                {"id": "g40", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"},
+                {"id": "g41", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-1a-10",
+              "firstName": "Max",
+              "lastName": "Schmid",
+              "middleName": "",
+              "grades": [
+                {"id": "g42", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
+                {"id": "g43", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
+                {"id": "g44", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
+                {"id": "g45", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"}
+              ],
+              "participation": []
+            }
+          ]
         }
       ]
     },
     {
-      "id": "class-1b",
-      "name": "1B",
-      "subjects": [
+      "id": "class-2b-2025",
+      "name": "2B",
+      "currentYearId": "year-2024-2025-2b",
+      "years": [
         {
-          "id": "english-subject-1",
-          "name": "Englisch"
-        },
-        {
-          "id": "history-subject-2",
-          "name": "Geschichte"
-        },
-        {
-          "id": "physics-subject-3",
-          "name": "Physik"
-        }
-      ],
-      "currentSubjectId": "english-subject-1",
-      "students": [
-        {
-          "grades": [
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1704585600000, "id": "grade-1b-0-0", "isPlusMinus": false, "name": "Englischtest 1", "value": 3, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1707264000000, "id": "grade-1b-0-1", "isPlusMinus": false, "name": "SA Grammar", "value": 2, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1709856000000, "id": "grade-1b-0-2", "isPlusMinus": false, "name": "Vocabulary Test", "value": 4, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1712534400000, "id": "grade-1b-0-3", "isPlusMinus": false, "name": "Reading", "value": 3, "weight": 0.3, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1715126400000, "id": "grade-1b-0-4", "isPlusMinus": false, "name": "Essay 1", "value": 2, "weight": 0.2, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1717804800000, "id": "grade-1b-0-5", "isPlusMinus": false, "name": "Listening Test", "value": 3, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1720396800000, "id": "grade-1b-0-6", "isPlusMinus": false, "name": "SA Writing", "value": 4, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1723075200000, "id": "grade-1b-0-7", "isPlusMinus": false, "name": "Speaking", "value": 3, "weight": 0.3, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1725753600000, "id": "grade-1b-0-8", "isPlusMinus": false, "name": "Translation", "value": 2, "weight": 0.2, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1728345600000, "id": "grade-1b-0-9", "isPlusMinus": false, "name": "Final Test", "value": 3, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1731024000000, "id": "grade-1b-0-10", "isPlusMinus": false, "name": "SA Literature", "value": 2, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1733616000000, "id": "grade-1b-0-11", "isPlusMinus": false, "name": "Presentation", "value": 4, "weight": 0.3, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1736294400000, "id": "grade-1b-0-12", "isPlusMinus": false, "name": "Project", "value": 3, "weight": 0.2, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1738972800000, "id": "grade-1b-0-13", "isPlusMinus": false, "name": "Review Test", "value": 2, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1741564800000, "id": "grade-1b-0-14", "isPlusMinus": false, "name": "SA Final", "value": 3, "weight": 0.5, "subjectId": "english-subject-1"}
+          "id": "year-2024-2025-2b",
+          "name": "2024/2025",
+          "currentSubjectId": "german-subject-2b",
+          "subjects": [
+            {
+              "id": "german-subject-2b",
+              "name": "Deutsch"
+            },
+            {
+              "id": "english-subject-2b",
+              "name": "Englisch"
+            },
+            {
+              "id": "history-subject-2b",
+              "name": "Geschichte"
+            }
           ],
-          "id": "student-1b-0",
-          "name": "Klara Meier",
-          "participation": []
-        },
-        {
-          "grades": [
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1704672000000, "id": "grade-1b-1-0", "isPlusMinus": false, "name": "Englischtest 1", "value": 2, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1707350400000, "id": "grade-1b-1-1", "isPlusMinus": false, "name": "SA Grammar", "value": 3, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1709942400000, "id": "grade-1b-1-2", "isPlusMinus": false, "name": "Vocabulary Test", "value": 2, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1712620800000, "id": "grade-1b-1-3", "isPlusMinus": false, "name": "Reading", "value": 4, "weight": 0.3, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1715212800000, "id": "grade-1b-1-4", "isPlusMinus": false, "name": "Essay 1", "value": 3, "weight": 0.2, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1717891200000, "id": "grade-1b-1-5", "isPlusMinus": false, "name": "Listening Test", "value": 2, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1720483200000, "id": "grade-1b-1-6", "isPlusMinus": false, "name": "SA Writing", "value": 3, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1723161600000, "id": "grade-1b-1-7", "isPlusMinus": false, "name": "Speaking", "value": 2, "weight": 0.3, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1725840000000, "id": "grade-1b-1-8", "isPlusMinus": false, "name": "Translation", "value": 4, "weight": 0.2, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1728432000000, "id": "grade-1b-1-9", "isPlusMinus": false, "name": "Final Test", "value": 3, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1731110400000, "id": "grade-1b-1-10", "isPlusMinus": false, "name": "SA Literature", "value": 2, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1733702400000, "id": "grade-1b-1-11", "isPlusMinus": false, "name": "Presentation", "value": 3, "weight": 0.3, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1736380800000, "id": "grade-1b-1-12", "isPlusMinus": false, "name": "Project", "value": 2, "weight": 0.2, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1739059200000, "id": "grade-1b-1-13", "isPlusMinus": false, "name": "Review Test", "value": 4, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110975", "categoryName": "Sa", "createdAt": 1741651200000, "id": "grade-1b-1-14", "isPlusMinus": false, "name": "SA Final", "value": 3, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280104735", "categoryName": "Test", "createdAt": 1744329600000, "id": "grade-1b-1-15", "isPlusMinus": false, "name": "Bonus Test", "value": 2, "weight": 0.5, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110976", "categoryName": "Mitarbeit", "createdAt": 1746921600000, "id": "grade-1b-1-16", "isPlusMinus": false, "name": "Discussion", "value": 3, "weight": 0.3, "subjectId": "english-subject-1"},
-            {"categoryId": "1770280110977", "categoryName": "Hausübung", "createdAt": 1749600000000, "id": "grade-1b-1-17", "isPlusMinus": false, "name": "Final Essay", "value": 4, "weight": 0.2, "subjectId": "english-subject-1"}
-          ],
-          "id": "student-1b-1",
-          "name": "Leon Braun",
-          "participation": []
+          "students": [
+            {
+              "id": "student-2b-1",
+              "firstName": "Nina",
+              "lastName": "Berger",
+              "middleName": "",
+              "grades": [
+                {"id": "g46", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
+                {"id": "g47", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
+                {"id": "g48", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
+                {"id": "g49", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-2b-2",
+              "firstName": "Oliver",
+              "lastName": "Lang",
+              "middleName": "",
+              "grades": [
+                {"id": "g50", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
+                {"id": "g51", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
+                {"id": "g52", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
+                {"id": "g53", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-2b-3",
+              "firstName": "Paula",
+              "lastName": "Huber",
+              "middleName": "",
+              "grades": [
+                {"id": "g54", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
+                {"id": "g55", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 1, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
+                {"id": "g56", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
+                {"id": "g57", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"},
+                {"id": "g58", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 1, "weight": 0.5, "isPlusMinus": false, "name": "SA 2", "subjectId": "german-subject-2b"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-2b-4",
+              "firstName": "Raphael",
+              "lastName": "Moser",
+              "middleName": "",
+              "grades": [
+                {"id": "g59", "categoryId": "cat-test", "categoryName": "Test", "value": 4, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
+                {"id": "g60", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 4, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
+                {"id": "g61", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "-", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
+                {"id": "g62", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-2b-5",
+              "firstName": "Sophie",
+              "lastName": "Steiner",
+              "middleName": "",
+              "grades": [
+                {"id": "g63", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
+                {"id": "g64", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
+                {"id": "g65", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
+                {"id": "g66", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-2b-6",
+              "firstName": "Tim",
+              "lastName": "Brunner",
+              "middleName": "",
+              "grades": [
+                {"id": "g67", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
+                {"id": "g68", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
+                {"id": "g69", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
+                {"id": "g70", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-2b-7",
+              "firstName": "Valentina",
+              "lastName": "Wolf",
+              "middleName": "",
+              "grades": [
+                {"id": "g71", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
+                {"id": "g72", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
+                {"id": "g73", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
+                {"id": "g74", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"},
+                {"id": "g75", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-2b-8",
+              "firstName": "Lukas",
+              "lastName": "Gruber",
+              "middleName": "",
+              "grades": [
+                {"id": "g76", "categoryId": "cat-test", "categoryName": "Test", "value": 4, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
+                {"id": "g77", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
+                {"id": "g78", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "-", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
+                {"id": "g79", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-2b-9",
+              "firstName": "Mia",
+              "lastName": "Pichler",
+              "middleName": "",
+              "grades": [
+                {"id": "g80", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
+                {"id": "g81", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
+                {"id": "g82", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
+                {"id": "g83", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
+              ],
+              "participation": []
+            },
+            {
+              "id": "student-2b-10",
+              "firstName": "Noah",
+              "lastName": "Eder",
+              "middleName": "",
+              "grades": [
+                {"id": "g84", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
+                {"id": "g85", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
+                {"id": "g86", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
+                {"id": "g87", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
+              ],
+              "participation": []
+            }
+          ]
         }
       ]
     }
   ],
-  "currentClassId": "class-1a",
+  "categories": [
+    {
+      "id": "cat-test",
+      "name": "Test",
+      "weight": 0.4,
+      "allowPlusMinus": false,
+      "onlyPlusMinus": false
+    },
+    {
+      "id": "cat-sa",
+      "name": "Schularbeit",
+      "weight": 0.5,
+      "allowPlusMinus": false,
+      "onlyPlusMinus": false
+    },
+    {
+      "id": "cat-mitarbeit",
+      "name": "Mitarbeit",
+      "weight": 0.3,
+      "allowPlusMinus": true,
+      "onlyPlusMinus": true
+    }
+  ],
+  "students": [],
+  "participationSettings": {
+    "plusValue": 0.1,
+    "minusValue": 0.1
+  },
+  "plusMinusGradeSettings": {
+    "startGrade": 3,
+    "plusValue": 0.5,
+    "minusValue": 0.5
+  },
+  "tutorial": {
+    "completed": true,
+    "currentStep": 0,
+    "neverShowAgain": false
+  },
   "gradePercentageRanges": [
     {
       "grade": 1,
-      "maxPercent": 100,
-      "minPercent": 85
+      "minPercent": 85,
+      "maxPercent": 100
     },
     {
       "grade": 2,
-      "maxPercent": 84,
-      "minPercent": 70
+      "minPercent": 70,
+      "maxPercent": 84
     },
     {
       "grade": 3,
-      "maxPercent": 69,
-      "minPercent": 55
+      "minPercent": 55,
+      "maxPercent": 69
     },
     {
       "grade": 4,
-      "maxPercent": 54,
-      "minPercent": 40
+      "minPercent": 40,
+      "maxPercent": 54
     },
     {
       "grade": 5,
-      "maxPercent": 39,
-      "minPercent": 0
+      "minPercent": 0,
+      "maxPercent": 39
     }
   ],
-  "participationSettings": {
-    "minusValue": 0.5,
-    "plusValue": 0.5
-  },
-  "plusMinusGradeSettings": {
-    "minusValue": 0.5,
-    "plusValue": 0.5,
-    "startGrade": 3
-  },
-  "students": [],
-  "teacherName": "Fabi",
-  "tutorial": {
-    "completed": true,
-    "neverShowAgain": false
+  "plusMinusPercentages": {
+    "plus": 100,
+    "neutral": 50,
+    "minus": 0
   }
 }

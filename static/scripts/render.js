@@ -642,8 +642,7 @@ const openAddGradeDialog = (studentId, onSuccess) => {
             return;
         }
 
-        // subjectId vom aktiven Fach-Tab übernehmen - sicherstellen, dass immer ein Fach ausgewählt ist
-        const activeSubjectId = currentClass.currentSubjectId;
+        // subjectId vom aktiven Fach-Tab übernehmen (activeSubjectId already defined at line 557)
         // Wenn kein Fach ausgewählt ist (was nicht vorkommen sollte), verhindere das Hinzufügen
         if (!activeSubjectId) {
             showAlertDialog(t("grade.mustSelectSubject"));
@@ -911,7 +910,7 @@ const renderStudents = () => {
     document.querySelectorAll("[data-edit-student]").forEach(btn => {
         btn.addEventListener("click", () => {
             const studentId = btn.dataset.editStudent;
-            const student = currentClass.students.find(s => s.id === studentId);
+            const student = currentYear.students.find(s => s.id === studentId);
             if (student) {
                 const content = `
             <div class="grid gap-2">
@@ -1684,12 +1683,12 @@ const calculateTrend = (grades) => {
  * @returns {number} - Class average or 0 if no grades
  */
 const calculateClassAverage = () => {
-    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-    if (!currentClass) return 0;
+    const currentYear = getCurrentYear();
+    if (!currentYear) return 0;
 
     const averages = [];
-    currentClass.students.forEach(student => {
-        const filteredGrades = filterGradesBySubject(student.grades, currentClass.currentSubjectId);
+    currentYear.students.forEach(student => {
+        const filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
         const avg = calculateWeightedAverage(filteredGrades);
         if (avg > 0) averages.push(avg);
     });
@@ -1707,10 +1706,10 @@ const calculateClassAverage = () => {
  * @param {string} studentId - The ID of the student to display
  */
 const renderStudentDetail = (studentId) => {
-    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-    if (!currentClass) return;
+    const currentYear = getCurrentYear();
+    if (!currentYear) return;
 
-    const student = currentClass.students.find(s => s.id === studentId);
+    const student = currentYear.students.find(s => s.id === studentId);
     if (!student) return;
 
     // Store student ID for reference
@@ -1720,7 +1719,7 @@ const renderStudentDetail = (studentId) => {
     document.getElementById("student-detail-name").textContent = getStudentDisplayName(student);
 
     // Noten nach aktivem Fach filtern
-    const filteredGrades = filterGradesBySubject(student.grades, currentClass.currentSubjectId);
+    const filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
 
     // Calculate statistics with filtered grades
     const weightedAvg = calculateWeightedAverage(filteredGrades);

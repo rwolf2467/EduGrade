@@ -157,9 +157,25 @@ document.getElementById("confirm-import").addEventListener("click", async () => 
         }
 
         // Check if the data structure matches our expected format
-        const isValid = rawData.classes.every(cls =>
-            cls.id && cls.name && Array.isArray(cls.students)
-        ) && (!rawData.categories || rawData.categories.every(cat =>
+        // Support both old format (cls.students) and new format (cls.years[].students)
+        const isValid = rawData.classes.every(cls => {
+            // Check basic class properties
+            if (!cls.id || !cls.name) return false;
+
+            // New format: check if class has years with students
+            if (Array.isArray(cls.years)) {
+                return cls.years.every(year =>
+                    year.id && year.name && Array.isArray(year.students)
+                );
+            }
+
+            // Old format: check if class has students directly
+            if (Array.isArray(cls.students)) {
+                return true;
+            }
+
+            return false;
+        }) && (!rawData.categories || rawData.categories.every(cat =>
             cat.id && cat.name && typeof cat.weight === 'number'
         )) && (!rawData.students || rawData.students.every(student =>
             student.id && (student.lastName || student.name) && Array.isArray(student.grades)

@@ -207,30 +207,25 @@ const sanitizeImportData = (data) => {
             const sanitizedClass = {
                 id: String(cls.id || ''),                    // ID immer als String
                 name: escapeHtml(cls.name || ''),            // Name escapen
+                currentYearId: cls.currentYearId ? String(cls.currentYearId) : null
+            };
 
-                // Fächer-System (Subjects) sanitisieren
-                subjects: Array.isArray(cls.subjects) ? cls.subjects.map(subject => ({
-                    id: String(subject.id || ''),
-                    name: escapeHtml(subject.name || '')
-                })) : [],
-                currentSubjectId: cls.currentSubjectId ? String(cls.currentSubjectId) : null,
-
-                // Schüler der Klasse sanitisieren
-                students: Array.isArray(cls.students) ? cls.students.map(student => {
-                    // MIGRATION: Altes Format (name) → neues Format (firstName/lastName)
-                    let firstName = student.firstName || '';
-                    let lastName = student.lastName || '';
-                    let middleName = student.middleName || '';
-                    if (!firstName && !lastName && student.name) {
-                        const parts = student.name.trim().split(/\s+/);
-                        if (parts.length === 1) {
-                            lastName = parts[0];
-                        } else {
-                            lastName = parts[parts.length - 1];
-                            firstName = parts.slice(0, -1).join(' ');
-                        }
+            // Helper function to sanitize student data
+            const sanitizeStudent = (student) => {
+                // MIGRATION: Altes Format (name) → neues Format (firstName/lastName)
+                let firstName = student.firstName || '';
+                let lastName = student.lastName || '';
+                let middleName = student.middleName || '';
+                if (!firstName && !lastName && student.name) {
+                    const parts = student.name.trim().split(/\s+/);
+                    if (parts.length === 1) {
+                        lastName = parts[0];
+                    } else {
+                        lastName = parts[parts.length - 1];
+                        firstName = parts.slice(0, -1).join(' ');
                     }
-                    return {
+                }
+                return {
                     id: String(student.id || ''),
                     firstName: escapeHtml(firstName),
                     lastName: escapeHtml(lastName),
@@ -251,9 +246,40 @@ const sanitizeImportData = (data) => {
                         isPlusMinus: Boolean(grade.isPlusMinus),
                         name: escapeHtml(grade.name || ''),
                         createdAt: parseInt(grade.createdAt, 10) || Date.now()
-                    })) : []
-                };}) : []
+                    })) : [],
+                    participation: student.participation || []
+                };
             };
+
+            // NEW FORMAT: Class with years
+            if (Array.isArray(cls.years)) {
+                sanitizedClass.years = cls.years.map(year => ({
+                    id: String(year.id || ''),
+                    name: escapeHtml(year.name || ''),
+                    currentSubjectId: year.currentSubjectId ? String(year.currentSubjectId) : null,
+
+                    // Fächer-System (Subjects) sanitisieren
+                    subjects: Array.isArray(year.subjects) ? year.subjects.map(subject => ({
+                        id: String(subject.id || ''),
+                        name: escapeHtml(subject.name || '')
+                    })) : [],
+
+                    // Schüler des Jahrgangs sanitisieren
+                    students: Array.isArray(year.students) ? year.students.map(sanitizeStudent) : []
+                }));
+            }
+            // OLD FORMAT: Class with students directly (for backward compatibility)
+            else if (Array.isArray(cls.students)) {
+                // Fächer-System (Subjects) sanitisieren - alte Struktur
+                sanitizedClass.subjects = Array.isArray(cls.subjects) ? cls.subjects.map(subject => ({
+                    id: String(subject.id || ''),
+                    name: escapeHtml(subject.name || '')
+                })) : [];
+                sanitizedClass.currentSubjectId = cls.currentSubjectId ? String(cls.currentSubjectId) : null;
+
+                // Schüler der Klasse sanitisieren - alte Struktur
+                sanitizedClass.students = cls.students.map(sanitizeStudent);
+            }
 
             // MIGRATION: Falls alte Daten mit Kategorien pro Klasse importiert werden,
             // diese zu den globalen Kategorien hinzufügen

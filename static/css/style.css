@@ -15,6 +15,9 @@ body {
     max-width: 100%;
     overflow-x: hidden;
     box-sizing: border-box;
+    background: radial-gradient(circle, transparent 20%, #0a0a0a 20%, #0a0a0a 80%, transparent 80%, transparent) 0% 0% / 64px 64px, radial-gradient(circle, transparent 20%, #0a0a0a 20%, #0a0a0a 80%, transparent 80%, transparent) 32px 32px / 64px 64px, linear-gradient(#171717 2px, transparent 2px) 0px -1px / 32px 32px, linear-gradient(90deg, #171717 2px, #0a0a0a 2px) -1px 0px / 32px 32px #0a0a0a;
+    background-size: 64px 64px, 64px 64px, 32px 32px, 32px 32px;
+    background-color: #0a0a0a;
 }
 
 /* Globales Box-Sizing */
@@ -134,7 +137,8 @@ body {
     inset: 0;
     background: rgba(0, 0, 0, 0.7);
     z-index: 10000;
-    pointer-events: none; /* Klicks durchlassen */
+    pointer-events: none;
+    /* Klicks durchlassen */
 }
 
 /* Hervorgehobenes Element - MUSS klickbar sein */
@@ -164,10 +168,13 @@ button.tutorial-spotlight,
 
 /* Pulsierende Animation für Spotlight */
 @keyframes tutorial-pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         outline-width: 4px;
         outline-color: #3b82f6;
     }
+
     50% {
         outline-width: 6px;
         outline-color: #60a5fa;
@@ -465,6 +472,7 @@ html:not(.dark) .grade-minus {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -481,6 +489,7 @@ html:not(.dark) .grade-minus {
         opacity: 1;
         transform: translateY(0);
     }
+
     to {
         opacity: 0;
         transform: translateY(-10px);
@@ -503,6 +512,7 @@ html:not(.dark) .grade-minus {
         opacity: 0;
         transform: translateY(8px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -549,6 +559,7 @@ html:not(.dark) [role="tab"]:hover:not([aria-selected="true"]) {
     from {
         transform: scaleX(0);
     }
+
     to {
         transform: scaleX(1);
     }
@@ -570,6 +581,7 @@ dialog[open]::backdrop {
         opacity: 0;
         transform: scale(0.95) translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: scale(1) translateY(0);
@@ -580,6 +592,7 @@ dialog[open]::backdrop {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -588,22 +601,37 @@ dialog[open]::backdrop {
 /* ========== CARD & LIST ANIMATIONS ========== */
 
 /* Klassen-Liste Animation */
-#class-list > div {
+#class-list>div {
     animation: listItemFadeIn 0.2s ease-out;
     animation-fill-mode: both;
 }
 
-#class-list > div:nth-child(1) { animation-delay: 0.02s; }
-#class-list > div:nth-child(2) { animation-delay: 0.04s; }
-#class-list > div:nth-child(3) { animation-delay: 0.06s; }
-#class-list > div:nth-child(4) { animation-delay: 0.08s; }
-#class-list > div:nth-child(5) { animation-delay: 0.1s; }
+#class-list>div:nth-child(1) {
+    animation-delay: 0.02s;
+}
+
+#class-list>div:nth-child(2) {
+    animation-delay: 0.04s;
+}
+
+#class-list>div:nth-child(3) {
+    animation-delay: 0.06s;
+}
+
+#class-list>div:nth-child(4) {
+    animation-delay: 0.08s;
+}
+
+#class-list>div:nth-child(5) {
+    animation-delay: 0.1s;
+}
 
 @keyframes listItemFadeIn {
     from {
         opacity: 0;
         transform: translateX(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -616,22 +644,52 @@ dialog[open]::backdrop {
     animation-fill-mode: both;
 }
 
-#students-table tr:nth-child(1) { animation-delay: 0.02s; }
-#students-table tr:nth-child(2) { animation-delay: 0.04s; }
-#students-table tr:nth-child(3) { animation-delay: 0.06s; }
-#students-table tr:nth-child(4) { animation-delay: 0.08s; }
-#students-table tr:nth-child(5) { animation-delay: 0.1s; }
-#students-table tr:nth-child(6) { animation-delay: 0.12s; }
-#students-table tr:nth-child(7) { animation-delay: 0.14s; }
-#students-table tr:nth-child(8) { animation-delay: 0.16s; }
-#students-table tr:nth-child(9) { animation-delay: 0.18s; }
-#students-table tr:nth-child(10) { animation-delay: 0.2s; }
+#students-table tr:nth-child(1) {
+    animation-delay: 0.02s;
+}
+
+#students-table tr:nth-child(2) {
+    animation-delay: 0.04s;
+}
+
+#students-table tr:nth-child(3) {
+    animation-delay: 0.06s;
+}
+
+#students-table tr:nth-child(4) {
+    animation-delay: 0.08s;
+}
+
+#students-table tr:nth-child(5) {
+    animation-delay: 0.1s;
+}
+
+#students-table tr:nth-child(6) {
+    animation-delay: 0.12s;
+}
+
+#students-table tr:nth-child(7) {
+    animation-delay: 0.14s;
+}
+
+#students-table tr:nth-child(8) {
+    animation-delay: 0.16s;
+}
+
+#students-table tr:nth-child(9) {
+    animation-delay: 0.18s;
+}
+
+#students-table tr:nth-child(10) {
+    animation-delay: 0.2s;
+}
 
 @keyframes tableRowFadeIn {
     from {
         opacity: 0;
         transform: translateY(5px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -680,6 +738,7 @@ dialog[open]::backdrop {
 /* ========== REDUCED MOTION ========== */
 /* Respektiere Benutzer-Präferenz für reduzierte Bewegung */
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -793,7 +852,7 @@ html:not(.dark) .student-name-link:hover {
 
 /* Kleine Bildschirme - 5. Stat-Karte auf volle Breite */
 @media (max-width: 640px) {
-    #student-detail-view .grid.grid-cols-2.md\\:grid-cols-5 > div:nth-child(5) {
+    #student-detail-view .grid.grid-cols-2.md\\:grid-cols-5>div:nth-child(5) {
         grid-column: span 2;
     }
 }
