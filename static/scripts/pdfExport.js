@@ -142,7 +142,7 @@ const exportStudentDetailPDF = async (studentId) => {
         console.log("PDF Export - Filtered grades count:", filteredGrades.length);
 
         if (canvas && window.studentGradeChartInstance) {
-            checkNewPage(100);
+            checkNewPage(120); // Mehr Platz reservieren
 
             pdf.setFontSize(14);
             pdf.setFont('helvetica', 'bold');
@@ -150,16 +150,21 @@ const exportStudentDetailPDF = async (studentId) => {
             yPosition += 8;
 
             try {
+                // Warte, damit das Chart vollständig gerendert ist
+                await new Promise(resolve => setTimeout(resolve, 100));
+
                 const chartImage = canvas.toDataURL('image/png', 1.0);
                 const chartWidth = pageWidth - (margin * 2);
-                const chartHeight = 80;
+
+                // Berechne Höhe basierend auf Canvas-Verhältnis
+                const canvasRatio = canvas.height / canvas.width;
+                const chartHeight = chartWidth * canvasRatio;
 
                 pdf.addImage(chartImage, 'PNG', margin, yPosition, chartWidth, chartHeight);
                 yPosition += chartHeight + 10;
                 console.log("PDF Export - Chart added successfully");
             } catch (error) {
                 console.error("PDF Export - Error capturing chart:", error);
-                // Skip chart if there's an error
             }
         } else {
             console.log("PDF Export - Chart skipped (canvas or instance missing)");
