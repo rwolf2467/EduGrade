@@ -2,6 +2,7 @@
 // This file manages saving and loading data via API.
 // Data is stored both locally (localStorage) and on the server.
 
+
 /**
  * STORAGE STRATEGY
  *
@@ -503,7 +504,7 @@ const migrateToYearStructure = () => {
         if (cls.years) return;
 
         // Create default year with current academic year name
-        const currentYear = new Date().getFullYear();
+        const currentYear = getCurrentSchoolYear();
         const defaultYearName = `${currentYear}/${currentYear + 1}`;
 
         const defaultYear = {

@@ -3,6 +3,7 @@
 // Diese Datei enthält alle CRUD-Operationen (Create, Read, Update, Delete)
 // für Klassen, Schüler, Kategorien und Noten.
 
+
 /**
  * KLASSE HINZUFÜGEN
  *
@@ -31,7 +32,7 @@ const addClass = (name) => {
     const yearId = Date.now().toString() + '-year-' + Math.floor(Math.random() * 1000);
 
     // Create default year with current academic year name
-    const currentYear = new Date().getFullYear();
+    const currentYear = getCurrentSchoolYear();
     const defaultYearName = `${currentYear}/${currentYear + 1}`;
 
     const defaultYear = {

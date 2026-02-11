@@ -18,6 +18,7 @@ const getStudentDisplayName = (student) => {
  * HELPER FUNCTIONS FOR CLASS AND YEAR SELECTION
  */
 
+
 /**
  * Gets the currently selected class from appData.
  * @returns {Object|undefined} The current class object or undefined if not found
@@ -222,7 +223,7 @@ const showAddYearDialog = (classId) => {
     const cls = appData.classes.find(c => c.id === classId);
     if (!cls) return;
 
-    const currentYear = new Date().getFullYear();
+    const currentYear = getCurrentSchoolYear();
 
     // Generate year options (from 5 years ago to 10 years in the future)
     const yearOptions = [];
