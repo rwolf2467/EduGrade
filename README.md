@@ -5,12 +5,14 @@ A secure web application for teachers to manage student grades, classes, and per
 ## Features
 
 - **Class & Student Management** - Create classes, add students, track individual performance
-- **Grade Tracking** - Record grades with customizable categories, weights, and +/- systems
-- **Analytics** - Visual charts and statistics for student performance
-- **Grade Sharing with Students** - Securely share grades with students using PIN-protected access links
-- **Subject-Based Organization** - Divide classes into multiple subjects for comprehensive tracking
+- **Subject-Based Organization** - Divide classes into multiple subjects (default subject can be renamed, e.g., "Math")
+- **Grade Tracking** - Record grades with customizable categories, weights, and percentage-based +/~/- systems
+- **Student Import** - Import student lists via CSV or JSON for quick class setup
+- **Analytics & Charts** - Visual charts and detailed statistics for student performance
+- **PDF Export** - Download and print detailed student views with grades and charts
+- **Grade Sharing with Students** - Securely share grades with students using PIN-protected access links with expiration dates
 - **Customizable Categories** - Define grade categories with custom weights and names
-- **Plus/Minus Grade System** - Configurable grading system with plus and minus values
+- **Plus/Minus Grade System** - Configurable percentage-based grading system with plus, neutral, and minus values
 - **Participation Tracking** - Track and record student participation grades
 - **Grade Percentage Ranges** - Customizable percentage-to-grade mapping
 - **Data Export/Import** - Backup and restore data in JSON format
@@ -101,21 +103,31 @@ For production, change `app.secret_key` to a secure random string.
 4. Configure proper environment variables
 5. Set up logging and monitoring
 
-## Grade Sharing Feature
+## Student Access & Sharing
 
 Teachers can create secure grade shares for students:
-1. Select a class to share
+1. Select a class and subject to share
 2. Set expiration time (1 hour to 30 days)
-3. Configure visibility options (grades, averages, final grades, etc.)
-4. Generate unique PINs for each student
-5. Students access grades using the share link and their PIN
+3. Configure visibility options (grades, averages, final grades, charts, etc.)
+4. Generate unique PINs for each student (6-digit)
+5. Students access their grades using the share link and their personal PIN
 
-Shared data includes:
-- Individual grades
+Students can view:
+- Individual grades with color-coded badges
 - Category breakdowns
 - Class averages
+- Performance charts
 - Subject information
 - Teacher name
+
+## Detailed Student View
+
+Click on any student to view:
+- Complete grade history with charts
+- Category-wise performance breakdown
+- Statistical analysis and trends
+- Export to PDF for printing or archiving
+- Visual performance indicators
 
 ## License
 
