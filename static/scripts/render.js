@@ -15,6 +15,28 @@ const getStudentDisplayName = (student) => {
 };
 
 /**
+ * HELPER FUNCTIONS FOR CLASS AND YEAR SELECTION
+ */
+
+/**
+ * Gets the currently selected class from appData.
+ * @returns {Object|undefined} The current class object or undefined if not found
+ */
+const getCurrentClass = () => {
+    return appData.classes.find(c => c.id === appData.currentClassId);
+};
+
+/**
+ * Gets the currently selected year from the current class.
+ * @returns {Object|null} The current year object or null if not found
+ */
+const getCurrentYear = () => {
+    const currentClass = getCurrentClass();
+    if (!currentClass || !currentClass.years) return null;
+    return currentClass.years.find(y => y.id === currentClass.currentYearId);
+};
+
+/**
  * KLASSENLISTE RENDERN
  *
  * Zeigt alle Klassen als Buttons in der Sidebar an.
@@ -91,6 +113,223 @@ const renderClassList = () => {
 };
 
 /**
+ * JAHR-TABS RENDERN
+ *
+ * Zeigt Tabs für alle Jahrgänge der aktuellen Klasse (ähnlich wie Subject-Tabs).
+ */
+const renderYearSelector = () => {
+    const currentClass = getCurrentClass();
+    if (!currentClass) return;
+
+    const container = document.getElementById("year-selector");
+    if (!container) return;
+
+    // Ensure years array exists
+    if (!currentClass.years) currentClass.years = [];
+
+    // Sort years by name (newest first)
+    const sortedYears = [...currentClass.years].sort((a, b) =>
+        b.name.localeCompare(a.name)
+    );
+
+    let html = '';
+
+    // Ein Tab pro Jahr
+    sortedYears.forEach(year => {
+        const isActive = currentClass.currentYearId === year.id;
+        html += `<div class="flex flex-col items-start gap-8"><div role="group" class="button-group">
+            <button class="${isActive ? 'btn-sm-primary' : 'btn-sm-outline'} rounded-r-none" data-year-id="${safeAttr(year.id)}">${escapeHtml(year.name)}</button>
+            <button class="btn-sm-icon-outline" data-edit-year="${safeAttr(year.id)}" data-tooltip="${t("year.editYear")}" data-side="top">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-notebook-pen-icon lucide-notebook-pen"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/><path d="M2 6h4"/><path d="M2 10h4"/><path d="M2 14h4"/><path d="M2 18h4"/><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/></svg>
+            </button>
+            <button class="btn-sm-icon-outline" data-delete-year="${safeAttr(year.id)}" data-tooltip="${t("year.manageYears")}" data-side="top" ${sortedYears.length <= 1 ? 'disabled' : ''}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
+        </div></div>`;
+    });
+
+    // "+" Button zum Hinzufügen
+    html += `<button class="btn-sm-icon-outline" id="add-year-btn" data-tooltip="${t("year.addYear")}" data-side="top">
+        <svg class="lucide lucide-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+    </button>`;
+
+    container.innerHTML = html;
+
+    // Event-Listener: Tab-Klick (Jahr wechseln)
+    container.querySelectorAll("[data-year-id]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const yearId = btn.dataset.yearId;
+            currentClass.currentYearId = yearId;
+            saveData();
+            renderYearSelector();
+            renderSubjectTabs();
+            renderStudents();
+            renderClassStats();
+        });
+    });
+
+    // Event-Listener: Jahr hinzufügen
+    const addBtn = document.getElementById("add-year-btn");
+    if (addBtn) {
+        addBtn.addEventListener("click", () => {
+            showAddYearDialog(currentClass.id);
+        });
+    }
+
+    // Event-Listener: Jahr bearbeiten
+    container.querySelectorAll("[data-edit-year]").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const yearId = btn.dataset.editYear;
+            const year = currentClass.years.find(y => y.id === yearId);
+            if (year) {
+                const content = `
+                    <div class="grid gap-2">
+                        <label class="block mb-2">${t("year.newYearName")}</label>
+                        <input type="text" name="name" class="input w-full" value="${escapeHtml(year.name)}" required maxlength="50">
+                    </div>
+                `;
+                showDialog("edit-dialog", t("year.editYear"), content, (formData) => {
+                    editYear(currentClass.id, yearId, formData.get("name"));
+                });
+            }
+        });
+    });
+
+    // Event-Listener: Jahr löschen
+    container.querySelectorAll("[data-delete-year]").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const yearId = btn.dataset.deleteYear;
+            const year = currentClass.years.find(y => y.id === yearId);
+            if (year && !btn.disabled) {
+                showConfirmDialog(t("year.confirmDelete").replace('{name}', escapeHtml(year.name)), () => {
+                    deleteYear(currentClass.id, yearId);
+                });
+            }
+        });
+    });
+};
+
+/**
+ * JAHR HINZUFÜGEN DIALOG
+ *
+ * Zeigt Dialog zum Erstellen eines neuen Jahrgangs mit Option zum Kopieren.
+ */
+const showAddYearDialog = (classId) => {
+    const cls = appData.classes.find(c => c.id === classId);
+    if (!cls) return;
+
+    const currentYear = new Date().getFullYear();
+    const defaultName = `${currentYear}/${currentYear + 1}`;
+
+    // Get previous year for copy option
+    const sortedYears = [...cls.years].sort((a, b) =>
+        b.name.localeCompare(a.name)
+    );
+    const previousYear = sortedYears.length > 0 ? sortedYears[0] : null;
+
+    const content = `
+        <div class="grid gap-2">
+            <label class="block mb-2">${t("year.yearName")}</label>
+            <input type="text" name="name" class="input w-full" value="${defaultName}" required maxlength="50">
+            <p class="text-sm" style="color: oklch(.708 0 0);">${t("year.yearNameHint")}</p>
+        </div>
+        ${previousYear ? `
+            <div class="grid gap-2 mt-3">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="copyFromPrevious" id="copy-from-previous" class="checkbox" checked>
+                    <span>${t("year.copyFromPrevious").replace('{name}', escapeHtml(previousYear.name))}</span>
+                </label>
+                <p class="text-sm" style="color: oklch(.708 0 0);">${t("year.copyHint")}</p>
+            </div>
+        ` : ''}
+    `;
+
+    showDialog("edit-dialog", t("year.addYear"), content, (formData) => {
+        const copyFromPreviousId = formData.get("copyFromPrevious") === "on" && previousYear
+            ? previousYear.id
+            : null;
+        addYear(classId, formData.get("name"), copyFromPreviousId);
+    });
+};
+
+/**
+ * JAHRE VERWALTEN DIALOG
+ *
+ * Zeigt Liste aller Jahrgänge mit Edit/Delete Buttons.
+ */
+const showManageYearsDialog = (classId) => {
+    const cls = appData.classes.find(c => c.id === classId);
+    if (!cls) return;
+
+    const sortedYears = [...cls.years].sort((a, b) =>
+        b.name.localeCompare(a.name)
+    );
+
+    const content = `
+        <div class="space-y-2">
+            ${sortedYears.map(year => `
+                <div class="flex items-center justify-between p-2 border rounded">
+                    <span>${escapeHtml(year.name)} ${year.id === cls.currentYearId ? '(aktiv)' : ''}</span>
+                    <div role="group" class="button-group">
+                        <button class="btn-sm-icon-outline" data-edit-year="${safeAttr(year.id)}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="btn-sm-icon-destructive" data-delete-year="${safeAttr(year.id)}" ${cls.years.length <= 1 ? 'disabled' : ''}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
+    showDialog("manage-years-dialog", t("year.manageYears"), content, null, true);
+
+    // Event listeners for edit/delete
+    document.querySelectorAll("[data-edit-year]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const yearId = btn.dataset.editYear;
+            const year = cls.years.find(y => y.id === yearId);
+            if (year) {
+                const editContent = `
+                    <div class="grid gap-2">
+                        <label class="block mb-2">${t("year.newYearName")}</label>
+                        <input type="text" name="name" class="input w-full" value="${escapeHtml(year.name)}" required maxlength="50">
+                    </div>
+                `;
+                showDialog("edit-dialog", t("year.editYear"), editContent, (formData) => {
+                    editYear(classId, yearId, formData.get("name"));
+                    document.getElementById("manage-years-dialog").close();
+                    showManageYearsDialog(classId);
+                });
+            }
+        });
+    });
+
+    document.querySelectorAll("[data-delete-year]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const yearId = btn.dataset.deleteYear;
+            const year = cls.years.find(y => y.id === yearId);
+            if (year) {
+                showConfirmDialog(t("year.confirmDelete").replace('{name}', escapeHtml(year.name)), () => {
+                    deleteYear(classId, yearId);
+                    document.getElementById("manage-years-dialog").close();
+                });
+            }
+        });
+    });
+};
+
+/**
  * HELPER: Noten für aktives Fach filtern
  *
  * Gibt die gefilterten Noten zurück basierend auf dem aktuellen Fach-Tab.
@@ -111,25 +350,25 @@ const filterGradesBySubject = (grades, currentSubjectId) => {
  * Jeder Fach-Tab hat Edit/Delete-Buttons.
  */
 const renderSubjectTabs = () => {
-    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-    if (!currentClass) return;
+    const currentYear = getCurrentYear();
+    if (!currentYear) return;
 
     // Sicherstellen, dass subjects-Array existiert (Rückwärtskompatibilität)
-    if (!currentClass.subjects) currentClass.subjects = [];
-    if (!currentClass.currentSubjectId || currentClass.currentSubjectId === "overview") {
+    if (!currentYear.subjects) currentYear.subjects = [];
+    if (!currentYear.currentSubjectId || currentYear.currentSubjectId === "overview") {
         // Erstes Fach auswählen falls vorhanden
-        currentClass.currentSubjectId = currentClass.subjects.length > 0 ? currentClass.subjects[0].id : null;
+        currentYear.currentSubjectId = currentYear.subjects.length > 0 ? currentYear.subjects[0].id : null;
     }
 
     const container = document.getElementById("subject-tabs");
     if (!container) return;
 
-    const activeId = currentClass.currentSubjectId;
+    const activeId = currentYear.currentSubjectId;
 
     let html = '';
 
     // Ein Tab pro Fach
-    currentClass.subjects.forEach(subject => {
+    currentYear.subjects.forEach(subject => {
         const isActive = activeId === subject.id;
         html += `<div class="flex flex-col items-start gap-8"><div role="group" class="button-group">
             <button class="${isActive ? 'btn-sm-primary' : 'btn-sm-outline'} rounded-r-none" data-subject-id="${safeAttr(subject.id)}">${escapeHtml(subject.name)}</button>
@@ -155,7 +394,7 @@ const renderSubjectTabs = () => {
     container.querySelectorAll("[data-subject-id]").forEach(btn => {
         btn.addEventListener("click", () => {
             const subjectId = btn.dataset.subjectId;
-            currentClass.currentSubjectId = subjectId;
+            currentYear.currentSubjectId = subjectId;
             saveData();
             renderSubjectTabs();
             renderStudents();
@@ -167,6 +406,7 @@ const renderSubjectTabs = () => {
     const addBtn = document.getElementById("add-subject-btn");
     if (addBtn) {
         addBtn.addEventListener("click", () => {
+            const currentClass = getCurrentClass();
             const content = `
                 <div class="grid gap-2">
                     <label class="block mb-2">${t("subject.subjectName")}</label>
@@ -184,8 +424,9 @@ const renderSubjectTabs = () => {
     container.querySelectorAll("[data-edit-subject]").forEach(btn => {
         btn.addEventListener("click", (e) => {
             e.stopPropagation();
+            const currentClass = getCurrentClass();
             const subjectId = btn.dataset.editSubject;
-            const subject = currentClass.subjects.find(s => s.id === subjectId);
+            const subject = currentYear.subjects.find(s => s.id === subjectId);
             if (subject) {
                 const content = `
                     <div class="grid gap-2">
@@ -204,8 +445,9 @@ const renderSubjectTabs = () => {
     container.querySelectorAll("[data-delete-subject]").forEach(btn => {
         btn.addEventListener("click", (e) => {
             e.stopPropagation();
+            const currentClass = getCurrentClass();
             const subjectId = btn.dataset.deleteSubject;
-            const subject = currentClass.subjects.find(s => s.id === subjectId);
+            const subject = currentYear.subjects.find(s => s.id === subjectId);
             if (subject) {
                 showConfirmDialog(t("subject.confirmDelete", { name: escapeHtml(subject.name) }), () => {
                     deleteSubject(currentClass.id, subjectId);
@@ -283,8 +525,8 @@ const initializeTabs = (tabsContainerId) => {
  * @param {function} onSuccess - Callback after grade is successfully added
  */
 const openAddGradeDialog = (studentId, onSuccess) => {
-    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-    if (!currentClass) return;
+    const currentYear = getCurrentYear();
+    if (!currentYear) return;
 
     // Create category selection with info about +/- support (global categories)
     const categoryOptions = appData.categories.map(cat => {
@@ -292,10 +534,10 @@ const openAddGradeDialog = (studentId, onSuccess) => {
         return `<option value="${safeAttr(cat.id)}" data-allow-plus-minus="${cat.allowPlusMinus}" data-only-plus-minus="${cat.onlyPlusMinus || false}">${escapeHtml(cat.name)} (${(cat.weight * 100).toFixed(0)}%)${label}</option>`;
     }).join("");
 
-    // Collect existing grade names from current class/subject for quick reuse
-    const activeSubjectId = currentClass.currentSubjectId;
+    // Collect existing grade names from current year/subject for quick reuse
+    const activeSubjectId = currentYear.currentSubjectId;
     const existingGradeNames = [...new Set(
-        (currentClass.students || [])
+        (currentYear.students || [])
             .flatMap(s => s.grades || [])
             .filter(g => g.name && g.name.trim() && g.subjectId === activeSubjectId)
             .map(g => g.name.trim())
@@ -548,10 +790,10 @@ const openAddGradeDialog = (studentId, onSuccess) => {
 };
 
 const renderStudents = () => {
-    // Aktuelle Klasse finden
-    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-    if (!currentClass) {
-        console.error("No current class found!");
+    // Aktuellen Jahrgang finden
+    const currentYear = getCurrentYear();
+    if (!currentYear) {
+        console.error("No current year found!");
         return;
     }
 
@@ -565,7 +807,7 @@ const renderStudents = () => {
     const studentsTable = document.getElementById("students-table");
 
     // FILTER-PIPELINE: Erst filtern, sortieren, dann rendern
-    studentsTable.innerHTML = currentClass.students
+    studentsTable.innerHTML = currentYear.students
         // 1. FILTERN: Nur Schüler behalten die den Kriterien entsprechen
         .filter(student => {
             const fullName = getStudentDisplayName(student).toLowerCase();
@@ -586,7 +828,7 @@ const renderStudents = () => {
         })
         .map(student => {
             // Noten nach aktivem Fach filtern
-            const filteredGrades = filterGradesBySubject(student.grades, currentClass.currentSubjectId);
+            const filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
             const simpleAvg = calculateSimpleAverage(filteredGrades);
             const weightedAvg = calculateWeightedAverage(filteredGrades);
             const gradeCount = filteredGrades.length;
@@ -698,19 +940,19 @@ const renderStudents = () => {
  * Shows: Class average, student count, total grades, pass rate.
  */
 const renderClassStats = () => {
-    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-    if (!currentClass) return;
+    const currentYear = getCurrentYear();
+    if (!currentYear) return;
 
-    const studentCount = currentClass.students.length;
+    const studentCount = currentYear.students.length;
 
     let totalGrades = 0;
     let passCount = 0;
     let studentWithGradesCount = 0;
     const classAverages = [];
 
-    currentClass.students.forEach(student => {
+    currentYear.students.forEach(student => {
         // Noten nach aktivem Fach filtern
-        const filteredGrades = filterGradesBySubject(student.grades, currentClass.currentSubjectId);
+        const filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
         const numericGrades = filteredGrades.filter(g => !g.isPlusMinus);
         totalGrades += numericGrades.length;
 
@@ -1100,23 +1342,30 @@ const renderHome = () => {
 
     // Durch alle Klassen iterieren
     appData.classes.forEach(cls => {
-        // Schüleranzahl addieren
-        totalStudents += cls.students.length;
+        // Durch alle Jahre der Klasse iterieren
+        if (cls.years) {
+            cls.years.forEach(year => {
+                // Schüleranzahl addieren
+                if (year.students) {
+                    totalStudents += year.students.length;
 
-        // Durch alle Schüler der Klasse iterieren
-        cls.students.forEach(student => {
-            // Nur numerische Noten zählen (keine +/-)
-            const numericGrades = student.grades.filter(g => !g.isPlusMinus);
-            totalGrades += numericGrades.length;
+                    // Durch alle Schüler des Jahres iterieren
+                    year.students.forEach(student => {
+                        // Nur numerische Noten zählen (keine +/-)
+                        const numericGrades = student.grades.filter(g => !g.isPlusMinus);
+                        totalGrades += numericGrades.length;
 
-            // Wenn der Schüler Noten hat, Durchschnitt berechnen
-            // some() prüft ob mindestens ein Element die Bedingung erfüllt
-            if (numericGrades.length > 0 || student.grades.some(g => g.isPlusMinus)) {
-                const avg = calculateWeightedAverage(student.grades);
-                // Nur gültige Durchschnitte (> 0) speichern
-                if (avg > 0) allAverages.push(avg);
-            }
-        });
+                        // Wenn der Schüler Noten hat, Durchschnitt berechnen
+                        // some() prüft ob mindestens ein Element die Bedingung erfüllt
+                        if (numericGrades.length > 0 || student.grades.some(g => g.isPlusMinus)) {
+                            const avg = calculateWeightedAverage(student.grades);
+                            // Nur gültige Durchschnitte (> 0) speichern
+                            if (avg > 0) allAverages.push(avg);
+                        }
+                    });
+                }
+            });
+        }
     });
 
     // GESAMTDURCHSCHNITT BERECHNEN
@@ -1141,14 +1390,23 @@ const renderHome = () => {
     }
 
     overviewList.innerHTML = appData.classes.map(cls => {
-        const studentCount = cls.students.length;
+        let studentCount = 0;
         let classAverage = "-";
         const classAverages = [];
 
-        cls.students.forEach(student => {
-            const avg = calculateWeightedAverage(student.grades);
-            if (avg > 0) classAverages.push(avg);
-        });
+        // Durch alle Jahre iterieren
+        if (cls.years) {
+            cls.years.forEach(year => {
+                if (year.students) {
+                    studentCount += year.students.length;
+
+                    year.students.forEach(student => {
+                        const avg = calculateWeightedAverage(student.grades);
+                        if (avg > 0) classAverages.push(avg);
+                    });
+                }
+            });
+        }
 
         if (classAverages.length > 0) {
             classAverage = (classAverages.reduce((a, b) => a + b, 0) / classAverages.length).toFixed(2);
@@ -1270,6 +1528,7 @@ const showClassView = () => {
             }
 
             renderClassList();
+            renderYearSelector();
             renderSubjectTabs();
             renderClassStats();
             renderStudents();
@@ -1284,6 +1543,7 @@ const showClassView = () => {
         }
 
         renderClassList();
+        renderYearSelector();
         renderSubjectTabs();
         renderClassStats();
         renderStudents();

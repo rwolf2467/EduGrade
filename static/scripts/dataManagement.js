@@ -28,15 +28,28 @@ const addClass = (name) => {
     // Neues Klassen-Objekt erstellen
     // Verwende eine wirklich eindeutige ID (Timestamp + Zufallszahl)
     const defaultSubjectId = Date.now().toString() + '-sub-' + Math.floor(Math.random() * 1000);
-    const newClass = {
-        id: Date.now().toString() + '-' + Math.floor(Math.random() * 1000),
-        name: validation.value,          // Validierter/bereinigter Name
+    const yearId = Date.now().toString() + '-year-' + Math.floor(Math.random() * 1000);
+
+    // Create default year with current academic year name
+    const currentYear = new Date().getFullYear();
+    const defaultYearName = `${currentYear}/${currentYear + 1}`;
+
+    const defaultYear = {
+        id: yearId,
+        name: defaultYearName,
         subjects: [{                     // Standard-Unterrichtsfach
             id: defaultSubjectId,
             name: t("class.defaultSubject")
         }],
         currentSubjectId: defaultSubjectId, // Standard-Fach aktiv setzen
         students: []                     // Leeres Array für Schüler
+    };
+
+    const newClass = {
+        id: Date.now().toString() + '-' + Math.floor(Math.random() * 1000),
+        name: validation.value,          // Validierter/bereinigter Name
+        years: [defaultYear],            // Array mit Standard-Jahr
+        currentYearId: yearId            // Standard-Jahr aktiv setzen
         // Kategorien werden global in appData.categories gespeichert
     };
 
@@ -52,6 +65,136 @@ const addClass = (name) => {
     // UI aktualisieren: Klassenliste, Home-View und Schülertabelle neu rendern
     renderClassList();
     renderHome();
+    renderStudents();
+};
+
+/**
+ * JAHR HINZUFÜGEN
+ *
+ * Erstellt einen neuen Jahrgang für eine Klasse.
+ * Optional können Schüler und Fächer vom vorherigen Jahrgang kopiert werden.
+ *
+ * @param {string} classId - ID der Klasse
+ * @param {string} name - Name des Jahrgangs (z.B. "2024/2025")
+ * @param {string|null} copyFromYearId - Optional: ID des Jahrgangs von dem kopiert werden soll
+ */
+const addYear = (classId, name, copyFromYearId = null) => {
+    const validation = validateStringInput(name, 50);
+    if (!validation.isValid) {
+        showAlertDialog(validation.error);
+        return;
+    }
+
+    const cls = appData.classes.find(c => c.id === classId);
+    if (!cls) {
+        console.error("Class not found!");
+        return;
+    }
+
+    if (!cls.years) cls.years = [];
+
+    const newYear = {
+        id: Date.now().toString() + '-year-' + Math.floor(Math.random() * 1000),
+        name: validation.value,
+        subjects: [],
+        currentSubjectId: null,
+        students: []
+    };
+
+    // If copying from previous year
+    if (copyFromYearId) {
+        const sourceYear = cls.years.find(y => y.id === copyFromYearId);
+        if (sourceYear) {
+            // Copy subjects (with new IDs)
+            newYear.subjects = sourceYear.subjects.map(subj => ({
+                id: Date.now().toString() + '-sub-' + Math.floor(Math.random() * 10000),
+                name: subj.name
+            }));
+
+            // Copy students (with new IDs, but NO grades)
+            newYear.students = sourceYear.students.map(student => ({
+                id: Date.now().toString() + '-stu-' + Math.floor(Math.random() * 10000),
+                firstName: student.firstName,
+                lastName: student.lastName,
+                middleName: student.middleName,
+                grades: [],
+                participation: []
+            }));
+
+            // Set first subject as current if available
+            if (newYear.subjects.length > 0) {
+                newYear.currentSubjectId = newYear.subjects[0].id;
+            }
+        }
+    }
+
+    cls.years.push(newYear);
+    cls.currentYearId = newYear.id;
+
+    saveData(t("toast.yearAdded"), "success");
+    renderYearSelector();
+    renderSubjectTabs();
+    renderStudents();
+
+    return newYear;
+};
+
+/**
+ * JAHR BEARBEITEN
+ *
+ * Ändert den Namen eines Jahrgangs.
+ *
+ * @param {string} classId - ID der Klasse
+ * @param {string} yearId - ID des Jahrgangs
+ * @param {string} newName - Neuer Name
+ */
+const editYear = (classId, yearId, newName) => {
+    const validation = validateStringInput(newName, 50);
+    if (!validation.isValid) {
+        showAlertDialog(validation.error);
+        return;
+    }
+
+    const cls = appData.classes.find(c => c.id === classId);
+    if (!cls || !cls.years) return;
+
+    const year = cls.years.find(y => y.id === yearId);
+    if (year) {
+        year.name = validation.value;
+        saveData(t("toast.yearEdited"), "success");
+        renderYearSelector();
+    }
+};
+
+/**
+ * JAHR LÖSCHEN
+ *
+ * Löscht einen Jahrgang (sofern es nicht der letzte ist).
+ *
+ * @param {string} classId - ID der Klasse
+ * @param {string} yearId - ID des Jahrgangs
+ */
+const deleteYear = (classId, yearId) => {
+    const cls = appData.classes.find(c => c.id === classId);
+    if (!cls || !cls.years) return;
+
+    // Prevent deleting last year
+    if (cls.years.length <= 1) {
+        showAlertDialog(t("error.cannotDeleteLastYear"));
+        return;
+    }
+
+    // Remove year
+    cls.years = cls.years.filter(y => y.id !== yearId);
+
+    // If deleted year was current, select first remaining
+    if (cls.currentYearId === yearId) {
+        cls.currentYearId = cls.years.length > 0 ? cls.years[0].id : null;
+    }
+
+    saveData(t("toast.yearDeleted"), "success");
+    renderYearSelector();
+    renderSubjectTabs();
     renderStudents();
 };
 
@@ -86,15 +229,15 @@ const addStudent = (firstName, lastName, middleName) => {
         validatedMiddleName = middleNameValidation.value;
     }
 
-    // Aktuelle Klasse im Array finden
-    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-    if (!currentClass) {
-        console.error("No current class found!");
+    // Aktuellen Jahrgang finden
+    const currentYear = getCurrentYear();
+    if (!currentYear) {
+        console.error("No current year found!");
         return;
     }
 
     // Duplikat-Prüfung: Vorname + Nachname (case-insensitive)
-    const isDuplicate = currentClass.students.some(s =>
+    const isDuplicate = currentYear.students.some(s =>
         s.firstName.toLowerCase() === firstNameValidation.value.toLowerCase() &&
         s.lastName.toLowerCase() === lastNameValidation.value.toLowerCase()
     );
@@ -114,8 +257,8 @@ const addStudent = (firstName, lastName, middleName) => {
         participation: []        // Für zukünftige Mitarbeits-Funktion
     };
 
-    // Schüler zur Klasse hinzufügen
-    currentClass.students.push(newStudent);
+    // Schüler zum Jahrgang hinzufügen
+    currentYear.students.push(newStudent);
     saveData(t("toast.studentAdded"));
     renderStudents();
 };
@@ -168,14 +311,14 @@ const addCategory = (name, weight, allowPlusMinus = false, onlyPlusMinus = false
  * @param {string} gradeName - Optionaler Name (z.B. "SA1", "Test 2")
  */
 const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null) => {
-    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-    if (!currentClass) {
-        console.error("No current class found!");
+    const currentYear = getCurrentYear();
+    if (!currentYear) {
+        console.error("No current year found!");
         return;
     }
 
     // Schüler und Kategorie finden (Kategorien sind global)
-    const student = currentClass.students.find(s => s.id === studentId);
+    const student = currentYear.students.find(s => s.id === studentId);
     const category = appData.categories.find(c => c.id === categoryId);
 
     if (student && category) {
@@ -241,33 +384,39 @@ const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null
  * @param {string} id - Die ID des zu löschenden Elements
  */
 const deleteItem = (type, id) => {
-    const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
-    if (!currentClass) {
-        console.error("No current class found!");
+    const currentYear = getCurrentYear();
+    if (!currentYear) {
+        console.error("No current year found!");
         return;
     }
 
     if (type === "student") {
         // Schüler aus dem Array entfernen
         // filter() erstellt ein neues Array ohne das Element mit der ID
-        currentClass.students = currentClass.students.filter(s => s.id !== id);
+        currentYear.students = currentYear.students.filter(s => s.id !== id);
 
     } else if (type === "category") {
         // Kategorie global löschen
         appData.categories = appData.categories.filter(c => c.id !== id);
 
-        // WICHTIG: Auch alle Noten dieser Kategorie bei allen Schülern in ALLEN Klassen löschen
+        // WICHTIG: Auch alle Noten dieser Kategorie bei allen Schülern in ALLEN Klassen und Jahren löschen
         // Sonst hätten Schüler "verwaiste" Noten ohne Kategorie
         appData.classes.forEach(cls => {
-            cls.students.forEach(s => {
-                s.grades = s.grades.filter(g => g.categoryId !== id);
-            });
+            if (cls.years) {
+                cls.years.forEach(year => {
+                    if (year.students) {
+                        year.students.forEach(s => {
+                            s.grades = s.grades.filter(g => g.categoryId !== id);
+                        });
+                    }
+                });
+            }
         });
 
     } else if (type === "grade") {
         // Einzelne Note löschen
         // Muss bei allen Schülern gesucht werden (wir wissen nicht welcher Schüler)
-        currentClass.students.forEach(s => {
+        currentYear.students.forEach(s => {
             s.grades = s.grades.filter(g => g.id !== id);
         });
     }
@@ -546,15 +695,21 @@ const addSubject = (classId, name) => {
         return;
     }
 
+    const currentYear = cls.years ? cls.years.find(y => y.id === cls.currentYearId) : null;
+    if (!currentYear) {
+        console.error("Current year not found!");
+        return;
+    }
+
     // Sicherstellen, dass subjects-Array existiert (Rückwärtskompatibilität)
-    if (!cls.subjects) cls.subjects = [];
+    if (!currentYear.subjects) currentYear.subjects = [];
 
     const newSubject = {
         id: Date.now().toString() + '-' + Math.floor(Math.random() * 1000),
         name: validation.value
     };
 
-    cls.subjects.push(newSubject);
+    currentYear.subjects.push(newSubject);
     saveData(t("toast.subjectAdded"), "success");
     renderSubjectTabs();
 };
@@ -574,9 +729,12 @@ const editSubject = (classId, subjectId, newName) => {
     }
 
     const cls = appData.classes.find(c => c.id === classId);
-    if (!cls || !cls.subjects) return;
+    if (!cls) return;
 
-    const subject = cls.subjects.find(s => s.id === subjectId);
+    const currentYear = cls.years ? cls.years.find(y => y.id === cls.currentYearId) : null;
+    if (!currentYear || !currentYear.subjects) return;
+
+    const subject = currentYear.subjects.find(s => s.id === subjectId);
     if (subject) {
         subject.name = validation.value;
         saveData(t("toast.subjectRenamed"), "success");
@@ -595,19 +753,24 @@ const editSubject = (classId, subjectId, newName) => {
  */
 const deleteSubject = (classId, subjectId) => {
     const cls = appData.classes.find(c => c.id === classId);
-    if (!cls || !cls.subjects) return;
+    if (!cls) return;
+
+    const currentYear = cls.years ? cls.years.find(y => y.id === cls.currentYearId) : null;
+    if (!currentYear || !currentYear.subjects) return;
 
     // Fach aus dem Array entfernen
-    cls.subjects = cls.subjects.filter(s => s.id !== subjectId);
+    currentYear.subjects = currentYear.subjects.filter(s => s.id !== subjectId);
 
-    // Alle Noten dieses Fachs bei allen Schülern dieser Klasse löschen
-    cls.students.forEach(student => {
-        student.grades = student.grades.filter(g => g.subjectId !== subjectId);
-    });
+    // Alle Noten dieses Fachs bei allen Schülern dieses Jahrgangs löschen
+    if (currentYear.students) {
+        currentYear.students.forEach(student => {
+            student.grades = student.grades.filter(g => g.subjectId !== subjectId);
+        });
+    }
 
     // Wenn das gelöschte Fach das aktive war, erstes verbleibendes Fach wählen
-    if (cls.currentSubjectId === subjectId) {
-        cls.currentSubjectId = cls.subjects.length > 0 ? cls.subjects[0].id : null;
+    if (currentYear.currentSubjectId === subjectId) {
+        currentYear.currentSubjectId = currentYear.subjects.length > 0 ? currentYear.subjects[0].id : null;
     }
 
     saveData(t("toast.subjectDeleted"), "success");

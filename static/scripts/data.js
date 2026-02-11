@@ -14,29 +14,34 @@
  * │   └── [Klasse]
  * │       ├── id: String - Eindeutige ID
  * │       ├── name: String - Name der Klasse (z.B. "1A")
- * │       ├── subjects: Array - Unterrichtsfächer dieser Klasse
- * │       │   └── [Fach]
+ * │       ├── years: Array - Jahrgänge dieser Klasse (z.B. "2024/2025")
+ * │       │   └── [Jahrgang]
  * │       │       ├── id: String - Eindeutige ID
- * │       │       └── name: String - Name des Fachs (z.B. "Mathematik")
- * │       ├── currentSubjectId: null|String - Aktives Fach-Tab (null = Alle Fächer)
- * │       └── students: Array - Schüler dieser Klasse
- * │           └── [Schüler]
- * │               ├── id: String
- * │               ├── firstName: String - Vorname
- * │               ├── lastName: String - Nachname
- * │               ├── middleName: String - Zweitname (optional)
- * │               ├── grades: Array - Noten des Schülers
- * │               │   └── [Note]
- * │               │       ├── id: String
- * │               │       ├── categoryId: String - Zugehörige Kategorie
- * │               │       ├── categoryName: String
- * │               │       ├── value: Number|String - Notenwert (1-6 oder "+"/"-")
- * │               │       ├── weight: Number - Gewichtung (0.1-1.0)
- * │               │       ├── isPlusMinus: Boolean
- * │               │       ├── name: String - Optionaler Name (z.B. "SA1")
- * │               │       └── subjectId: String|undefined - Zugehöriges Fach (undefined = kein Fach)
- * │               └── participation: Array - Für zukünftige Erweiterung
- * ├── categories: Array - GLOBALE Notenkategorien (gelten für ALLE Klassen)
+ * │       │       ├── name: String - Name des Jahrgangs (z.B. "2024/2025")
+ * │       │       ├── subjects: Array - Unterrichtsfächer dieses Jahrgangs
+ * │       │       │   └── [Fach]
+ * │       │       │       ├── id: String - Eindeutige ID
+ * │       │       │       └── name: String - Name des Fachs (z.B. "Mathematik")
+ * │       │       ├── currentSubjectId: null|String - Aktives Fach-Tab (null = Alle Fächer)
+ * │       │       └── students: Array - Schüler dieses Jahrgangs
+ * │       │           └── [Schüler]
+ * │       │               ├── id: String
+ * │       │               ├── firstName: String - Vorname
+ * │       │               ├── lastName: String - Nachname
+ * │       │               ├── middleName: String - Zweitname (optional)
+ * │       │               ├── grades: Array - Noten des Schülers
+ * │       │               │   └── [Note]
+ * │       │               │       ├── id: String
+ * │       │               │       ├── categoryId: String - Zugehörige Kategorie
+ * │       │               │       ├── categoryName: String
+ * │       │               │       ├── value: Number|String - Notenwert (1-6 oder "+"/"-")
+ * │       │               │       ├── weight: Number - Gewichtung (0.1-1.0)
+ * │       │               │       ├── isPlusMinus: Boolean
+ * │       │               │       ├── name: String - Optionaler Name (z.B. "SA1")
+ * │       │               │       └── subjectId: String|undefined - Zugehöriges Fach (undefined = kein Fach)
+ * │       │               └── participation: Array - Für zukünftige Erweiterung
+ * │       └── currentYearId: String - ID des aktuell ausgewählten Jahrgangs
+ * ├── categories: Array - GLOBALE Notenkategorien (gelten für ALLE Klassen und Jahrgänge)
  * │   └── [Kategorie]
  * │       ├── id: String
  * │       ├── name: String (z.B. "Schularbeit")

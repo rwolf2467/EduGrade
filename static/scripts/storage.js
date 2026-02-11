@@ -309,6 +309,9 @@ const checkPendingSync = async () => {
  * Ensures old data structures are compatible.
  */
 const migrateData = () => {
+    // MIGRATION: Migrate to year-based structure first (before other migrations)
+    migrateToYearStructure();
+
     // If classes exist, set the first one as current
     if (appData.classes && appData.classes.length > 0 && !appData.currentClassId) {
         appData.currentClassId = appData.classes[0].id;
@@ -322,10 +325,14 @@ const migrateData = () => {
     // MIGRATION: Initialize participation array for existing students
     if (appData.classes) {
         appData.classes.forEach(cls => {
-            if (cls.students) {
-                cls.students.forEach(student => {
-                    if (!student.participation) {
-                        student.participation = [];
+            if (cls.years) {
+                cls.years.forEach(year => {
+                    if (year.students) {
+                        year.students.forEach(student => {
+                            if (!student.participation) {
+                                student.participation = [];
+                            }
+                        });
                     }
                 });
             }
@@ -394,32 +401,36 @@ const migrateData = () => {
     // MIGRATION: Ensure all grades have the correct structure
     if (appData.classes) {
         appData.classes.forEach(cls => {
-            if (cls.students) {
-                cls.students.forEach(student => {
-                    if (student.grades) {
-                        student.grades.forEach((grade, index) => {
-                            // Ensure categoryName and weight are present
-                            if (!grade.categoryName && grade.categoryId) {
-                                const category = appData.categories.find(c => c.id === grade.categoryId);
-                                if (category) {
-                                    grade.categoryName = category.name;
-                                    grade.weight = category.weight;
-                                }
-                            }
-                            // MIGRATION: Add createdAt timestamp if missing
-                            // Use grade ID as timestamp (IDs are based on Date.now())
-                            // or fallback to sequential timestamps
-                            if (!grade.createdAt) {
-                                const idAsTimestamp = parseInt(grade.id, 10);
-                                if (!isNaN(idAsTimestamp) && idAsTimestamp > 1000000000000) {
-                                    // ID looks like a timestamp (after year 2001)
-                                    grade.createdAt = idAsTimestamp;
-                                } else {
-                                    // Fallback: use a sequential timestamp based on index
-                                    // Start from a base date and add index * 1 day
-                                    const baseDate = Date.now() - (student.grades.length - index) * 86400000;
-                                    grade.createdAt = baseDate;
-                                }
+            if (cls.years) {
+                cls.years.forEach(year => {
+                    if (year.students) {
+                        year.students.forEach(student => {
+                            if (student.grades) {
+                                student.grades.forEach((grade, index) => {
+                                    // Ensure categoryName and weight are present
+                                    if (!grade.categoryName && grade.categoryId) {
+                                        const category = appData.categories.find(c => c.id === grade.categoryId);
+                                        if (category) {
+                                            grade.categoryName = category.name;
+                                            grade.weight = category.weight;
+                                        }
+                                    }
+                                    // MIGRATION: Add createdAt timestamp if missing
+                                    // Use grade ID as timestamp (IDs are based on Date.now())
+                                    // or fallback to sequential timestamps
+                                    if (!grade.createdAt) {
+                                        const idAsTimestamp = parseInt(grade.id, 10);
+                                        if (!isNaN(idAsTimestamp) && idAsTimestamp > 1000000000000) {
+                                            // ID looks like a timestamp (after year 2001)
+                                            grade.createdAt = idAsTimestamp;
+                                        } else {
+                                            // Fallback: use a sequential timestamp based on index
+                                            // Start from a base date and add index * 1 day
+                                            const baseDate = Date.now() - (student.grades.length - index) * 86400000;
+                                            grade.createdAt = baseDate;
+                                        }
+                                    }
+                                });
                             }
                         });
                     }
@@ -431,24 +442,28 @@ const migrateData = () => {
     // MIGRATION: Split student name into firstName/lastName/middleName
     if (appData.classes) {
         appData.classes.forEach(cls => {
-            if (cls.students) {
-                cls.students.forEach(student => {
-                    if (student.name && !student.lastName) {
-                        const parts = student.name.trim().split(/\s+/);
-                        if (parts.length === 1) {
-                            student.lastName = parts[0];
-                            student.firstName = '';
-                        } else {
-                            student.lastName = parts[parts.length - 1];
-                            student.firstName = parts.slice(0, -1).join(' ');
-                        }
-                        student.middleName = '';
-                        delete student.name;
+            if (cls.years) {
+                cls.years.forEach(year => {
+                    if (year.students) {
+                        year.students.forEach(student => {
+                            if (student.name && !student.lastName) {
+                                const parts = student.name.trim().split(/\s+/);
+                                if (parts.length === 1) {
+                                    student.lastName = parts[0];
+                                    student.firstName = '';
+                                } else {
+                                    student.lastName = parts[parts.length - 1];
+                                    student.firstName = parts.slice(0, -1).join(' ');
+                                }
+                                student.middleName = '';
+                                delete student.name;
+                            }
+                            // Ensure fields exist even for already-migrated students
+                            if (!student.firstName && student.firstName !== '') student.firstName = '';
+                            if (!student.lastName && student.lastName !== '') student.lastName = '';
+                            if (!student.middleName && student.middleName !== '') student.middleName = '';
+                        });
                     }
-                    // Ensure fields exist even for already-migrated students
-                    if (!student.firstName && student.firstName !== '') student.firstName = '';
-                    if (!student.lastName && student.lastName !== '') student.lastName = '';
-                    if (!student.middleName && student.middleName !== '') student.middleName = '';
                 });
             }
         });
@@ -457,6 +472,59 @@ const migrateData = () => {
     // Data after migration
     // No automatic saving - data will be saved when user makes next change
     console.log("Data migration completed - changes will be saved on next user action");
+};
+
+/**
+ * MIGRATION: Migrate to Year-based Structure
+ *
+ * Converts old structure (class.subjects, class.students) to new structure
+ * (class.years[].subjects, class.years[].students)
+ *
+ * This allows teachers to manage the same class across multiple academic years.
+ */
+const migrateToYearStructure = () => {
+    if (!appData.classes || appData.classes.length === 0) return;
+
+    let needsMigration = false;
+
+    // Check if any class needs migration
+    appData.classes.forEach(cls => {
+        if (!cls.years && (cls.students || cls.subjects || cls.currentSubjectId !== undefined)) {
+            needsMigration = true;
+        }
+    });
+
+    if (!needsMigration) return;
+
+    console.log("Migrating data structure to support years (Jahrgänge)...");
+
+    appData.classes.forEach(cls => {
+        // Skip classes that already have years
+        if (cls.years) return;
+
+        // Create default year with current academic year name
+        const currentYear = new Date().getFullYear();
+        const defaultYearName = `${currentYear}/${currentYear + 1}`;
+
+        const defaultYear = {
+            id: Date.now().toString() + '-year-' + Math.floor(Math.random() * 1000),
+            name: defaultYearName,
+            subjects: cls.subjects || [],
+            currentSubjectId: cls.currentSubjectId || null,
+            students: cls.students || []
+        };
+
+        // Set up new structure
+        cls.years = [defaultYear];
+        cls.currentYearId = defaultYear.id;
+
+        // Remove old properties
+        delete cls.subjects;
+        delete cls.currentSubjectId;
+        delete cls.students;
+    });
+
+    console.log("Year structure migration completed");
 };
 
 // ============ VERSION CHECK ============
