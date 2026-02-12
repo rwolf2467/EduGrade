@@ -820,16 +820,17 @@ window.openStudentAccessDialog = openStudentAccessDialog;
  * UI: Share erstellen
  */
 const renderCreateShare = (container, currentClass) => {
-    // Ensure subjects array exists (backward compatibility)
-    if (!currentClass.subjects) currentClass.subjects = [];
-    
+    // Get the current year from the class
+    const currentYear = currentClass.years ? currentClass.years.find(y => y.id === currentClass.currentYearId) : null;
+    const subjects = currentYear && currentYear.subjects ? currentYear.subjects : [];
+
     // Generate subject checkboxes HTML
     let subjectCheckboxes = '';
-    if (currentClass.subjects.length > 0) {
+    if (subjects.length > 0) {
         subjectCheckboxes = `
             <div class="space-y-2">
                 <label class="text-sm font-medium">${t("share.subjectsToShare")}</label>
-                ${currentClass.subjects.map(subject => `
+                ${subjects.map(subject => `
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" id="subject-${subject.id}" class="checkbox" checked>
                         <span class="text-sm">${escapeHtml(subject.name)}</span>
@@ -919,10 +920,14 @@ const createClassShare = async (container, currentClass) => {
         chart: document.getElementById('vis-chart').checked
     };
 
+    // Get the current year from the class
+    const currentYear = currentClass.years ? currentClass.years.find(y => y.id === currentClass.currentYearId) : null;
+    const subjects = currentYear && currentYear.subjects ? currentYear.subjects : [];
+
     // Get selected subjects
     const selectedSubjects = [];
-    if (currentClass.subjects && currentClass.subjects.length > 0) {
-        currentClass.subjects.forEach(subject => {
+    if (subjects && subjects.length > 0) {
+        subjects.forEach(subject => {
             const checkbox = document.getElementById(`subject-${subject.id}`);
             if (checkbox && checkbox.checked) {
                 selectedSubjects.push(subject.id);
@@ -968,6 +973,53 @@ const createClassShare = async (container, currentClass) => {
 const renderPinListView = (container, token, pins, currentClass) => {
     const shareUrl = `${window.location.origin}/grades/${token}`;
 
+    let tableContent = '';
+    if (pins.length === 0) {
+        // Check if there are actually students in the class to determine the appropriate message
+        const currentYear = currentClass.years ? currentClass.years.find(y => y.id === currentClass.currentYearId) : null;
+        const students = currentYear && currentYear.students ? currentYear.students : [];
+
+        if (students.length === 0) {
+            // No students in class
+            tableContent = `
+                <div class="p-4 text-center text-sm text-gray-500">
+                    ${t("share.noStudentsInClass")}
+                </div>
+            `;
+        } else {
+            // Students exist in class but no PINs were generated (shouldn't normally happen)
+            tableContent = `
+                <div class="p-4 text-center text-sm text-gray-500">
+                    ${t("share.noPinsGenerated")}
+                </div>
+            `;
+        }
+    } else {
+        // Students exist, show PIN table
+        tableContent = `
+            <table class="table w-full text-sm">
+                <thead>
+                    <tr><th>${t("table.lastName")}</th><th>${t("share.pin")}</th><th></th></tr>
+                </thead>
+                <tbody>
+                    ${pins.map(p => `
+                        <tr>
+                            <td>${escapeHtml(p.name)}</td>
+                            <td><code class="text-lg tracking-widest font-mono">${escapeHtml(p.pin)}</code></td>
+                            <td>
+                                <button class="btn-sm-icon-outline copy-pin-btn" data-pin="${safeAttr(p.pin)}" data-tooltip="${t("share.copyPin")}" data-side="left">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
     container.innerHTML = `
         <div class="space-y-4">
             <div class="p-3 rounded-lg border bg-green-500/10 border-green-500/30">
@@ -987,32 +1039,28 @@ const renderPinListView = (container, token, pins, currentClass) => {
                 </div>
             </div>
 
+            <!-- QR Code Section -->
+            <div class="flex flex-col items-center justify-center p-4 border rounded-lg bg-white">
+                <label class="text-sm font-medium mb-2">${t("share.qrCode")}</label>
+                <div id="qr-code-container" class="flex items-center justify-center p-4 bg-white border rounded-lg">
+                    <div id="qr-code-placeholder" class="text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin mx-auto mb-2">
+                            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                        </svg>
+                        <p class="text-sm">${t("share.generatingQR")}</p>
+                    </div>
+                    <img id="qr-code-image" class="hidden max-w-xs max-h-xs" alt="${t("share.qrCodeAlt")}">
+                </div>
+                <p class="text-xs mt-2 text-center" style="color: oklch(.708 0 0);">${t("share.qrCodeDescription")}</p>
+            </div>
+
             <div>
                 <div class="flex items-center justify-between mb-2">
                     <label class="text-sm font-medium">${t("share.studentPins")}</label>
-                    <button class="btn-sm-outline" id="copy-all-pins">${t("share.copyAll")}</button>
+                    ${pins.length > 0 ? `<button class="btn-sm-outline" id="copy-all-pins">${t("share.copyAll")}</button>` : ''}
                 </div>
                 <div class="overflow-x-auto border rounded-lg">
-                    <table class="table w-full text-sm">
-                        <thead>
-                            <tr><th>Name</th><th>PIN</th><th></th></tr>
-                        </thead>
-                        <tbody>
-                            ${pins.map(p => `
-                                <tr>
-                                    <td>${escapeHtml(p.name)}</td>
-                                    <td><code class="text-lg tracking-widest font-mono">${escapeHtml(p.pin)}</code></td>
-                                    <td>
-                                        <button class="btn-sm-icon-outline copy-pin-btn" data-pin="${safeAttr(p.pin)}" data-tooltip="${t("share.copyPin")}" data-side="left">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
-                                            </svg>
-                                        </button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                    ${tableContent}
                 </div>
             </div>
 
@@ -1020,28 +1068,99 @@ const renderPinListView = (container, token, pins, currentClass) => {
         </div>
     `;
 
+    // Generate QR code
+    generateQRCode(shareUrl);
+
     // Copy URL
     document.getElementById('copy-share-url').addEventListener('click', () => {
         navigator.clipboard.writeText(shareUrl).then(() => showToast(t("toast.linkCopied"), 'success'));
     });
 
-    // Copy individual PINs
-    container.querySelectorAll('.copy-pin-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            navigator.clipboard.writeText(btn.dataset.pin).then(() => showToast(t("toast.pinCopied"), 'success'));
+    // Copy individual PINs (only if there are PINs to copy)
+    if (pins.length > 0) {
+        container.querySelectorAll('.copy-pin-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                navigator.clipboard.writeText(btn.dataset.pin).then(() => showToast(t("toast.pinCopied"), 'success'));
+            });
         });
-    });
 
-    // Copy all PINs as text
-    document.getElementById('copy-all-pins').addEventListener('click', () => {
-        const text = pins.map(p => `${p.name}: ${p.pin}`).join('\n');
-        navigator.clipboard.writeText(text).then(() => showToast(t("toast.allPinsCopied"), 'success'));
-    });
+        // Copy all PINs as text
+        document.getElementById('copy-all-pins').addEventListener('click', () => {
+            const text = pins.map(p => `${p.name}: ${p.pin}`).join('\n');
+            navigator.clipboard.writeText(text).then(() => showToast(t("toast.allPinsCopied"), 'success'));
+        });
+    }
 
     // Done button -> reload share status
     document.getElementById('pin-list-done').addEventListener('click', () => {
         openStudentAccessDialog();
     });
+};
+
+/**
+ * Generate QR code for the share URL
+ */
+const generateQRCode = async (url) => {
+    try {
+        // First, try the server-side generation
+        const response = await fetch('/api/qrcode/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url: url })
+        });
+
+        // Check if the response is OK before trying to parse JSON
+        if (response.ok) {
+            const data = await response.json();
+
+            if (data.success) {
+                const qrImage = document.getElementById('qr-code-image');
+                const placeholder = document.getElementById('qr-code-placeholder');
+                
+                qrImage.src = data.qr_code;
+                qrImage.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                return; // Success, exit early
+            } else {
+                console.warn('Server-side QR code generation failed, falling back to client-side:', data.message);
+            }
+        } else {
+            console.warn(`Server-side QR code generation failed with status: ${response.status}, falling back to client-side`);
+        }
+    } catch (error) {
+        console.warn('Server-side QR code generation failed, falling back to client-side:', error);
+    }
+
+    // Fallback to client-side QR code generation
+    if (typeof QRCode !== 'undefined') {
+        try {
+            const qrImage = document.getElementById('qr-code-image');
+            const placeholder = document.getElementById('qr-code-placeholder');
+            
+            // Use the client-side QR code library
+            const canvas = document.createElement('canvas');
+            await QRCode.toCanvas(canvas, url, { width: 200 }); // Fixed width for consistency
+            
+            // Convert canvas to data URL
+            const dataUrl = canvas.toDataURL('image/png');
+            
+            // Update the image element
+            qrImage.src = dataUrl;
+            qrImage.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            return; // Success with client-side generation
+        } catch (clientError) {
+            console.error('Client-side QR code generation failed:', clientError);
+        }
+    } else {
+        console.warn('QRCode library not available, skipping client-side generation');
+    }
+    
+    // If both server-side and client-side fail, show error
+    const placeholder = document.getElementById('qr-code-placeholder');
+    placeholder.innerHTML = `<p class="text-red-500 text-sm">${t("share.qrGenerationError")}</p>`;
 };
 
 /**
@@ -1054,19 +1173,20 @@ const renderActiveShare = (container, shareData, currentClass) => {
         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
-    // Ensure subjects array exists (backward compatibility)
-    if (!currentClass.subjects) currentClass.subjects = [];
-    
+    // Get the current year from the class
+    const currentYear = currentClass.years ? currentClass.years.find(y => y.id === currentClass.currentYearId) : null;
+    const subjects = currentYear && currentYear.subjects ? currentYear.subjects : [];
+
     // Generate subject checkboxes HTML
     let subjectCheckboxes = '';
-    if (currentClass.subjects.length > 0) {
+    if (subjects.length > 0) {
         // Determine which subjects are currently shared (default to all if not specified)
-        const sharedSubjects = shareData.subjects || currentClass.subjects.map(s => s.id);
-        
+        const sharedSubjects = shareData.subjects || subjects.map(s => s.id);
+
         subjectCheckboxes = `
             <div class="space-y-2">
                 <label class="text-sm font-medium">${t("share.subjectsToShare")}</label>
-                ${currentClass.subjects.map(subject => `
+                ${subjects.map(subject => `
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" id="subject-${subject.id}" class="checkbox" ${(sharedSubjects.includes(subject.id)) ? 'checked' : ''}>
                         <span class="text-sm">${escapeHtml(subject.name)}</span>
@@ -1106,6 +1226,21 @@ const renderActiveShare = (container, shareData, currentClass) => {
                         </svg>
                     </button>
                 </div>
+            </div>
+
+            <!-- QR Code Section -->
+            <div class="flex flex-col items-center justify-center p-4 border rounded-lg bg-white">
+                <label class="text-sm font-medium mb-2">${t("share.qrCode")}</label>
+                <div id="qr-code-container" class="flex items-center justify-center p-4 bg-white border rounded-lg">
+                    <div id="qr-code-placeholder" class="text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin mx-auto mb-2">
+                            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                        </svg>
+                        <p class="text-sm">${t("share.generatingQR")}</p>
+                    </div>
+                    <img id="qr-code-image" class="hidden max-w-xs max-h-xs" alt="${t("share.qrCodeAlt")}">
+                </div>
+                <p class="text-xs mt-2 text-center" style="color: oklch(.708 0 0);">${t("share.qrCodeDescription")}</p>
             </div>
 
             ${subjectCheckboxes}
@@ -1154,6 +1289,9 @@ const renderActiveShare = (container, shareData, currentClass) => {
         </div>
     `;
 
+    // Generate QR code
+    generateQRCode(shareUrl);
+
     // Copy URL
     document.getElementById('copy-share-url').addEventListener('click', () => {
         navigator.clipboard.writeText(shareUrl).then(() => showToast(t("toast.linkCopied"), 'success'));
@@ -1201,10 +1339,14 @@ const renderActiveShare = (container, shareData, currentClass) => {
             btn.disabled = true;
             btn.textContent = t("error.saving");
 
+            // Get the current year from the class
+            const currentYear = currentClass.years ? currentClass.years.find(y => y.id === currentClass.currentYearId) : null;
+            const subjects = currentYear && currentYear.subjects ? currentYear.subjects : [];
+
             // Get selected subjects
             const selectedSubjects = [];
-            if (currentClass.subjects && currentClass.subjects.length > 0) {
-                currentClass.subjects.forEach(subject => {
+            if (subjects && subjects.length > 0) {
+                subjects.forEach(subject => {
                     const checkbox = document.getElementById(`subject-${subject.id}`);
                     if (checkbox && checkbox.checked) {
                         selectedSubjects.push(subject.id);

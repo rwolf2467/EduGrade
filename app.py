@@ -35,6 +35,16 @@ from quart import Quart, render_template, request, jsonify, redirect, url_for, m
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from io import BytesIO
+import base64 as b64
+
+# Try to import qrcode, but make it optional
+try:
+    import qrcode
+    QR_CODE_AVAILABLE = True
+except ImportError:
+    QR_CODE_AVAILABLE = False
+    print("Warning: qrcode library not available. QR code generation will not work.")
 
 # ============ RATE LIMITING ============
 
@@ -288,10 +298,22 @@ def build_share_snapshot(user_data: dict, class_id: str) -> dict | None:
     if not cls:
         return None
 
+    # Get the current year from the class to access students
+    current_year_id = cls.get('currentYearId')
+    current_year = None
+    if current_year_id and cls.get('years'):
+        for year in cls.get('years', []):
+            if year.get('id') == current_year_id:
+                current_year = year
+                break
+    
+    # Get students from the current year if available, otherwise from class (fallback for backward compatibility)
+    students = current_year.get('students', []) if current_year else cls.get('students', [])
+
     return {
-        'students': cls.get('students', []),
+        'students': students,
         'categories': user_data.get('categories', []),
-        'subjects': cls.get('subjects', []),
+        'subjects': current_year.get('subjects', []) if current_year else cls.get('subjects', []),
         'plusMinusGradeSettings': user_data.get('plusMinusGradeSettings', {
             'startGrade': 3, 'plusValue': 0.5, 'minusValue': 0.5
         })
@@ -1140,12 +1162,24 @@ async def api_create_share():
     # Generate share token
     share_token = generate_share_token()
 
+    # Get the current year from the class to access students
+    current_year_id = cls.get('currentYearId')
+    current_year = None
+    if current_year_id and cls.get('years'):
+        for year in cls.get('years', []):
+            if year.get('id') == current_year_id:
+                current_year = year
+                break
+    
+    # Get students from the current year if available, otherwise from class (fallback for backward compatibility)
+    students = current_year.get('students', []) if current_year else cls.get('students', [])
+
     # Generate PINs for each student
     existing_pins = set()
     students_pins = {}  # student_id -> {pin_hash, name, pin (cleartext for response only)}
     cleartext_pins = {}  # student_id -> pin (returned to teacher once)
 
-    for student in cls.get('students', []):
+    for student in students:
         pin = generate_unique_pin(existing_pins)
         existing_pins.add(pin)
         students_pins[student['id']] = {
@@ -1185,7 +1219,7 @@ async def api_create_share():
 
     # Return share info with cleartext PINs (shown once to teacher)
     pin_list = []
-    for student in cls.get('students', []):
+    for student in students:  # Use the 'students' variable defined earlier in the function
         pin_list.append({
             'student_id': student['id'],
             'name': get_student_display_name(student),
@@ -1410,6 +1444,53 @@ async def api_verify_pin(share_token):
         'plusMinusGradeSettings': snapshot.get('plusMinusGradeSettings', {}),
         'visibility': share.get('visibility', {})
     })
+
+
+@app.route('/api/qrcode/generate', methods=['POST'])
+async def api_generate_qr():
+    """Generate a QR code for a given URL"""
+    if not QR_CODE_AVAILABLE:
+        return jsonify({
+            'success': False, 
+            'message': 'QR code library not available on this server'
+        }), 500
+    
+    try:
+        data = await request.get_json()
+        
+        if not data or 'url' not in data:
+            return jsonify({'success': False, 'message': 'URL is required'}), 400
+        
+        url = data['url']
+        
+        # Create QR code
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
+        
+        # Create image
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Convert to base64
+        buffer = BytesIO()
+        img.save(buffer, format='PNG')
+        img_str = b64.b64encode(buffer.getvalue()).decode()
+        
+        return jsonify({
+            'success': True,
+            'qr_code': f"data:image/png;base64,{img_str}"
+        })
+    except Exception as e:
+        print(f"Error generating QR code: {str(e)}")
+        return jsonify({
+            'success': False, 
+            'message': 'Failed to generate QR code'
+        }), 500
 
 
 if __name__ == '__main__':

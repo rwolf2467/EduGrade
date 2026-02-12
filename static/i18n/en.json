@@ -394,6 +394,13 @@
   "share.copyLink": "Copy link",
   "share.copyPin": "Copy PIN",
   "share.saveSubjects": "Save subjects",
+  "share.noStudentsInClass": "No students in this class. Add students to generate PINs.",
+  "share.noPinsGenerated": "No PINs were generated. This is unusual - please try creating the share again.",
+  "share.qrCode": "QR Code",
+  "share.qrCodeAlt": "QR Code for student access link",
+  "share.qrCodeDescription": "Show this QR code to students so they can scan and access their grades.",
+  "share.generatingQR": "Generating QR code...",
+  "share.qrGenerationError": "Error generating QR code",
 
   "studentView.yourPin": "Your PIN",
   "studentView.pinHint": "Enter your 6-digit PIN that you received from your teacher.",

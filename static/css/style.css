@@ -15,6 +15,15 @@ body {
     max-width: 100%;
     overflow-x: hidden;
     box-sizing: border-box;
+    background: radial-gradient(circle, rgba(0,0,0,0.02) 20%, transparent 20%, transparent 80%, rgba(0,0,0,0.02) 80%, rgba(0,0,0,0.02)) 0% 0% / 64px 64px, 
+                radial-gradient(circle, rgba(0,0,0,0.02) 20%, transparent 20%, transparent 80%, rgba(0,0,0,0.02) 80%, rgba(0,0,0,0.02)) 32px 32px / 64px 64px, 
+                linear-gradient(#e2e8f0 1px, transparent 1px) 0px -1px / 32px 32px, 
+                linear-gradient(90deg, #e2e8f0 1px, #f8fafc 1px) -1px 0px / 32px 32px #f8fafc;
+    background-size: 64px 64px, 64px 64px, 32px 32px, 32px 32px;
+}
+
+/* Dark mode background */
+html.dark body {
     background: radial-gradient(circle, transparent 20%, #0a0a0a 20%, #0a0a0a 80%, transparent 80%, transparent) 0% 0% / 64px 64px, radial-gradient(circle, transparent 20%, #0a0a0a 20%, #0a0a0a 80%, transparent 80%, transparent) 32px 32px / 64px 64px, linear-gradient(#171717 2px, transparent 2px) 0px -1px / 32px 32px, linear-gradient(90deg, #171717 2px, #0a0a0a 2px) -1px 0px / 32px 32px #0a0a0a;
     background-size: 64px 64px, 64px 64px, 32px 32px, 32px 32px;
     background-color: #0a0a0a;
