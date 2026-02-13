@@ -47,6 +47,38 @@ const escapeHtml = (text) => {
 };
 
 /**
+ * UNESCAPE HTML ENTITIES
+ *
+ * Dekodiert HTML-Entities zurück zu normalen Zeichen.
+ * Wird beim Import verwendet, um bereits escaped Daten zu korrigieren.
+ *
+ * @param {string} text - Der zu dekodierende Text
+ * @returns {string} - Der dekodierte Text
+ */
+const unescapeHtml = (text) => {
+    if (text === null || text === undefined) {
+        return '';
+    }
+
+    const str = String(text);
+
+    // Mapping von HTML-Entities zu ihren ursprünglichen Zeichen
+    const map = {
+        '&amp;': '&',
+        '&lt;': '<',
+        '&gt;': '>',
+        '&quot;': '"',
+        '&#039;': "'",
+        '&#x2F;': '/',
+        '&#x60;': '`',
+        '&#x3D;': '='
+    };
+
+    // Ersetze alle HTML-Entities
+    return str.replace(/&amp;|&lt;|&gt;|&quot;|&#039;|&#x2F;|&#x60;|&#x3D;/g, entity => map[entity] || entity);
+};
+
+/**
  * VALIDIERUNG VON TEXT-EINGABEN
  *
  * Prüft Benutzereingaben auf:
@@ -191,7 +223,7 @@ const sanitizeImportData = (data) => {
 
     // Neues sauberes Objekt erstellen
     const sanitized = {
-        teacherName: escapeHtml(data.teacherName || ''),
+        teacherName: unescapeHtml(data.teacherName || ''),
         currentClassId: data.currentClassId || null,
         classes: [],
         categories: [],
@@ -206,7 +238,7 @@ const sanitizeImportData = (data) => {
         sanitized.classes = data.classes.map(cls => {
             const sanitizedClass = {
                 id: String(cls.id || ''),                    // ID immer als String
-                name: escapeHtml(cls.name || ''),            // Name escapen
+                name: unescapeHtml(cls.name || ''),                // Name als String
                 currentYearId: cls.currentYearId ? String(cls.currentYearId) : null
             };
 
@@ -227,25 +259,29 @@ const sanitizeImportData = (data) => {
                 }
                 return {
                     id: String(student.id || ''),
-                    firstName: escapeHtml(firstName),
-                    lastName: escapeHtml(lastName),
-                    middleName: escapeHtml(middleName),
+                    firstName: unescapeHtml(firstName),
+                    lastName: unescapeHtml(lastName),
+                    middleName: unescapeHtml(middleName),
 
                     // Noten des Schülers sanitisieren
                     grades: Array.isArray(student.grades) ? student.grades.map(grade => ({
                         id: String(grade.id || ''),
                         categoryId: String(grade.categoryId || ''),
-                        categoryName: escapeHtml(grade.categoryName || ''),
+                        categoryName: unescapeHtml(grade.categoryName || ''),
                         // subjectId für Fächer-Zuordnung
                         subjectId: grade.subjectId ? String(grade.subjectId) : null,
                         // Notenwert: +/- nur wenn gültig, sonst als Zahl parsen
-                        value: grade.isPlusMinus
+                        value: grade.isPending ? null : (grade.isPlusMinus
                             ? (grade.value === '+' || grade.value === '~' || grade.value === '-' ? grade.value : '+')
-                            : parseFloat(grade.value) || 1,
+                            : parseFloat(grade.value) || 1),
                         weight: parseFloat(grade.weight) || 0.5,
                         isPlusMinus: Boolean(grade.isPlusMinus),
-                        name: escapeHtml(grade.name || ''),
-                        createdAt: parseInt(grade.createdAt, 10) || Date.now()
+                        isPending: Boolean(grade.isPending),
+                        name: unescapeHtml(grade.name || ''),
+                        createdAt: parseInt(grade.createdAt, 10) || Date.now(),
+                        excludeFromAverage: Boolean(grade.excludeFromAverage),
+                        enteredAsPercent: Boolean(grade.enteredAsPercent),
+                        percentValue: grade.percentValue ? parseFloat(grade.percentValue) : null
                     })) : [],
                     participation: student.participation || []
                 };
@@ -255,13 +291,13 @@ const sanitizeImportData = (data) => {
             if (Array.isArray(cls.years)) {
                 sanitizedClass.years = cls.years.map(year => ({
                     id: String(year.id || ''),
-                    name: escapeHtml(year.name || ''),
+                    name: unescapeHtml(year.name || ''),
                     currentSubjectId: year.currentSubjectId ? String(year.currentSubjectId) : null,
 
                     // Fächer-System (Subjects) sanitisieren
                     subjects: Array.isArray(year.subjects) ? year.subjects.map(subject => ({
                         id: String(subject.id || ''),
-                        name: escapeHtml(subject.name || '')
+                        name: unescapeHtml(subject.name || '')
                     })) : [],
 
                     // Schüler des Jahrgangs sanitisieren
@@ -273,7 +309,7 @@ const sanitizeImportData = (data) => {
                 // Fächer-System (Subjects) sanitisieren - alte Struktur
                 sanitizedClass.subjects = Array.isArray(cls.subjects) ? cls.subjects.map(subject => ({
                     id: String(subject.id || ''),
-                    name: escapeHtml(subject.name || '')
+                    name: unescapeHtml(subject.name || '')
                 })) : [];
                 sanitizedClass.currentSubjectId = cls.currentSubjectId ? String(cls.currentSubjectId) : null;
 
@@ -287,7 +323,7 @@ const sanitizeImportData = (data) => {
                 cls.categories.forEach(cat => {
                     const sanitizedCat = {
                         id: String(cat.id || ''),
-                        name: escapeHtml(cat.name || ''),
+                        name: unescapeHtml(cat.name || ''),
                         weight: parseFloat(cat.weight) || 0.5,
                         allowPlusMinus: Boolean(cat.allowPlusMinus),
                         onlyPlusMinus: Boolean(cat.onlyPlusMinus)
@@ -307,7 +343,7 @@ const sanitizeImportData = (data) => {
     if (Array.isArray(data.categories)) {
         sanitized.categories = data.categories.map(cat => ({
             id: String(cat.id || ''),
-            name: escapeHtml(cat.name || ''),
+            name: unescapeHtml(cat.name || ''),
             weight: parseFloat(cat.weight) || 0.5,
             allowPlusMinus: Boolean(cat.allowPlusMinus),
             onlyPlusMinus: Boolean(cat.onlyPlusMinus)
@@ -332,22 +368,26 @@ const sanitizeImportData = (data) => {
             }
             return {
             id: String(student.id || ''),
-            firstName: escapeHtml(firstName),
-            lastName: escapeHtml(lastName),
-            middleName: escapeHtml(middleName),
+            firstName: String(firstName),
+            lastName: String(lastName),
+            middleName: String(middleName),
             grades: Array.isArray(student.grades) ? student.grades.map(grade => ({
                 id: String(grade.id || ''),
                 categoryId: String(grade.categoryId || ''),
-                categoryName: escapeHtml(grade.categoryName || ''),
+                categoryName: unescapeHtml(grade.categoryName || ''),
                 // subjectId für Fächer-Zuordnung
                 subjectId: grade.subjectId ? String(grade.subjectId) : null,
-                value: grade.isPlusMinus
+                value: grade.isPending ? null : (grade.isPlusMinus
                     ? (grade.value === '+' || grade.value === '~' || grade.value === '-' ? grade.value : '+')
-                    : parseFloat(grade.value) || 1,
+                    : parseFloat(grade.value) || 1),
                 weight: parseFloat(grade.weight) || 0.5,
                 isPlusMinus: Boolean(grade.isPlusMinus),
-                name: escapeHtml(grade.name || ''),
-                createdAt: parseInt(grade.createdAt, 10) || Date.now()
+                isPending: Boolean(grade.isPending),
+                name: unescapeHtml(grade.name || ''),
+                createdAt: parseInt(grade.createdAt, 10) || Date.now(),
+                excludeFromAverage: Boolean(grade.excludeFromAverage),
+                enteredAsPercent: Boolean(grade.enteredAsPercent),
+                percentValue: grade.percentValue ? parseFloat(grade.percentValue) : null
             })) : []
         };});
     }
