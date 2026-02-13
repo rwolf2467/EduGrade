@@ -87,6 +87,31 @@ document.getElementById("cancel-add-student").addEventListener("click", () => {
 
 let parsedStudentsToImport = [];
 
+// Download CSV template
+document.getElementById("download-csv-template-btn").addEventListener("click", () => {
+    // Create example CSV with header
+    const csvContent = `Vorname,Zweitname,Nachname
+Max,Maria,Mustermann
+Anna,,Schmidt
+Tom,Felix,Meyer
+Lisa,Sophie,Wagner`;
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+
+    link.setAttribute("href", url);
+    link.setAttribute("download", "schueler_vorlage.csv");
+    link.style.visibility = 'hidden';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+});
+
 const resetImportStudentsDialog = () => {
     document.getElementById("import-students-file").value = "";
     document.getElementById("import-students-preview").classList.add("hidden");

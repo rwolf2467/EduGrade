@@ -865,3 +865,126 @@ html:not(.dark) .student-name-link:hover {
         grid-column: span 2;
     }
 }
+
+/* ========== TABLE ROW HOVER EFFECTS ========== */
+
+/* Students table row hover - Dark Mode */
+#students-table tr {
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+
+#students-table tr:hover {
+    background-color: rgba(59, 130, 246, 0.08) !important;
+    transform: translateX(2px);
+}
+
+/* Students table row hover - Light Mode */
+html:not(.dark) #students-table tr:hover {
+    background-color: rgba(59, 130, 246, 0.06) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* Grade table row hover in student detail view - Dark Mode */
+#student-grades-table tr {
+    transition: all 0.15s ease;
+}
+
+#student-grades-table tr:hover {
+    background-color: rgba(59, 130, 246, 0.06) !important;
+}
+
+/* Grade table row hover - Light Mode */
+html:not(.dark) #student-grades-table tr:hover {
+    background-color: rgba(59, 130, 246, 0.04) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Alternating row colors for better readability - Dark Mode */
+#students-table tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+#students-table tr:nth-child(even):hover {
+    background-color: rgba(59, 130, 246, 0.08) !important;
+}
+
+/* Alternating row colors - Light Mode */
+html:not(.dark) #students-table tr:nth-child(even) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+html:not(.dark) #students-table tr:nth-child(even):hover {
+    background-color: rgba(59, 130, 246, 0.06) !important;
+}
+
+/* Highlight student name link on row hover */
+#students-table tr:hover .student-name-link {
+    color: #3b82f6;
+    font-weight: 500;
+}
+
+html:not(.dark) #students-table tr:hover .student-name-link {
+    color: #2563eb;
+}
+
+/* ========== LIGHT MODE COLOR ADJUSTMENTS ========== */
+
+/* Softer destructive button colors in light mode */
+html:not(.dark) .btn-destructive {
+    background-color: rgba(220, 38, 38, 0.08) !important;
+    color: #b91c1c !important;
+    border-color: rgba(220, 38, 38, 0.2) !important;
+}
+
+html:not(.dark) .btn-destructive:hover {
+    background-color: rgba(220, 38, 38, 0.12) !important;
+    border-color: rgba(220, 38, 38, 0.3) !important;
+}
+
+html:not(.dark) .btn-destructive:active {
+    background-color: rgba(220, 38, 38, 0.16) !important;
+}
+
+/* Softer colors for icon buttons with destructive style */
+html:not(.dark) .btn-icon.btn-destructive {
+    color: #b91c1c !important;
+    background-color: transparent !important;
+}
+
+html:not(.dark) .btn-icon.btn-destructive:hover {
+    background-color: rgba(220, 38, 38, 0.08) !important;
+}
+
+/* Softer primary button in light mode */
+html:not(.dark) .btn-primary {
+    background-color: rgba(59, 130, 246, 0.9) !important;
+    border-color: rgba(59, 130, 246, 1) !important;
+}
+
+html:not(.dark) .btn-primary:hover {
+    background-color: rgba(37, 99, 235, 0.95) !important;
+}
+
+/* Softer secondary button in light mode */
+html:not(.dark) .btn-secondary {
+    background-color: rgba(100, 116, 139, 0.08) !important;
+    color: #475569 !important;
+    border-color: rgba(100, 116, 139, 0.2) !important;
+}
+
+html:not(.dark) .btn-secondary:hover {
+    background-color: rgba(100, 116, 139, 0.12) !important;
+    border-color: rgba(100, 116, 139, 0.3) !important;
+}
+
+/* Softer outline button in light mode */
+html:not(.dark) .btn-outline {
+    border-color: rgba(100, 116, 139, 0.3) !important;
+    color: #475569 !important;
+}
+
+html:not(.dark) .btn-outline:hover {
+    background-color: rgba(100, 116, 139, 0.05) !important;
+    border-color: rgba(100, 116, 139, 0.4) !important;
+}

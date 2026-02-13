@@ -548,6 +548,11 @@ const openAddGradeDialog = (studentId, onSuccess) => {
     const currentYear = getCurrentYear();
     if (!currentYear) return;
 
+    // Get student for display
+    const student = currentYear.students.find(s => s.id === studentId);
+    if (!student) return;
+    const studentName = getStudentDisplayName(student);
+
     // Create category selection with info about +/- support (global categories)
     const categoryOptions = appData.categories.map(cat => {
         const label = cat.onlyPlusMinus ? ' [+/~/- only]' : (cat.allowPlusMinus ? ' [+/~/-]' : '');
@@ -565,7 +570,18 @@ const openAddGradeDialog = (studentId, onSuccess) => {
 
     const hasGradeNames = existingGradeNames.length > 0;
 
+    // Get today's date in YYYY-MM-DD format for the date input
+    const today = new Date().toISOString().split('T')[0];
+
     const content = `
+    <div class="mb-3 p-3 rounded-lg bg-primary/10">
+      <p class="text-sm font-medium">${escapeHtml(studentName)}</p>
+    </div>
+    <div class="grid gap-2">
+      <label class="block mb-2">${t("grade.gradeDate")}</label>
+      <input type="date" name="gradeDate" class="input w-full" value="${today}" required>
+      <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.gradeDateHint")}</p>
+    </div>
     <div class="grid gap-2">
       <label class="block mb-2">${t("grade.gradeName")}</label>
       <div class="relative">
@@ -649,7 +665,18 @@ const openAddGradeDialog = (studentId, onSuccess) => {
             showAlertDialog(t("grade.mustSelectSubject"));
             return;
         }
-        const newGrade = addGrade(studentId, formData.get("categoryId"), gradeValue, formData.get("name"), activeSubjectId);
+
+        // Get selected date and convert to timestamp
+        const selectedDate = formData.get("gradeDate");
+        let gradeTimestamp = null;
+        if (selectedDate) {
+            // Parse the date string (YYYY-MM-DD) and set time to noon to avoid timezone issues
+            const dateParts = selectedDate.split('-');
+            const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 12, 0, 0);
+            gradeTimestamp = dateObj.getTime();
+        }
+
+        const newGrade = addGrade(studentId, formData.get("categoryId"), gradeValue, formData.get("name"), activeSubjectId, gradeTimestamp);
 
         if (newGrade) {
             // Store percentage info if entered as percentage
@@ -830,12 +857,12 @@ const renderStudents = () => {
         // 1. FILTERN: Nur Schüler behalten die den Kriterien entsprechen
         .filter(student => {
             const fullName = getStudentDisplayName(student).toLowerCase();
-            const matchesSearch = fullName.includes(searchTerm) ||
-                student.grades.some(g => {
-                    const gradeValue = g.isPlusMinus ? g.value : g.value.toString();
-                    const gradeName = g.name || "";
-                    return gradeValue.includes(searchTerm) || gradeName.toLowerCase().includes(searchTerm);
-                });
+            // Calculate final grade for search
+            const filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
+            const weightedAvg = calculateWeightedAverage(filteredGrades);
+            const finalGrade = calculateFinalGrade(weightedAvg).toLowerCase();
+
+            const matchesSearch = fullName.includes(searchTerm) || finalGrade.includes(searchTerm);
             const matchesCategory = filterCategory ? student.grades.some(g => g.categoryId === filterCategory) : true;
             return matchesSearch && matchesCategory;
         })
@@ -853,6 +880,9 @@ const renderStudents = () => {
             const gradeCount = filteredGrades.length;
             return `
             <tr>
+              <td>
+                <input type="checkbox" class="checkbox student-checkbox" data-student-id="${safeAttr(student.id)}">
+              </td>
               <td><span class="student-name-link" data-student-id="${safeAttr(student.id)}">${escapeHtml(student.lastName || '')}</span></td>
               <td>${escapeHtml(student.firstName || '')}</td>
               <td>${escapeHtml(student.middleName || '')}</td>
@@ -949,6 +979,338 @@ const renderStudents = () => {
             });
         });
     });
+
+    // Bulk Actions: Handle checkbox changes
+    const updateBulkActionsToolbar = () => {
+        const checkboxes = document.querySelectorAll(".student-checkbox");
+        const checkedCheckboxes = document.querySelectorAll(".student-checkbox:checked");
+        const toolbar = document.getElementById("bulk-actions-toolbar");
+        const countElement = document.getElementById("bulk-selection-count");
+        const selectAllCheckbox = document.getElementById("select-all-students");
+
+        const checkedCount = checkedCheckboxes.length;
+
+        // Show/hide toolbar based on selection
+        if (checkedCount > 0) {
+            toolbar.classList.remove("hidden");
+            countElement.textContent = t("class.selected").replace("{count}", checkedCount);
+        } else {
+            toolbar.classList.add("hidden");
+        }
+
+        // Update "select all" checkbox state
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = checkedCount === checkboxes.length && checkboxes.length > 0;
+            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+        }
+    };
+
+    // Individual checkbox listeners
+    document.querySelectorAll(".student-checkbox").forEach(checkbox => {
+        checkbox.addEventListener("change", updateBulkActionsToolbar);
+    });
+
+    // Select all checkbox
+    const selectAllCheckbox = document.getElementById("select-all-students");
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener("change", (e) => {
+            const checkboxes = document.querySelectorAll(".student-checkbox");
+            checkboxes.forEach(cb => {
+                cb.checked = e.target.checked;
+            });
+            updateBulkActionsToolbar();
+        });
+    }
+
+    // Bulk add grade button
+    const bulkAddGradeBtn = document.getElementById("bulk-add-grade-btn");
+    if (bulkAddGradeBtn) {
+        // Remove old listener if exists
+        const newBtn = bulkAddGradeBtn.cloneNode(true);
+        bulkAddGradeBtn.parentNode.replaceChild(newBtn, bulkAddGradeBtn);
+
+        newBtn.addEventListener("click", () => {
+            const selectedStudentIds = Array.from(document.querySelectorAll(".student-checkbox:checked"))
+                .map(cb => cb.dataset.studentId);
+
+            if (selectedStudentIds.length === 0) return;
+
+            // Open the grade dialog and add to all selected students
+            const currentYear = getCurrentYear();
+            if (!currentYear) return;
+
+            // Create category selection with info about +/- support (global categories)
+            const categoryOptions = appData.categories.map(cat => {
+                const label = cat.onlyPlusMinus ? ' [+/~/- only]' : (cat.allowPlusMinus ? ' [+/~/-]' : '');
+                return `<option value="${safeAttr(cat.id)}" data-allow-plus-minus="${cat.allowPlusMinus}" data-only-plus-minus="${cat.onlyPlusMinus || false}">${escapeHtml(cat.name)} (${(cat.weight * 100).toFixed(0)}%)${label}</option>`;
+            }).join("");
+
+            // Collect existing grade names from current year/subject for quick reuse
+            const activeSubjectId = currentYear.currentSubjectId;
+            const existingGradeNames = [...new Set(
+                (currentYear.students || [])
+                    .flatMap(s => s.grades || [])
+                    .filter(g => g.name && g.name.trim() && g.subjectId === activeSubjectId)
+                    .map(g => g.name.trim())
+            )].sort();
+
+            const hasGradeNames = existingGradeNames.length > 0;
+
+            // Get today's date in YYYY-MM-DD format for the date input
+            const today = new Date().toISOString().split('T')[0];
+
+            const content = `
+            <div class="mb-3 p-3 rounded-lg bg-primary/10">
+                <p class="text-sm font-medium">${t("class.selected").replace("{count}", selectedStudentIds.length)}</p>
+            </div>
+            <div class="grid gap-2">
+              <label class="block mb-2">${t("grade.gradeDate")}</label>
+              <input type="date" name="gradeDate" class="input w-full" value="${today}" required>
+              <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.gradeDateHint")}</p>
+            </div>
+            <div class="grid gap-2">
+              <label class="block mb-2">${t("grade.gradeName")}</label>
+              <div class="relative">
+                <div class="flex gap-2">
+                  <input type="text" name="name" class="input flex-1" placeholder="${t("grade.gradeNamePlaceholder")}">
+                  ${hasGradeNames ? `<button type="button" id="grade-name-dropdown-btn" class="btn-outline" style="padding: 0.4rem 0.5rem; display: flex; align-items: center;" title="${t("grade.previousNames")}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </button>` : ''}
+                </div>
+                ${hasGradeNames ? `<div id="grade-name-dropdown" class="hidden absolute z-50 mt-1 w-full rounded-lg shadow-lg overflow-auto" style="max-height: 200px; background: var(--card, #1e1e2e); border: 1px solid var(--border, #2d2d3d);">
+                  ${existingGradeNames.map(name => `<button type="button" class="grade-name-option w-full text-left px-3 py-2 cursor-pointer" style="border: none; background: none; color: inherit;" onmouseover="this.style.background='rgba(128,128,128,0.15)'" onmouseout="this.style.background='none'" data-name="${safeAttr(name)}">${escapeHtml(name)}</button>`).join('')}
+                </div>` : ''}
+              </div>
+              <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.gradeNameHint")}</p>
+            </div>
+            <div class="grid gap-2">
+              <label class="block mb-2">${t("grade.category")}</label>
+              <select name="categoryId" id="grade-category-select" class="select w-full" required>
+                ${categoryOptions}
+              </select>
+              <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.categoryHint")}</p>
+            </div>
+            <div class="grid gap-2" id="grade-value-container">
+              <div class="tabs w-full" id="grade-input-tabs">
+                <nav role="tablist" aria-orientation="horizontal" class="w-full">
+                  <button type="button" role="tab" id="tab-grade-direct" aria-controls="panel-grade-direct" aria-selected="true" tabindex="0">${t("grade.gradeTab")}</button>
+                  <button type="button" role="tab" id="tab-grade-percent" aria-controls="panel-grade-percent" aria-selected="false" tabindex="0">${t("grade.percentageTab")}</button>
+                </nav>
+                <div role="tabpanel" id="panel-grade-direct" aria-labelledby="tab-grade-direct" tabindex="-1" aria-selected="true">
+                  <div class="pt-3">
+                    <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input" placeholder="1-6">
+                    <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterGrade")}</p>
+                  </div>
+                </div>
+                <div role="tabpanel" id="panel-grade-percent" aria-labelledby="tab-grade-percent" tabindex="-1" aria-selected="false" hidden>
+                  <div class="pt-3">
+                    <div class="flex items-center gap-2">
+                      <input type="number" id="grade-percent-input" step="0.1" min="0" max="100" class="input flex-1" placeholder="0-100">
+                      <span>%</span>
+                    </div>
+                    <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterPercentage")}</p>
+                    <p class="text-sm mt-1 font-semibold" id="percent-preview"></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+
+            showDialog("edit-dialog", t("class.bulkAddGrade"), content, (formData) => {
+                // Check if percentage tab is active
+                const percentPanel = document.getElementById("panel-grade-percent");
+                const percentInput = document.getElementById("grade-percent-input");
+                const directGradeInput = document.getElementById("grade-value-input");
+
+                let gradeValue = formData.get("value");
+                let enteredAsPercent = false;
+                let percentValue = null;
+
+                // If percentage panel is visible and has a value, convert it
+                if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
+                    percentValue = parseFloat(percentInput.value);
+                    const convertedGrade = percentToGrade(percentValue);
+                    if (convertedGrade !== null) {
+                        gradeValue = convertedGrade.toString();
+                        enteredAsPercent = true;
+                    } else {
+                        showAlertDialog(t("error.invalidPercentage"));
+                        return;
+                    }
+                } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
+                    showAlertDialog(t("error.enterPercentage"));
+                    return;
+                } else if ((!percentPanel || percentPanel.hidden) && directGradeInput && !directGradeInput.value && !gradeValue) {
+                    showAlertDialog(t("error.enterGrade"));
+                    return;
+                }
+
+                // Check if subject is selected
+                if (!activeSubjectId) {
+                    showAlertDialog(t("grade.mustSelectSubject"));
+                    return;
+                }
+
+                // Get selected date and convert to timestamp
+                const selectedDate = formData.get("gradeDate");
+                let gradeTimestamp = null;
+                if (selectedDate) {
+                    // Parse the date string (YYYY-MM-DD) and set time to noon to avoid timezone issues
+                    const dateParts = selectedDate.split('-');
+                    const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 12, 0, 0);
+                    gradeTimestamp = dateObj.getTime();
+                }
+
+                // Add grade to all selected students
+                selectedStudentIds.forEach(studentId => {
+                    const newGrade = addGrade(studentId, formData.get("categoryId"), gradeValue, formData.get("name"), activeSubjectId, gradeTimestamp);
+
+                    if (newGrade && enteredAsPercent) {
+                        newGrade.enteredAsPercent = true;
+                        newGrade.percentValue = percentValue;
+                    }
+                });
+
+                saveData(t("toast.gradeAddedToMultiple").replace("{count}", selectedStudentIds.length), "success");
+                renderStudents();
+            });
+
+            // Set up tab switching after dialog is shown
+            setTimeout(() => {
+                const tabGradeDirect = document.getElementById("tab-grade-direct");
+                const tabGradePercent = document.getElementById("tab-grade-percent");
+                const panelGradeDirect = document.getElementById("panel-grade-direct");
+                const panelGradePercent = document.getElementById("panel-grade-percent");
+
+                if (tabGradeDirect && tabGradePercent && panelGradeDirect && panelGradePercent) {
+                    tabGradeDirect.addEventListener("click", () => {
+                        tabGradeDirect.setAttribute("aria-selected", "true");
+                        tabGradePercent.setAttribute("aria-selected", "false");
+                        panelGradeDirect.removeAttribute("hidden");
+                        panelGradePercent.setAttribute("hidden", "");
+                    });
+
+                    tabGradePercent.addEventListener("click", () => {
+                        tabGradePercent.setAttribute("aria-selected", "true");
+                        tabGradeDirect.setAttribute("aria-selected", "false");
+                        panelGradePercent.removeAttribute("hidden");
+                        panelGradeDirect.setAttribute("hidden", "");
+                    });
+
+                    // Percentage preview
+                    const percentInput = document.getElementById("grade-percent-input");
+                    const percentPreview = document.getElementById("percent-preview");
+                    if (percentInput && percentPreview) {
+                        percentInput.addEventListener("input", () => {
+                            const val = parseFloat(percentInput.value);
+                            if (!isNaN(val) && val >= 0 && val <= 100) {
+                                const grade = percentToGrade(val);
+                                if (grade !== null) {
+                                    percentPreview.textContent = t("grade.percentPreview").replace("{grade}", grade.toFixed(1));
+                                }
+                            } else {
+                                percentPreview.textContent = "";
+                            }
+                        });
+                    }
+                }
+
+                // Grade name dropdown
+                const dropdownBtn = document.getElementById("grade-name-dropdown-btn");
+                const dropdown = document.getElementById("grade-name-dropdown");
+                const nameInput = document.querySelector('input[name="name"]');
+
+                if (dropdownBtn && dropdown && nameInput) {
+                    dropdownBtn.addEventListener("click", () => {
+                        dropdown.classList.toggle("hidden");
+                    });
+
+                    document.querySelectorAll(".grade-name-option").forEach(option => {
+                        option.addEventListener("click", () => {
+                            nameInput.value = option.dataset.name;
+                            dropdown.classList.add("hidden");
+                        });
+                    });
+                }
+
+                // Add dynamic input switching based on category selection
+                const categorySelect = document.getElementById("grade-category-select");
+                const valueContainer = document.getElementById("grade-value-container");
+
+                if (categorySelect && valueContainer) {
+                    const updateGradeInput = () => {
+                        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+                        const allowPlusMinus = selectedOption.dataset.allowPlusMinus === "true";
+                        const onlyPlusMinus = selectedOption.dataset.onlyPlusMinus === "true";
+
+                        if (onlyPlusMinus) {
+                            valueContainer.innerHTML = `
+                                <label class="block mb-2">${t("grade.gradeTab")}</label>
+                                <select name="value" class="select w-full" required>
+                                    <option value="">${t("grade.select")}</option>
+                                    <option value="+">${t("grade.plus")}</option>
+                                    <option value="~">${t("grade.neutral")}</option>
+                                    <option value="-">${t("grade.minus")}</option>
+                                </select>
+                                <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.plusMinusOnlyHint")}</p>
+                            `;
+                        } else if (allowPlusMinus) {
+                            valueContainer.innerHTML = `
+                                <label class="block mb-2">${t("grade.gradeTab")}</label>
+                                <select name="value" class="select w-full" required>
+                                    <option value="">${t("grade.selectGradeType")}</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="+">${t("grade.plus")}</option>
+                                    <option value="~">${t("grade.neutral")}</option>
+                                    <option value="-">${t("grade.minus")}</option>
+                                </select>
+                                <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.mixedHint")}</p>
+                            `;
+                        }
+                    };
+
+                    categorySelect.addEventListener("change", updateGradeInput);
+                }
+            }, 100);
+        });
+    }
+
+    // Bulk delete button
+    const bulkDeleteBtn = document.getElementById("bulk-delete-btn");
+    if (bulkDeleteBtn) {
+        // Remove old listener if exists
+        const newBtn = bulkDeleteBtn.cloneNode(true);
+        bulkDeleteBtn.parentNode.replaceChild(newBtn, bulkDeleteBtn);
+
+        newBtn.addEventListener("click", () => {
+            const selectedStudentIds = Array.from(document.querySelectorAll(".student-checkbox:checked"))
+                .map(cb => cb.dataset.studentId);
+
+            if (selectedStudentIds.length === 0) return;
+
+            const confirmMessage = t("confirm.deleteStudents").replace("{count}", selectedStudentIds.length);
+            showConfirmDialog(confirmMessage, () => {
+                const currentYear = getCurrentYear();
+                if (!currentYear) return;
+
+                // Delete all selected students
+                currentYear.students = currentYear.students.filter(
+                    student => !selectedStudentIds.includes(student.id)
+                );
+
+                saveData(t("toast.studentsDeleted").replace("{count}", selectedStudentIds.length), "success");
+                renderStudents();
+            });
+        });
+    }
+
+    // Initialize toolbar state
+    updateBulkActionsToolbar();
 
 };
 
@@ -2182,10 +2544,39 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                     `;
                 }
 
+                // Convert timestamp to date string (YYYY-MM-DD)
+                const gradeDate = grade.createdAt ? new Date(grade.createdAt) : new Date();
+                const gradeDateStr = gradeDate.toISOString().split('T')[0];
+
+                // Get student name for display
+                const studentDisplayName = getStudentDisplayName(student);
+
+                // Create category dropdown with current category selected
+                const categoryOptions = appData.categories.map(cat => {
+                    const label = cat.onlyPlusMinus ? ' [+/~/- only]' : (cat.allowPlusMinus ? ' [+/~/-]' : '');
+                    const selected = cat.id === grade.categoryId ? 'selected' : '';
+                    return `<option value="${safeAttr(cat.id)}" ${selected}>${escapeHtml(cat.name)} (${(cat.weight * 100).toFixed(0)}%)${label}</option>`;
+                }).join("");
+
                 const content = `
+                    <div class="mb-3 p-3 rounded-lg bg-primary/10">
+                        <p class="text-sm font-medium">${escapeHtml(studentDisplayName)}</p>
+                    </div>
+                    <div class="grid gap-2">
+                        <label class="block mb-2">${t("grade.gradeDate")}</label>
+                        <input type="date" name="gradeDate" class="input w-full" value="${gradeDateStr}" required>
+                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.gradeDateHint")}</p>
+                    </div>
                     <div class="grid gap-2">
                         <label class="block mb-2">${t("grade.gradeName")}</label>
                         <input type="text" name="name" class="input w-full" value="${escapeHtml(grade.name || '')}" maxlength="100">
+                    </div>
+                    <div class="grid gap-2">
+                        <label class="block mb-2">${t("grade.category")}</label>
+                        <select name="categoryId" class="select w-full" required>
+                            ${categoryOptions}
+                        </select>
+                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.categoryHint")}</p>
                     </div>
                     <div class="grid gap-2">
                         <label class="flex items-center gap-2 cursor-pointer">
@@ -2257,6 +2648,25 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                         // Remove percentage metadata if user switched to direct grade input
                         delete grade.enteredAsPercent;
                         delete grade.percentValue;
+                    }
+
+                    // Update date if changed
+                    const selectedDate = formData.get("gradeDate");
+                    if (selectedDate) {
+                        const dateParts = selectedDate.split('-');
+                        const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 12, 0, 0);
+                        grade.createdAt = dateObj.getTime();
+                    }
+
+                    // Update category if changed
+                    const newCategoryId = formData.get("categoryId");
+                    if (newCategoryId && newCategoryId !== grade.categoryId) {
+                        const newCategory = appData.categories.find(c => c.id === newCategoryId);
+                        if (newCategory) {
+                            grade.categoryId = newCategory.id;
+                            grade.categoryName = newCategory.name;
+                            grade.weight = newCategory.weight;
+                        }
                     }
 
                     saveData(t("toast.gradeUpdated"), "success");

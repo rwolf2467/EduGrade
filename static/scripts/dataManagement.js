@@ -28,21 +28,40 @@ const addClass = (name) => {
 
     // Neues Klassen-Objekt erstellen
     // Verwende eine wirklich eindeutige ID (Timestamp + Zufallszahl)
-    const defaultSubjectId = Date.now().toString() + '-sub-' + Math.floor(Math.random() * 1000);
     const yearId = Date.now().toString() + '-year-' + Math.floor(Math.random() * 1000);
 
     // Create default year with current academic year name
     const currentYear = getCurrentSchoolYear();
     const defaultYearName = `${currentYear}/${currentYear + 1}`;
 
+    // Create subjects array from defaultSubjects or fallback to default subject
+    let subjects = [];
+    let firstSubjectId = null;
+
+    if (appData.defaultSubjects && appData.defaultSubjects.length > 0) {
+        // Use configured default subjects
+        subjects = appData.defaultSubjects.map((subjectName, index) => {
+            const subjectId = Date.now().toString() + '-sub-' + Math.floor(Math.random() * 1000) + '-' + index;
+            if (index === 0) firstSubjectId = subjectId;
+            return {
+                id: subjectId,
+                name: subjectName
+            };
+        });
+    } else {
+        // Fallback to default subject if none configured
+        firstSubjectId = Date.now().toString() + '-sub-' + Math.floor(Math.random() * 1000);
+        subjects = [{
+            id: firstSubjectId,
+            name: t("class.defaultSubject")
+        }];
+    }
+
     const defaultYear = {
         id: yearId,
         name: defaultYearName,
-        subjects: [{                     // Standard-Unterrichtsfach
-            id: defaultSubjectId,
-            name: t("class.defaultSubject")
-        }],
-        currentSubjectId: defaultSubjectId, // Standard-Fach aktiv setzen
+        subjects: subjects,
+        currentSubjectId: firstSubjectId, // First subject active by default
         students: []                     // Leeres Array für Schüler
     };
 
@@ -310,8 +329,10 @@ const addCategory = (name, weight, allowPlusMinus = false, onlyPlusMinus = false
  * @param {string} categoryId - ID der Kategorie
  * @param {string|number} value - Notenwert ("+" / "-" oder Zahl 1-6)
  * @param {string} gradeName - Optionaler Name (z.B. "SA1", "Test 2")
+ * @param {string} subjectId - ID des Fachs
+ * @param {number} gradeDate - Optionales Datum als Timestamp (default: jetzt)
  */
-const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null) => {
+const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null, gradeDate = null) => {
     const currentYear = getCurrentYear();
     if (!currentYear) {
         console.error("No current year found!");
@@ -344,13 +365,14 @@ const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null
         }
 
         // Neues Noten-Objekt erstellen
+        const timestamp = gradeDate || Date.now();
         const newGrade = {
             id: Date.now().toString(),
             categoryId: categoryId,
             categoryName: category.name,    // Name der Kategorie speichern (für Anzeige)
             weight: category.weight,        // Gewichtung von Kategorie übernehmen
             name: validatedGradeName,
-            createdAt: Date.now(),          // Zeitstempel für zeitlichen Graph
+            createdAt: timestamp,           // Zeitstempel für zeitlichen Graph (vom Benutzer wählbar)
             subjectId: subjectId            // Zugehöriges Fach (null = kein Fach)
         };
 

@@ -61,6 +61,7 @@ let appData = {
     currentClassId: null,         // ID der aktuell angezeigten Klasse
     classes: [],                  // Hauptarray mit allen Klassen und deren Daten
     categories: [],               // GLOBALE Kategorien (gelten für alle Klassen)
+    defaultSubjects: [],          // Standard-Fächer die beim Anlegen neuer Klassen erstellt werden
     students: [],                 // Legacy-Array (wird nicht aktiv verwendet)
     participationSettings: {      // Einstellungen für Mitarbeits-Funktion
         plusValue: 0.1,           // Wert pro Plus bei Mitarbeit

@@ -81,6 +81,14 @@ const exportStudentDetailPDF = async (studentId) => {
         yPosition += 5;
         pdf.text(`${t("common.subject")}: ${subjectName}`, margin, yPosition);
         yPosition += 5;
+
+        // Add teacher name if available
+        const teacherName = appData.teacherName || '';
+        if (teacherName) {
+            pdf.text(`${t("pdf.teacher")}: ${teacherName}`, margin, yPosition);
+            yPosition += 5;
+        }
+
         pdf.text(`${t("pdf.generatedOn")}: ${new Date().toLocaleDateString()}`, margin, yPosition);
         yPosition += 12;
         pdf.setTextColor(0, 0, 0);
