@@ -2,6 +2,15 @@
 
 A secure web application for teachers to manage student grades, classes, and performance tracking. Built with Python (Quart) and JavaScript.
 
+## Screenshots
+<img width="2556" height="1491" alt="image" src="https://github.com/user-attachments/assets/95ecb0df-45ba-4666-847b-b938bc24e60e" />
+<img width="2556" height="1491" alt="image" src="https://github.com/user-attachments/assets/14049f86-8ba5-429d-8532-b2011fd444d7" />
+<img width="2556" height="1491" alt="image" src="https://github.com/user-attachments/assets/f7df65a1-f00f-4578-bd92-072f1edc59cd" />
+<img width="2556" height="1491" alt="image" src="https://github.com/user-attachments/assets/e35699bb-782a-4f71-af2b-441f17849872" />
+<img width="2556" height="1491" alt="image" src="https://github.com/user-attachments/assets/956cf027-04b8-4083-83f1-d0af8136ec63" />
+
+
+
 ## Features
 
 - **Class & Student Management** - Create classes, add students, track individual performance
