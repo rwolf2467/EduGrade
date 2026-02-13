@@ -988,3 +988,14 @@ html:not(.dark) .btn-outline:hover {
     background-color: rgba(100, 116, 139, 0.05) !important;
     border-color: rgba(100, 116, 139, 0.4) !important;
 }
+
+/* Pending grade styling */
+.pending-grade {
+    background-color: rgba(251, 191, 36, 0.1);
+    border-left: 3px solid rgba(251, 191, 36, 0.5);
+}
+
+html.dark .pending-grade {
+    background-color: rgba(251, 191, 36, 0.05);
+    border-left: 3px solid rgba(251, 191, 36, 0.3);
+}

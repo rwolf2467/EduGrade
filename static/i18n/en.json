@@ -200,6 +200,10 @@
   "grade.deleteTooltip": "Delete grade",
   "grade.includeInAverage": "Include in overall grade",
   "grade.excludedFromAverage": "Not included in overall grade",
+  "grade.pendingGrade": "Enter grade later",
+  "grade.pendingGradeHint": "Enable this option for students who need to make up the work later.",
+  "grade.pendingValue": "Pending",
+  "grade.pendingTooltip": "This grade is pending and will be entered later",
 
   "confirm.deleteClass": "Are you sure you want to permanently delete the class \"{name}\"? This action cannot be undone and all associated data will be lost.",
   "confirm.deleteStudent": "Are you sure you want to permanently delete this student? This action cannot be undone.",

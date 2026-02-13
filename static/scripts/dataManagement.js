@@ -332,7 +332,7 @@ const addCategory = (name, weight, allowPlusMinus = false, onlyPlusMinus = false
  * @param {string} subjectId - ID des Fachs
  * @param {number} gradeDate - Optionales Datum als Timestamp (default: jetzt)
  */
-const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null, gradeDate = null) => {
+const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null, gradeDate = null, isPending = false) => {
     const currentYear = getCurrentYear();
     if (!currentYear) {
         console.error("No current year found!");
@@ -355,15 +355,6 @@ const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null
             validatedGradeName = nameValidation.value;
         }
 
-        // NOTENWERT VALIDIEREN
-        // Prüfen ob es eine +/- Note ist
-        const isPlusMinus = value === "+" || value === "~" || value === "-";
-        const gradeValidation = validateGradeValue(value, isPlusMinus);
-        if (!gradeValidation.isValid) {
-            showAlertDialog(gradeValidation.error);
-            return;
-        }
-
         // Neues Noten-Objekt erstellen
         const timestamp = gradeDate || Date.now();
         const newGrade = {
@@ -373,16 +364,32 @@ const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null
             weight: category.weight,        // Gewichtung von Kategorie übernehmen
             name: validatedGradeName,
             createdAt: timestamp,           // Zeitstempel für zeitlichen Graph (vom Benutzer wählbar)
-            subjectId: subjectId            // Zugehöriges Fach (null = kein Fach)
+            subjectId: subjectId,           // Zugehöriges Fach (null = kein Fach)
+            isPending: isPending            // Marker für ausstehende Noten
         };
 
-        // Je nach Notentyp den Wert setzen
-        if (isPlusMinus) {
-            newGrade.value = gradeValidation.value;  // "+" oder "-"
-            newGrade.isPlusMinus = true;
-        } else {
-            newGrade.value = gradeValidation.value;  // Zahl 1-6
+        // If grade is pending, skip validation and set placeholder value
+        if (isPending) {
+            newGrade.value = null;
             newGrade.isPlusMinus = false;
+        } else {
+            // NOTENWERT VALIDIEREN
+            // Prüfen ob es eine +/- Note ist
+            const isPlusMinus = value === "+" || value === "~" || value === "-";
+            const gradeValidation = validateGradeValue(value, isPlusMinus);
+            if (!gradeValidation.isValid) {
+                showAlertDialog(gradeValidation.error);
+                return;
+            }
+
+            // Je nach Notentyp den Wert setzen
+            if (isPlusMinus) {
+                newGrade.value = gradeValidation.value;  // "+" oder "-"
+                newGrade.isPlusMinus = true;
+            } else {
+                newGrade.value = gradeValidation.value;  // Zahl 1-6
+                newGrade.isPlusMinus = false;
+            }
         }
 
         // Note zum Schüler hinzufügen

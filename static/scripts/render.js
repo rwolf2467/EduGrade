@@ -604,6 +604,13 @@ const openAddGradeDialog = (studentId, onSuccess) => {
       </select>
       <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.categoryHint")}</p>
     </div>
+    <div class="grid gap-2 mb-3">
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" name="isPending" id="grade-is-pending" class="checkbox">
+        <span>${t("grade.pendingGrade")}</span>
+      </label>
+      <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.pendingGradeHint")}</p>
+    </div>
     <div class="grid gap-2" id="grade-value-container">
       <div class="tabs w-full" id="grade-input-tabs">
         <nav role="tablist" aria-orientation="horizontal" class="w-full">
@@ -631,6 +638,9 @@ const openAddGradeDialog = (studentId, onSuccess) => {
   `;
 
     showDialog("edit-dialog", t("grade.addGrade"), content, (formData) => {
+        // Check if pending grade checkbox is checked
+        const isPending = formData.get("isPending") === "on";
+
         // Check if percentage tab is active
         const percentPanel = document.getElementById("panel-grade-percent");
         const percentInput = document.getElementById("grade-percent-input");
@@ -640,23 +650,29 @@ const openAddGradeDialog = (studentId, onSuccess) => {
         let enteredAsPercent = false;
         let percentValue = null;
 
-        // If percentage panel is visible and has a value, convert it
-        if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
-            percentValue = parseFloat(percentInput.value);
-            const convertedGrade = percentToGrade(percentValue);
-            if (convertedGrade !== null) {
-                gradeValue = convertedGrade.toString();
-                enteredAsPercent = true;
-            } else {
-                showAlertDialog(t("error.invalidPercentage"));
+        // If grade is pending, skip value validation
+        if (!isPending) {
+            // If percentage panel is visible and has a value, convert it
+            if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
+                percentValue = parseFloat(percentInput.value);
+                const convertedGrade = percentToGrade(percentValue);
+                if (convertedGrade !== null) {
+                    gradeValue = convertedGrade.toString();
+                    enteredAsPercent = true;
+                } else {
+                    showAlertDialog(t("error.invalidPercentage"));
+                    return;
+                }
+            } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
+                showAlertDialog(t("error.enterPercentage"));
+                return;
+            } else if ((!percentPanel || percentPanel.hidden) && directGradeInput && !directGradeInput.value && !gradeValue) {
+                showAlertDialog(t("error.enterGrade"));
                 return;
             }
-        } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
-            showAlertDialog(t("error.enterPercentage"));
-            return;
-        } else if ((!percentPanel || percentPanel.hidden) && directGradeInput && !directGradeInput.value && !gradeValue) {
-            showAlertDialog(t("error.enterGrade"));
-            return;
+        } else {
+            // For pending grades, set value to null
+            gradeValue = null;
         }
 
         // subjectId vom aktiven Fach-Tab übernehmen (activeSubjectId already defined at line 557)
@@ -676,7 +692,7 @@ const openAddGradeDialog = (studentId, onSuccess) => {
             gradeTimestamp = dateObj.getTime();
         }
 
-        const newGrade = addGrade(studentId, formData.get("categoryId"), gradeValue, formData.get("name"), activeSubjectId, gradeTimestamp);
+        const newGrade = addGrade(studentId, formData.get("categoryId"), gradeValue, formData.get("name"), activeSubjectId, gradeTimestamp, isPending);
 
         if (newGrade) {
             // Store percentage info if entered as percentage
@@ -832,6 +848,25 @@ const openAddGradeDialog = (studentId, onSuccess) => {
                 }
             });
         }
+    }
+
+    // Add event listener for pending grade checkbox
+    const pendingCheckbox = document.getElementById("grade-is-pending");
+    const gradeValueContainer = document.getElementById("grade-value-container");
+
+    if (pendingCheckbox && gradeValueContainer) {
+        const toggleGradeInputs = () => {
+            const isPending = pendingCheckbox.checked;
+            gradeValueContainer.style.opacity = isPending ? "0.5" : "1";
+            gradeValueContainer.style.pointerEvents = isPending ? "none" : "auto";
+
+            // Disable/enable all inputs in the container
+            gradeValueContainer.querySelectorAll("input, select, button").forEach(el => {
+                el.disabled = isPending;
+            });
+        };
+
+        pendingCheckbox.addEventListener("change", toggleGradeInputs);
     }
 };
 
@@ -1090,6 +1125,13 @@ const renderStudents = () => {
               </select>
               <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.categoryHint")}</p>
             </div>
+            <div class="grid gap-2 mb-3">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="isPending" id="grade-is-pending-bulk" class="checkbox">
+                <span>${t("grade.pendingGrade")}</span>
+              </label>
+              <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.pendingGradeHint")}</p>
+            </div>
             <div class="grid gap-2" id="grade-value-container">
               <div class="tabs w-full" id="grade-input-tabs">
                 <nav role="tablist" aria-orientation="horizontal" class="w-full">
@@ -1117,6 +1159,9 @@ const renderStudents = () => {
           `;
 
             showDialog("edit-dialog", t("class.bulkAddGrade"), content, (formData) => {
+                // Check if pending grade checkbox is checked
+                const isPending = formData.get("isPending") === "on";
+
                 // Check if percentage tab is active
                 const percentPanel = document.getElementById("panel-grade-percent");
                 const percentInput = document.getElementById("grade-percent-input");
@@ -1126,23 +1171,29 @@ const renderStudents = () => {
                 let enteredAsPercent = false;
                 let percentValue = null;
 
-                // If percentage panel is visible and has a value, convert it
-                if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
-                    percentValue = parseFloat(percentInput.value);
-                    const convertedGrade = percentToGrade(percentValue);
-                    if (convertedGrade !== null) {
-                        gradeValue = convertedGrade.toString();
-                        enteredAsPercent = true;
-                    } else {
-                        showAlertDialog(t("error.invalidPercentage"));
+                // If grade is pending, skip value validation
+                if (!isPending) {
+                    // If percentage panel is visible and has a value, convert it
+                    if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
+                        percentValue = parseFloat(percentInput.value);
+                        const convertedGrade = percentToGrade(percentValue);
+                        if (convertedGrade !== null) {
+                            gradeValue = convertedGrade.toString();
+                            enteredAsPercent = true;
+                        } else {
+                            showAlertDialog(t("error.invalidPercentage"));
+                            return;
+                        }
+                    } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
+                        showAlertDialog(t("error.enterPercentage"));
+                        return;
+                    } else if ((!percentPanel || percentPanel.hidden) && directGradeInput && !directGradeInput.value && !gradeValue) {
+                        showAlertDialog(t("error.enterGrade"));
                         return;
                     }
-                } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
-                    showAlertDialog(t("error.enterPercentage"));
-                    return;
-                } else if ((!percentPanel || percentPanel.hidden) && directGradeInput && !directGradeInput.value && !gradeValue) {
-                    showAlertDialog(t("error.enterGrade"));
-                    return;
+                } else {
+                    // For pending grades, set value to null
+                    gradeValue = null;
                 }
 
                 // Check if subject is selected
@@ -1163,7 +1214,7 @@ const renderStudents = () => {
 
                 // Add grade to all selected students
                 selectedStudentIds.forEach(studentId => {
-                    const newGrade = addGrade(studentId, formData.get("categoryId"), gradeValue, formData.get("name"), activeSubjectId, gradeTimestamp);
+                    const newGrade = addGrade(studentId, formData.get("categoryId"), gradeValue, formData.get("name"), activeSubjectId, gradeTimestamp, isPending);
 
                     if (newGrade && enteredAsPercent) {
                         newGrade.enteredAsPercent = true;
@@ -1275,6 +1326,25 @@ const renderStudents = () => {
                     };
 
                     categorySelect.addEventListener("change", updateGradeInput);
+                }
+
+                // Add event listener for pending grade checkbox (bulk)
+                const pendingCheckboxBulk = document.getElementById("grade-is-pending-bulk");
+                const gradeValueContainerBulk = document.getElementById("grade-value-container");
+
+                if (pendingCheckboxBulk && gradeValueContainerBulk) {
+                    const toggleGradeInputsBulk = () => {
+                        const isPending = pendingCheckboxBulk.checked;
+                        gradeValueContainerBulk.style.opacity = isPending ? "0.5" : "1";
+                        gradeValueContainerBulk.style.pointerEvents = isPending ? "none" : "auto";
+
+                        // Disable/enable all inputs in the container
+                        gradeValueContainerBulk.querySelectorAll("input, select, button").forEach(el => {
+                            el.disabled = isPending;
+                        });
+                    };
+
+                    pendingCheckboxBulk.addEventListener("change", toggleGradeInputsBulk);
                 }
             }, 100);
         });
@@ -1594,6 +1664,9 @@ const calculateWeightedAverage = (grades) => {
     grades.forEach(grade => {
         // Noten, die nicht in die Gesamtnote eingerechnet werden sollen, überspringen
         if (grade.excludeFromAverage) return;
+
+        // Ausstehende Noten (isPending) überspringen
+        if (grade.isPending) return;
 
         const catId = grade.categoryId;
         if (!gradesByCategory[catId]) {
@@ -2455,9 +2528,17 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
             })
             : '-';
 
-        const displayValue = grade.isPlusMinus ? grade.value : grade.value.toString();
-        const gradeColorClass = getGradeColorClass(grade);
-        const weightDisplay = grade.isPlusMinus ? '-' : `${(grade.weight * 100).toFixed(0)}%`;
+        // Handle pending grades
+        let displayValue, gradeColorClass, weightDisplay;
+        if (grade.isPending) {
+            displayValue = t("grade.pendingValue");
+            gradeColorClass = "badge-warning";
+            weightDisplay = '-';
+        } else {
+            displayValue = grade.isPlusMinus ? grade.value : grade.value.toString();
+            gradeColorClass = getGradeColorClass(grade);
+            weightDisplay = grade.isPlusMinus ? '-' : `${(grade.weight * 100).toFixed(0)}%`;
+        }
 
         // Visual indication for grades excluded from average
         const excludedClass = grade.excludeFromAverage ? 'opacity-50' : '';
@@ -2465,11 +2546,24 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
             ? `<span class="badge badge-secondary text-xs ml-1" data-tooltip="${t("grade.excludedFromAverage")}" data-side="top">⊘</span>`
             : '';
 
+        // Visual indication for pending grades
+        const pendingClass = grade.isPending ? 'pending-grade' : '';
+        const pendingBadge = grade.isPending
+            ? `<span class="badge badge-warning text-xs ml-1" data-tooltip="${t("grade.pendingTooltip")}" data-side="top" style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-alert-icon lucide-clock-alert">
+                  <path d="M12 6v6l4 2"/>
+                  <path d="M20 12v5"/>
+                  <path d="M20 21h.01"/>
+                  <path d="M21.25 8.2A10 10 0 1 0 16 21.16"/>
+                </svg>
+              </span>`
+            : '';
+
         return `
-            <tr class="${excludedClass}">
+            <tr class="${excludedClass} ${pendingClass}">
                 <td>${escapeHtml(date)}</td>
                 <td>${escapeHtml(grade.categoryName || '-')}</td>
-                <td>${escapeHtml(grade.name || '-')}${excludedBadge}</td>
+                <td>${escapeHtml(grade.name || '-')}${excludedBadge}${pendingBadge}</td>
                 <td><span class="badge ${gradeColorClass}">${escapeHtml(displayValue)}</span></td>
                 <td>${weightDisplay}</td>
                 <td>
@@ -2502,7 +2596,13 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                 const wasEnteredAsPercent = grade.enteredAsPercent === true;
 
                 let valueInput;
-                if (isPlusMinus) {
+                // For pending grades, show empty input
+                if (grade.isPending) {
+                    valueInput = `
+                        <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input-edit" placeholder="1-6">
+                        <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterGrade")}</p>
+                    `;
+                } else if (isPlusMinus) {
                     valueInput = `
                         <select name="value" class="select w-full" required>
                             <option value="+" ${grade.value === '+' ? 'selected' : ''}>${t("grade.plus")}</option>
@@ -2526,7 +2626,7 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                           </nav>
                           <div role="tabpanel" id="panel-grade-direct-edit" aria-labelledby="tab-grade-direct-edit" tabindex="-1" aria-selected="${gradeSelected}" ${gradeSelected ? '' : 'hidden'}>
                             <div class="pt-3">
-                              <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input-edit" value="${escapeHtml(grade.value)}" placeholder="1-6">
+                              <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input-edit" value="${escapeHtml(grade.value || '')}" placeholder="1-6">
                               <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterGrade")}</p>
                             </div>
                           </div>
@@ -2584,7 +2684,14 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                             <span class="text-sm">${t("grade.includeInAverage")}</span>
                         </label>
                     </div>
-                    <div class="grid gap-2">
+                    <div class="grid gap-2 mb-3">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="isPending" id="grade-is-pending-edit" class="checkbox" ${grade.isPending ? 'checked' : ''}>
+                            <span>${t("grade.pendingGrade")}</span>
+                        </label>
+                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.pendingGradeHint")}</p>
+                    </div>
+                    <div class="grid gap-2" id="grade-value-container-edit">
                         <label class="block mb-2">${t("grade.gradeValue")}</label>
                         ${valueInput}
                     </div>
@@ -2593,43 +2700,52 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                 showDialog("edit-dialog", t("grade.editGrade"), content, (formData) => {
                     const newName = formData.get("name");
                     const includeInAverage = formData.get("includeInAverage");
+                    const isPendingChecked = formData.get("isPending") === "on";
                     let newValue = formData.get("value");
                     let enteredAsPercent = false;
                     let percentValue = null;
 
-                    // Check if percentage tab exists and is active (for numeric grades)
-                    if (!isPlusMinus) {
-                        const percentPanel = document.getElementById("panel-grade-percent-edit");
-                        const percentInput = document.getElementById("grade-percent-input-edit");
-                        const directGradeInput = document.getElementById("grade-value-input-edit");
+                    // If grade is pending, skip value validation
+                    if (!isPendingChecked) {
+                        // Check if percentage tab exists and is active (for numeric grades)
+                        if (!isPlusMinus) {
+                            const percentPanel = document.getElementById("panel-grade-percent-edit");
+                            const percentInput = document.getElementById("grade-percent-input-edit");
+                            const directGradeInput = document.getElementById("grade-value-input-edit");
 
-                        // If percentage panel is visible and has a value, convert it
-                        if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
-                            percentValue = parseFloat(percentInput.value);
-                            const convertedGrade = percentToGrade(percentValue);
-                            if (convertedGrade !== null) {
-                                newValue = convertedGrade.toString();
-                                enteredAsPercent = true;
-                            } else {
-                                showAlertDialog(t("error.invalidPercentage"));
+                            // If percentage panel is visible and has a value, convert it
+                            if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
+                                percentValue = parseFloat(percentInput.value);
+                                const convertedGrade = percentToGrade(percentValue);
+                                if (convertedGrade !== null) {
+                                    newValue = convertedGrade.toString();
+                                    enteredAsPercent = true;
+                                } else {
+                                    showAlertDialog(t("error.invalidPercentage"));
+                                    return;
+                                }
+                            } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
+                                showAlertDialog(t("error.enterPercentage"));
                                 return;
+                            } else if (directGradeInput && directGradeInput.value) {
+                                // User switched to grade tab
+                                newValue = directGradeInput.value;
+                                enteredAsPercent = false;
                             }
-                        } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
-                            showAlertDialog(t("error.enterPercentage"));
-                            return;
-                        } else if (directGradeInput && directGradeInput.value) {
-                            // User switched to grade tab
-                            newValue = directGradeInput.value;
-                            enteredAsPercent = false;
                         }
+
+                        if (isPlusMinus) {
+                            grade.value = newValue;
+                        } else {
+                            grade.value = parseFloat(newValue);
+                        }
+                    } else {
+                        // For pending grades, set value to null
+                        grade.value = null;
                     }
 
-                    if (isPlusMinus) {
-                        grade.value = newValue;
-                    } else {
-                        grade.value = parseFloat(newValue);
-                    }
                     grade.name = newName;
+                    grade.isPending = isPendingChecked;
 
                     // Update "include in average" setting
                     if (includeInAverage === "on") {
@@ -2739,6 +2855,31 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                         }
                     }, 0);
                 }
+
+                // Add event listener for pending grade checkbox in edit dialog
+                setTimeout(() => {
+                    const pendingCheckboxEdit = document.getElementById("grade-is-pending-edit");
+                    const gradeValueContainerEdit = document.getElementById("grade-value-container-edit");
+
+                    if (pendingCheckboxEdit && gradeValueContainerEdit) {
+                        const toggleGradeInputsEdit = () => {
+                            const isPending = pendingCheckboxEdit.checked;
+                            gradeValueContainerEdit.style.opacity = isPending ? "0.5" : "1";
+                            gradeValueContainerEdit.style.pointerEvents = isPending ? "none" : "auto";
+
+                            // Disable/enable all inputs in the container
+                            gradeValueContainerEdit.querySelectorAll("input, select, button").forEach(el => {
+                                el.disabled = isPending;
+                            });
+                        };
+
+                        pendingCheckboxEdit.addEventListener("change", toggleGradeInputsEdit);
+                        // Initialize state if already pending
+                        if (pendingCheckboxEdit.checked) {
+                            toggleGradeInputsEdit();
+                        }
+                    }
+                }, 0);
             }
         });
     });

@@ -200,6 +200,10 @@
   "grade.deleteTooltip": "Note löschen",
   "grade.includeInAverage": "Wird in Gesamtnote eingerechnet",
   "grade.excludedFromAverage": "Wird nicht in Gesamtnote eingerechnet",
+  "grade.pendingGrade": "Note später eintragen",
+  "grade.pendingGradeHint": "Aktiviere diese Option für Schüler, die eine Arbeit später nachschreiben müssen.",
+  "grade.pendingValue": "Ausstehend",
+  "grade.pendingTooltip": "Diese Note steht noch aus und wird später eingetragen",
 
   "confirm.deleteClass": "Möchtest du die Klasse \"{name}\" wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden und alle zugehörigen Daten gehen verloren.",
   "confirm.deleteStudent": "Möchtest du diesen Schüler wirklich dauerhaft löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
