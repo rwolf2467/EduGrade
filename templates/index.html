@@ -588,6 +588,20 @@
 
                 <!-- Home View -->
                 <section id="home-view" class="mt-10">
+                    <!-- Breadcrumb -->
+                    <nav aria-label="Breadcrumb" class="mb-6">
+                        <ol class="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5">
+                            <li class="inline-flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                    <polyline points="9 22 9 12 15 12 15 22" />
+                                </svg>
+                                <span class="text-foreground font-medium" data-i18n="nav.home">Home</span>
+                            </li>
+                        </ol>
+                    </nav>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                         <div class="card">
                             <div class="flex items-center gap-3 p-4">
@@ -672,6 +686,24 @@
 
                 <!-- Class View -->
                 <section id="class-view" class="hidden mt-10">
+                    <!-- Breadcrumb -->
+                    <nav aria-label="Breadcrumb" class="mb-6">
+                        <ol id="class-view-breadcrumb" class="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5">
+                            <li class="inline-flex items-center gap-1.5">
+                                <a href="#" id="breadcrumb-home" class="hover:text-foreground transition-colors" data-i18n="nav.home">Home</a>
+                            </li>
+                            <li>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="size-3.5">
+                                    <path d="m9 18 6-6-6-6" />
+                                </svg>
+                            </li>
+                            <li class="inline-flex items-center gap-1.5">
+                                <span id="breadcrumb-class-name" class="text-foreground font-medium"></span>
+                            </li>
+                        </ol>
+                    </nav>
                     <div class="card mb-6">
                         <header class="mb-4">
                             <h2 class="text-xl font-semibold mb-3">Class: <span id="current-class-name"></span></h2>
@@ -792,6 +824,34 @@
 
                 <!-- Student Detail View -->
                 <section id="student-detail-view" class="hidden mt-10">
+                    <!-- Breadcrumb -->
+                    <nav aria-label="Breadcrumb" class="mb-6">
+                        <ol id="student-detail-breadcrumb" class="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5">
+                            <li class="inline-flex items-center gap-1.5">
+                                <a href="#" id="breadcrumb-student-home" class="hover:text-foreground transition-colors" data-i18n="nav.home">Home</a>
+                            </li>
+                            <li>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="size-3.5">
+                                    <path d="m9 18 6-6-6-6" />
+                                </svg>
+                            </li>
+                            <li class="inline-flex items-center gap-1.5">
+                                <a href="#" id="breadcrumb-student-class" class="hover:text-foreground transition-colors"></a>
+                            </li>
+                            <li>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="size-3.5">
+                                    <path d="m9 18 6-6-6-6" />
+                                </svg>
+                            </li>
+                            <li class="inline-flex items-center gap-1.5">
+                                <span id="breadcrumb-student-name" class="text-foreground font-medium"></span>
+                            </li>
+                        </ol>
+                    </nav>
                     <div class="card mb-6">
                         <header class="flex justify-between items-center mb-4">
                             <div class="flex items-center gap-3">
@@ -1098,14 +1158,25 @@
 
 
 
-                <dialog id="confirm-dialog" class="dialog w-full sm:max-w-[425px]"
+                <dialog id="confirm-dialog" class="dialog w-full sm:max-w-[500px]"
                     aria-labelledby="confirm-dialog-title">
                     <div>
                         <header>
-                            <h2 data-i18n="dialog.confirmation">Confirmation</h2>
+                            <h2 id="confirm-dialog-title" data-i18n="dialog.confirmation">Confirmation</h2>
                         </header>
-                        <section>
-                            <p id="confirm-message" class="mb-4"></p>
+                        <section class="flex gap-3 items-start">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="text-red-500 flex-shrink-0 mt-0.5">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+                                <path d="M12 9v4" />
+                                <path d="M12 17h.01" />
+                            </svg>
+                            <div class="flex-1">
+                                <p id="confirm-message" class="mb-3 font-semibold"></p>
+                                <div id="confirm-details" class="text-sm" style="color: oklch(.708 0 0);"></div>
+                                <p id="confirm-warning" class="text-sm mt-2 font-medium" style="color: oklch(.708 0 0);"></p>
+                            </div>
                         </section>
                         <footer class="flex justify-end gap-2">
                             <button type="button" class="btn-outline" id="cancel-action"
@@ -1113,6 +1184,14 @@
                             <button type="button" class="btn-destructive" id="confirm-action"
                                 data-i18n="dialog.delete">Delete</button>
                         </footer>
+                        <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M18 6 6 18" />
+                                <path d="m6 6 12 12" />
+                            </svg>
+                        </button>
                     </div>
                 </dialog>
 

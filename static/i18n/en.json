@@ -580,5 +580,30 @@
   "common.class": "Class",
   "common.subject": "Subject",
   "common.allSubjects": "All Subjects",
-  "common.weight": "Weight"
+  "common.weight": "Weight",
+
+  "emptyState.noClasses": "No Classes Yet",
+  "emptyState.noClassesDesc": "You haven't created any classes yet. Click \"Add Class\" in the sidebar to get started.",
+  "emptyState.noStudents": "No Students Yet",
+  "emptyState.noStudentsDesc": "You haven't added any students to this class yet. Click \"Add Student\" to get started.",
+  "emptyState.noStudentsFiltered": "No Students Found",
+  "emptyState.noStudentsFilteredDesc": "No students match your search criteria. Try a different search term or filter.",
+  "emptyState.noGrades": "No Grades Yet",
+  "emptyState.noGradesDesc": "This student doesn't have any grades yet. Click \"Add Grade\" to record a new grade.",
+  "emptyState.learnMore": "Learn More",
+
+  "confirm.deleteStudent": "Delete student?",
+  "confirm.deleteClass": "Really delete class \"{name}\"?",
+  "confirm.deleteGrade": "Delete grade?",
+  "confirm.deleteCategory": "Really delete category?",
+  "confirm.studentGradeCount": "Number of Grades",
+  "confirm.allGradesDeleted": "All grades for this student will also be deleted.",
+  "confirm.cannotBeUndone": "This action cannot be undone.",
+  "confirm.classStats": "Contents",
+  "confirm.students": "Students",
+  "confirm.grades": "Grades",
+  "confirm.allDataDeleted": "All data for this class will be permanently deleted.",
+  "confirm.gradeDetails": "Details",
+
+  "table.value": "Value"
 }

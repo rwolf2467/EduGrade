@@ -105,9 +105,30 @@ const renderClassList = () => {
             const classId = btn.dataset.deleteClass;
             const cls = appData.classes.find(c => c.id === classId);
             if (cls) {
-                showConfirmDialog(t("confirm.deleteClass", { name: escapeHtml(cls.name) }), () => {
+                // Berechne Gesamtzahl der Schüler und Noten
+                let totalStudents = 0;
+                let totalGrades = 0;
+                if (cls.years) {
+                    cls.years.forEach(year => {
+                        if (year.students) {
+                            totalStudents += year.students.length;
+                            year.students.forEach(student => {
+                                totalGrades += student.grades.length;
+                            });
+                        }
+                    });
+                }
+
+                const message = t("confirm.deleteClass", { name: escapeHtml(cls.name) });
+                const details = `<strong>${t('confirm.classStats') || 'Inhalt'}:</strong><br>
+                    • ${totalStudents} ${t('confirm.students') || 'Schüler'}<br>
+                    • ${totalGrades} ${t('confirm.grades') || 'Noten'}<br><br>
+                    ${t('confirm.allDataDeleted') || 'Alle Daten dieser Klasse werden unwiderruflich gelöscht.'}`;
+                const warning = t('confirm.cannotBeUndone') || 'Diese Aktion kann nicht rückgängig gemacht werden.';
+
+                showConfirmDialog(message, () => {
                     deleteClass(classId);
-                });
+                }, details, warning);
             }
         });
     });
@@ -888,7 +909,7 @@ const renderStudents = () => {
     const studentsTable = document.getElementById("students-table");
 
     // FILTER-PIPELINE: Erst filtern, sortieren, dann rendern
-    studentsTable.innerHTML = currentYear.students
+    const filteredStudents = currentYear.students
         // 1. FILTERN: Nur Schüler behalten die den Kriterien entsprechen
         .filter(student => {
             const fullName = getStudentDisplayName(student).toLowerCase();
@@ -906,8 +927,33 @@ const renderStudents = () => {
             const lastNameCmp = (a.lastName || '').localeCompare(b.lastName || '', 'de');
             if (lastNameCmp !== 0) return lastNameCmp;
             return (a.firstName || '').localeCompare(b.firstName || '', 'de');
-        })
-        .map(student => {
+        });
+
+    // Empty State anzeigen wenn keine Schüler vorhanden
+    if (filteredStudents.length === 0) {
+        const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>`;
+
+        const title = currentYear.students.length === 0 ? t('emptyState.noStudents') || 'Keine Schüler' : t('emptyState.noStudentsFiltered') || 'Keine Schüler gefunden';
+        const description = currentYear.students.length === 0
+            ? t('emptyState.noStudentsDesc') || 'Sie haben noch keine Schüler in dieser Klasse. Klicken Sie auf "Schüler hinzufügen" um zu beginnen.'
+            : t('emptyState.noStudentsFilteredDesc') || 'Keine Schüler entsprechen Ihren Suchkriterien. Versuchen Sie einen anderen Suchbegriff oder Filter.';
+
+        const buttons = currentYear.students.length === 0 ? [{
+            text: t('class.addStudent') || 'Schüler hinzufügen',
+            class: 'btn-primary',
+            onclick: 'document.getElementById(\'add-student\').click()'
+        }] : [];
+
+        studentsTable.innerHTML = `<tr><td colspan="9">${createEmptyState(icon, title, description, buttons)}</td></tr>`;
+        return;
+    }
+
+    studentsTable.innerHTML = filteredStudents.map(student => {
             // Noten nach aktivem Fach filtern
             const filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
             const simpleAvg = calculateSimpleAverage(filteredGrades);
@@ -1007,11 +1053,22 @@ const renderStudents = () => {
     document.querySelectorAll("[data-delete-student]").forEach(btn => {
         btn.addEventListener("click", () => {
             const studentId = btn.dataset.deleteStudent;
-            showConfirmDialog(t("confirm.deleteStudent"), () => {
-                deleteItem("student", studentId);
-                saveData(t("toast.studentDeleted"), "success");
-                renderStudents();
-            });
+            const student = currentYear.students.find(s => s.id === studentId);
+            if (student) {
+                const studentName = getStudentDisplayName(student);
+                const gradeCount = student.grades.length;
+                const message = t("confirm.deleteStudent") + ` ${studentName}?`;
+                const details = gradeCount > 0
+                    ? `<strong>${t('confirm.studentGradeCount') || 'Anzahl Noten'}:</strong> ${gradeCount}<br><br>${t('confirm.allGradesDeleted') || 'Alle Noten dieses Schülers werden ebenfalls gelöscht.'}`
+                    : '';
+                const warning = t('confirm.cannotBeUndone') || 'Diese Aktion kann nicht rückgängig gemacht werden.';
+
+                showConfirmDialog(message, () => {
+                    deleteItem("student", studentId);
+                    saveData(t("toast.studentDeleted"), "success");
+                    renderStudents();
+                }, details, warning);
+            }
         });
     });
 
@@ -1842,7 +1899,22 @@ const renderHome = () => {
     // Render class overview
     const overviewList = document.getElementById("class-overview-list");
     if (appData.classes.length === 0) {
-        overviewList.innerHTML = `<p class="text-sm" style="color: oklch(.708 0 0);">${t("home.noClasses")}</p>`;
+        const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 21a8 8 0 0 0-16 0" />
+            <circle cx="10" cy="8" r="5" />
+            <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
+        </svg>`;
+
+        const title = t('emptyState.noClasses') || 'Keine Klassen';
+        const description = t('emptyState.noClassesDesc') || 'Sie haben noch keine Klassen erstellt. Klicken Sie auf "Klasse hinzufügen" in der Seitenleiste um zu beginnen.';
+
+        const buttons = [{
+            text: t('nav.addClass') || 'Klasse hinzufügen',
+            class: 'btn-primary',
+            onclick: 'document.getElementById(\'add-class\').click()'
+        }];
+
+        overviewList.innerHTML = createEmptyState(icon, title, description, buttons);
         return;
     }
 
@@ -1982,7 +2054,15 @@ const showClassView = () => {
             const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
             if (currentClass) {
                 document.getElementById("current-class-name").textContent = currentClass.name;
+                // Update breadcrumb
+                document.getElementById("breadcrumb-class-name").textContent = currentClass.name;
             }
+
+            // Breadcrumb home click handler
+            document.getElementById("breadcrumb-home").onclick = (e) => {
+                e.preventDefault();
+                showHomeView();
+            };
 
             renderClassList();
             renderYearSelector();
@@ -1997,7 +2077,15 @@ const showClassView = () => {
         const currentClass = appData.classes.find(c => c.id === appData.currentClassId);
         if (currentClass) {
             document.getElementById("current-class-name").textContent = currentClass.name;
+            // Update breadcrumb
+            document.getElementById("breadcrumb-class-name").textContent = currentClass.name;
         }
+
+        // Breadcrumb home click handler
+        document.getElementById("breadcrumb-home").onclick = (e) => {
+            e.preventDefault();
+            showHomeView();
+        };
 
         renderClassList();
         renderYearSelector();
@@ -2155,7 +2243,23 @@ const renderStudentDetail = (studentId) => {
     document.getElementById("student-detail-view").dataset.studentId = studentId;
 
     // Set student name
-    document.getElementById("student-detail-name").textContent = getStudentDisplayName(student);
+    const studentName = getStudentDisplayName(student);
+    document.getElementById("student-detail-name").textContent = studentName;
+
+    // Update breadcrumbs
+    const currentClass = getCurrentClass();
+    if (currentClass) {
+        document.getElementById("breadcrumb-student-class").textContent = currentClass.name;
+        document.getElementById("breadcrumb-student-class").onclick = (e) => {
+            e.preventDefault();
+            showClassView();
+        };
+    }
+    document.getElementById("breadcrumb-student-name").textContent = studentName;
+    document.getElementById("breadcrumb-student-home").onclick = (e) => {
+        e.preventDefault();
+        showHomeView();
+    };
 
     // Noten nach aktivem Fach filtern
     const filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
@@ -2515,7 +2619,21 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
     );
 
     if (sortedGrades.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="color: oklch(.708 0 0);">${t("student.noGrades")}</td></tr>`;
+        const icon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+        </svg>`;
+
+        const title = t('emptyState.noGrades') || 'Keine Noten';
+        const description = t('emptyState.noGradesDesc') || 'Dieser Schüler hat noch keine Noten. Klicken Sie auf "Note hinzufügen" um eine neue Note zu erfassen.';
+
+        const buttons = [{
+            text: t('grade.addGrade') || 'Note hinzufügen',
+            class: 'btn-primary',
+            onclick: 'document.getElementById(\'student-detail-add-grade\').click()'
+        }];
+
+        tbody.innerHTML = `<tr><td colspan="6">${createEmptyState(icon, title, description, buttons)}</td></tr>`;
         return;
     }
 
@@ -2888,14 +3006,35 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
     document.querySelectorAll("#student-grades-table [data-delete-grade]").forEach(btn => {
         btn.addEventListener("click", () => {
             const gradeId = btn.dataset.deleteGrade;
-            showConfirmDialog(t("confirm.deleteGrade"), () => {
-                const gradeIndex = student.grades.findIndex(g => g.id === gradeId);
-                if (gradeIndex !== -1) {
-                    student.grades.splice(gradeIndex, 1);
-                    saveData(t("toast.gradeDeleted"), "success");
-                    renderStudentDetail(student.id);
-                }
-            });
+            const grade = student.grades.find(g => g.id === gradeId);
+            if (grade) {
+                const gradeName = grade.name || t('grade.unnamed') || 'Unbenannte Note';
+                const gradeValue = grade.isPlusMinus ? grade.value : grade.value.toString();
+                const gradeCategory = grade.categoryName || '-';
+                const gradeDate = grade.createdAt
+                    ? new Date(grade.createdAt).toLocaleDateString('de-AT', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    })
+                    : '-';
+
+                const message = t("confirm.deleteGrade") + ` "${gradeName}"?`;
+                const details = `<strong>${t('confirm.gradeDetails') || 'Details'}:</strong><br>
+                    • ${t('table.value') || 'Wert'}: ${gradeValue}<br>
+                    • ${t('table.category') || 'Kategorie'}: ${gradeCategory}<br>
+                    • ${t('table.date') || 'Datum'}: ${gradeDate}`;
+                const warning = t('confirm.cannotBeUndone') || 'Diese Aktion kann nicht rückgängig gemacht werden.';
+
+                showConfirmDialog(message, () => {
+                    const gradeIndex = student.grades.findIndex(g => g.id === gradeId);
+                    if (gradeIndex !== -1) {
+                        student.grades.splice(gradeIndex, 1);
+                        saveData(t("toast.gradeDeleted"), "success");
+                        renderStudentDetail(student.id);
+                    }
+                }, details, warning);
+            }
         });
     });
 };

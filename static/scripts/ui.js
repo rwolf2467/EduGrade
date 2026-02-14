@@ -442,7 +442,7 @@ const showDialog = (dialogId, title, content, onConfirm = null) => {
  * @param {string} message - Die Bestätigungsfrage
  * @param {function} onConfirm - Funktion die bei Bestätigung ausgeführt wird
  */
-const showConfirmDialog = (message, onConfirm) => {
+const showConfirmDialog = (message, onConfirm, details = null, warning = null) => {
     const dialog = document.getElementById("confirm-dialog");
 
     // Personalisierte Nachricht mit Lehrernamen
@@ -452,6 +452,26 @@ const showConfirmDialog = (message, onConfirm) => {
     // Nachricht in den Dialog einfügen
     // textContent ist sicher gegen XSS (interpretiert kein HTML)
     dialog.querySelector("#confirm-message").textContent = personalizedMessage;
+
+    // Details anzeigen (falls vorhanden)
+    const detailsEl = dialog.querySelector("#confirm-details");
+    if (details) {
+        detailsEl.innerHTML = details;
+        detailsEl.style.display = 'block';
+    } else {
+        detailsEl.innerHTML = '';
+        detailsEl.style.display = 'none';
+    }
+
+    // Warnung anzeigen (falls vorhanden)
+    const warningEl = dialog.querySelector("#confirm-warning");
+    if (warning) {
+        warningEl.textContent = warning;
+        warningEl.style.display = 'block';
+    } else {
+        warningEl.textContent = '';
+        warningEl.style.display = 'none';
+    }
 
     // Dialog öffnen
     dialog.showModal();
@@ -612,6 +632,53 @@ const initAnimations = () => {
     });
 
     bodyObserver.observe(document.body, { childList: true, subtree: true });
+};
+
+/**
+ * EMPTY STATE ERSTELLEN
+ *
+ * Erstellt einen schönen Empty State für leere Listen.
+ *
+ * @param {string} icon - SVG-Icon als String
+ * @param {string} title - Überschrift
+ * @param {string} description - Beschreibung
+ * @param {Array} buttons - Array von Button-Objekten {text, class, onclick}
+ * @param {string} learnMoreLink - Optional: Link zu "Learn More" (z.B. "#")
+ * @returns {string} HTML-String für den Empty State
+ */
+const createEmptyState = (icon, title, description, buttons = [], learnMoreLink = null) => {
+    const buttonsHtml = buttons.map(btn =>
+        `<button class="${btn.class}" onclick="${btn.onclick}">${btn.text}</button>`
+    ).join('');
+
+    const learnMoreHtml = learnMoreLink ? `
+        <a href="${learnMoreLink}" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive underline-offset-4 hover:underline h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 text-muted-foreground">
+            ${t('emptyState.learnMore') || 'Learn More'}
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10" /><path d="M7 17 17 7" /></svg>
+        </a>
+    ` : '';
+
+    return `
+        <div class="flex min-w-0 flex-1 flex-col items-center justify-center gap-6 rounded-lg border border-dashed p-6 text-center text-balance md:p-12 text-neutral-800 dark:text-neutral-300">
+            <header class="flex max-w-sm flex-col items-center gap-2 text-center">
+                <div class="mb-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 bg-muted text-foreground flex size-10 shrink-0 items-center justify-center rounded-lg [&_svg:not([class*='size-'])]:size-6">
+                    ${icon}
+                </div>
+                <h3 class="text-lg font-medium tracking-tight">${title}</h3>
+                <p class="text-muted-foreground [&>a:hover]:text-primary text-sm/relaxed [&>a]:underline [&>a]:underline-offset-4">
+                    ${description}
+                </p>
+            </header>
+            ${buttons.length > 0 ? `
+            <section class="flex w-full max-w-sm min-w-0 flex-col items-center gap-4 text-sm text-balance">
+                <div class="flex gap-2">
+                    ${buttonsHtml}
+                </div>
+            </section>
+            ` : ''}
+            ${learnMoreHtml}
+        </div>
+    `;
 };
 
 // Initialisiere Animationen wenn DOM geladen

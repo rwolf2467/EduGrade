@@ -580,5 +580,30 @@
   "common.class": "Klasse",
   "common.subject": "Fach",
   "common.allSubjects": "Alle Fächer",
-  "common.weight": "Gewichtung"
+  "common.weight": "Gewichtung",
+
+  "emptyState.noClasses": "Keine Klassen",
+  "emptyState.noClassesDesc": "Sie haben noch keine Klassen erstellt. Klicken Sie auf \"Klasse hinzufügen\" in der Seitenleiste um zu beginnen.",
+  "emptyState.noStudents": "Keine Schüler",
+  "emptyState.noStudentsDesc": "Sie haben noch keine Schüler in dieser Klasse. Klicken Sie auf \"Schüler hinzufügen\" um zu beginnen.",
+  "emptyState.noStudentsFiltered": "Keine Schüler gefunden",
+  "emptyState.noStudentsFilteredDesc": "Keine Schüler entsprechen Ihren Suchkriterien. Versuchen Sie einen anderen Suchbegriff oder Filter.",
+  "emptyState.noGrades": "Keine Noten",
+  "emptyState.noGradesDesc": "Dieser Schüler hat noch keine Noten. Klicken Sie auf \"Note hinzufügen\" um eine neue Note zu erfassen.",
+  "emptyState.learnMore": "Mehr erfahren",
+
+  "confirm.deleteStudent": "Schüler löschen?",
+  "confirm.deleteClass": "Klasse \"{name}\" wirklich löschen?",
+  "confirm.deleteGrade": "Note löschen?",
+  "confirm.deleteCategory": "Kategorie wirklich löschen?",
+  "confirm.studentGradeCount": "Anzahl Noten",
+  "confirm.allGradesDeleted": "Alle Noten dieses Schülers werden ebenfalls gelöscht.",
+  "confirm.cannotBeUndone": "Diese Aktion kann nicht rückgängig gemacht werden.",
+  "confirm.classStats": "Inhalt",
+  "confirm.students": "Schüler",
+  "confirm.grades": "Noten",
+  "confirm.allDataDeleted": "Alle Daten dieser Klasse werden unwiderruflich gelöscht.",
+  "confirm.gradeDetails": "Details",
+
+  "table.value": "Wert"
 }
