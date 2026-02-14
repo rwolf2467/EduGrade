@@ -94,7 +94,7 @@ See [DOCKER.md](DOCKER.md) for more Docker options and production setup.
 
 ```bash
 # Clone and install
-git clone https://github.com/yourusername/edugrade.git
+git clone https://github.com/rwolf2467/edugrade.git
 cd edugrade
 pip install -r requirements.txt
 
