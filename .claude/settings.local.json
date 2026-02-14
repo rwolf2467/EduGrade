@@ -16,7 +16,11 @@
       "Bash(unzip:*)",
       "Bash(yes:*)",
       "Bash(~/.bubblewrap/android_sdk/cmdline-tools/latest/bin/sdkmanager:*)",
-      "Bash(JAVA_HOME=/tmp/jdk-17.0.2 ANDROID_HOME=/home/murauer/.bubblewrap/android_sdk /home/murauer/Nextcloud/avocloud/Code/EduGrade/twa/gradlew:*)"
+      "Bash(JAVA_HOME=/tmp/jdk-17.0.2 ANDROID_HOME=/home/murauer/.bubblewrap/android_sdk /home/murauer/Nextcloud/avocloud/Code/EduGrade/twa/gradlew:*)",
+      "Bash(docker build:*)",
+      "Bash(docker push:*)",
+      "Bash(docker info:*)",
+      "Bash(chmod:*)"
     ]
   }
 }

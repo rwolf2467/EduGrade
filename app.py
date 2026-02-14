@@ -789,8 +789,20 @@ def login_required(f):
     decorated_function.__name__ = f"{f.__name__}_login_required"
     return decorated_function
 
-# Version identifier - changes on each server restart (deploy)
-APP_VERSION = str(int(time.time()))
+# Load version from config file
+def load_version():
+    """Load version information from version.json"""
+    try:
+        version_file = Path(__file__).parent / "version.json"
+        with open(version_file, 'r', encoding='utf-8') as f:
+            version_data = json.load(f)
+        return version_data.get('version', '1.0.0'), version_data.get('build', '')
+    except Exception as e:
+        print(f"Warning: Could not load version.json: {e}")
+        return '1.0.0', ''
+
+APP_VERSION, BUILD_DATE = load_version()
+VERSION_STRING = f"v{APP_VERSION} ({BUILD_DATE})" if BUILD_DATE else f"v{APP_VERSION}"
 
 app = Quart(__name__,
             template_folder='templates',
@@ -823,7 +835,7 @@ async def index():
     if not user:
         return redirect(url_for('login_page'))
 
-    return await render_template('index.html', user=user, app_version=APP_VERSION)
+    return await render_template('index.html', user=user, app_version=APP_VERSION, version_string=VERSION_STRING)
 
 
 @app.route('/login')
@@ -881,7 +893,11 @@ async def about_developer_page():
 @app.route('/api/version')
 async def api_version():
     """Return current app version for update detection"""
-    return jsonify({'version': APP_VERSION})
+    return jsonify({
+        'version': APP_VERSION,
+        'build': BUILD_DATE,
+        'version_string': VERSION_STRING
+    })
 
 
 # ============ Auth API ============

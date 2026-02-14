@@ -1,5 +1,8 @@
 # EduGrade
 
+[![Docker Hub](https://img.shields.io/badge/docker-redwolf2467%2Fedugrade-blue?logo=docker)](https://hub.docker.com/r/redwolf2467/edugrade)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+
 A secure web application for teachers to manage student grades, classes, and performance tracking. Built with Python (Quart) and JavaScript.
 
 ## Screenshots
@@ -51,6 +54,44 @@ A secure web application for teachers to manage student grades, classes, and per
 
 ## Quick Start
 
+### 🐳 Docker (Recommended)
+
+The easiest way to run EduGrade:
+
+```bash
+# Pull the latest image
+docker pull redwolf2467/edugrade
+
+# Run container (accessible at http://localhost:8080)
+docker run -d \
+  --name edugrade \
+  -p 8080:1601 \
+  -v edugrade-data:/app/data \
+  --restart unless-stopped \
+  redwolf2467/edugrade:latest
+```
+
+**Done!** Open `http://localhost:8080` in your browser.
+
+#### Docker Compose
+
+```bash
+# Download docker-compose.yml
+curl -O https://raw.githubusercontent.com/rwolf2467/EduGrade/main/docker-compose.yml
+
+# Edit ports if needed (default: 1601:1601, change to 8080:1601 for external port 8080)
+nano docker-compose.yml
+
+# Start
+docker-compose up -d
+```
+
+See [DOCKER.md](DOCKER.md) for more Docker options and production setup.
+
+---
+
+### 🐍 Manual Installation
+
 ```bash
 # Clone and install
 git clone https://github.com/yourusername/edugrade.git
@@ -63,7 +104,7 @@ python app.py
 
 Open `http://localhost:1601` in your browser.
 
-### Virtual Environment (Recommended)
+#### Virtual Environment (Recommended)
 
 ```bash
 python -m venv venv
