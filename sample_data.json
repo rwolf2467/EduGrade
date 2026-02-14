@@ -1,163 +1,566 @@
 {
-  "teacherName": "Mag. Beispiellehrer",
-  "currentClassId": "class-1a-2025",
+  "teacherName": "Test User",
+  "currentClassId": "1770845129941-418",
   "classes": [
     {
-      "id": "class-1a-2025",
+      "id": "1770845129941-418",
       "name": "1A",
-      "currentYearId": "year-2024-2025",
+      "currentYearId": "1770845129941-year-115",
       "years": [
         {
-          "id": "year-2024-2025",
-          "name": "2024/2025",
-          "currentSubjectId": "math-subject-1",
+          "id": "1770845129941-year-115",
+          "name": "2025/2026",
+          "currentSubjectId": "1770845129941-sub-610",
           "subjects": [
             {
-              "id": "math-subject-1",
-              "name": "Mathematik"
-            },
-            {
-              "id": "german-subject-2",
-              "name": "Deutsch"
-            },
-            {
-              "id": "english-subject-3",
-              "name": "Englisch"
+              "id": "1770845129941-sub-610",
+              "name": "General"
             }
           ],
           "students": [
             {
-              "id": "student-1a-1",
+              "id": "1770845149980-95",
+              "firstName": "t",
+              "lastName": "ttt",
+              "middleName": "tt",
+              "grades": [
+                {
+                  "id": "1770845161254",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 4,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770845161254
+                },
+                {
+                  "id": "1770925198886",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 5,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770925198886
+                },
+                {
+                  "id": "1770990078448",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 4,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "Test_Buk_Add",
+                  "createdAt": 1770990078448
+                },
+                {
+                  "id": "1770990211251",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 4,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "bulk test 2",
+                  "createdAt": 1770990211251
+                },
+                {
+                  "id": "1770990697728",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 1,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990697728
+                },
+                {
+                  "id": "1770990708946",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990708946
+                },
+                {
+                  "id": "1771007528152",
+                  "categoryId": "1770991572571",
+                  "categoryName": "test",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 5,
+                  "weight": 0.3,
+                  "isPlusMinus": false,
+                  "name": "iiii",
+                  "createdAt": 1770894000000
+                }
+              ],
+              "participation": []
+            },
+            {
+              "id": "1770854267560-226",
+              "firstName": "test",
+              "lastName": "test",
+              "middleName": "",
+              "grades": [
+                {
+                  "id": "1770854270195",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770854270195
+                },
+                {
+                  "id": "1770990078448",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 4,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "Test_Buk_Add",
+                  "createdAt": 1770990078448
+                },
+                {
+                  "id": "1770990211251",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 4,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "bulk test 2",
+                  "createdAt": 1770990211251
+                },
+                {
+                  "id": "1770990697728",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 1,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990697728
+                },
+                {
+                  "id": "1770990708946",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990708946
+                },
+                {
+                  "id": "1771007528152",
+                  "categoryId": "1770991572571",
+                  "categoryName": "test",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 5,
+                  "weight": 0.3,
+                  "isPlusMinus": false,
+                  "name": "iiii",
+                  "createdAt": 1770894000000
+                }
+              ],
+              "participation": []
+            },
+            {
+              "id": "1770990686731-4331",
               "firstName": "Anna",
               "lastName": "Müller",
               "middleName": "",
               "grades": [
-                {"id": "g1", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
-                {"id": "g2", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 1, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
-                {"id": "g3", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
-                {"id": "g4", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"},
-                {"id": "g5", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"}
+                {
+                  "id": "1770990697728",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 1,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990697728
+                },
+                {
+                  "id": "1770990708946",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990708946
+                }
               ],
               "participation": []
             },
             {
-              "id": "student-1a-2",
-              "firstName": "Ben",
+              "id": "1770990686732-1764",
+              "firstName": "Lukas",
               "lastName": "Schmidt",
-              "middleName": "",
+              "middleName": "Peter",
               "grades": [
-                {"id": "g6", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
-                {"id": "g7", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
-                {"id": "g8", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
-                {"id": "g9", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"}
+                {
+                  "id": "1770990697728",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 1,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990697728
+                },
+                {
+                  "id": "1770990708946",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990708946
+                },
+                {
+                  "id": "1771007528152",
+                  "categoryId": "1770991572571",
+                  "categoryName": "test",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 5,
+                  "weight": 0.3,
+                  "isPlusMinus": false,
+                  "name": "iiii",
+                  "createdAt": 1770894000000
+                }
               ],
               "participation": []
             },
             {
-              "id": "student-1a-3",
-              "firstName": "Clara",
-              "lastName": "Weber",
-              "middleName": "",
-              "grades": [
-                {"id": "g10", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
-                {"id": "g11", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
-                {"id": "g12", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
-                {"id": "g13", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"},
-                {"id": "g14", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 1, "weight": 0.5, "isPlusMinus": false, "name": "SA 2", "subjectId": "math-subject-1"}
-              ],
-              "participation": []
-            },
-            {
-              "id": "student-1a-4",
-              "firstName": "David",
-              "lastName": "Fischer",
-              "middleName": "",
-              "grades": [
-                {"id": "g15", "categoryId": "cat-test", "categoryName": "Test", "value": 4, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
-                {"id": "g16", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
-                {"id": "g17", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "-", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
-                {"id": "g18", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"}
-              ],
-              "participation": []
-            },
-            {
-              "id": "student-1a-5",
-              "firstName": "Emma",
+              "id": "1770990686732-4863",
+              "firstName": "Sophie",
               "lastName": "Wagner",
               "middleName": "",
               "grades": [
-                {"id": "g19", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
-                {"id": "g20", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
-                {"id": "g21", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
-                {"id": "g22", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"},
-                {"id": "g23", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"}
+                {
+                  "id": "1770990697728",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 1,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990697728
+                },
+                {
+                  "id": "1770990708946",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990708946
+                }
               ],
               "participation": []
             },
             {
-              "id": "student-1a-6",
-              "firstName": "Felix",
+              "id": "1770990686732-1446",
+              "firstName": "Max",
+              "lastName": "Bauer",
+              "middleName": "Alexander",
+              "grades": [
+                {
+                  "id": "1770990697728",
+                  "categoryId": "1770991572571",
+                  "categoryName": "test",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 1,
+                  "weight": 0.3,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770807600000
+                },
+                {
+                  "id": "1770990708946",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990708946
+                },
+                {
+                  "id": "1770991026426",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "Test",
+                  "createdAt": 1770634800000
+                },
+                {
+                  "id": "1771007528152",
+                  "categoryId": "1770991572571",
+                  "categoryName": "test",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 5,
+                  "weight": 0.3,
+                  "isPlusMinus": false,
+                  "name": "iiii",
+                  "createdAt": 1770894000000
+                }
+              ],
+              "participation": []
+            },
+            {
+              "id": "1770990686732-7234",
+              "firstName": "Emma",
+              "lastName": "Fischer",
+              "middleName": "Marie",
+              "grades": [
+                {
+                  "id": "1770990697728",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 1,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990697728
+                },
+                {
+                  "id": "1770990708946",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990708946
+                }
+              ],
+              "participation": []
+            },
+            {
+              "id": "1770990686732-4027",
+              "firstName": "Jonas",
+              "lastName": "Weber",
+              "middleName": "",
+              "grades": [
+                {
+                  "id": "1770990697728",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 1,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990697728
+                },
+                {
+                  "id": "1770990708946",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990708946
+                }
+              ],
+              "participation": []
+            },
+            {
+              "id": "1770990686732-8310",
+              "firstName": "Lena",
               "lastName": "Hoffmann",
               "middleName": "",
               "grades": [
-                {"id": "g24", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
-                {"id": "g25", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
-                {"id": "g26", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
-                {"id": "g27", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"}
+                {
+                  "id": "1770990697728",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 1,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990697728
+                },
+                {
+                  "id": "1770990708946",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990708946
+                }
               ],
               "participation": []
             },
             {
-              "id": "student-1a-7",
-              "firstName": "Hannah",
+              "id": "1770990686732-9719",
+              "firstName": "Felix",
+              "lastName": "Schneider",
+              "middleName": "Thomas",
+              "grades": [
+                {
+                  "id": "1770990697728",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 1,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990697728
+                },
+                {
+                  "id": "1770990708946",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990708946
+                }
+              ],
+              "participation": []
+            },
+            {
+              "id": "1770990686732-6887",
+              "firstName": "Mia",
               "lastName": "Klein",
               "middleName": "",
               "grades": [
-                {"id": "g28", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
-                {"id": "g29", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 1, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
-                {"id": "g30", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
-                {"id": "g31", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"},
-                {"id": "g32", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 2", "subjectId": "math-subject-1"}
+                {
+                  "id": "1770990697728",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 1,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990697728
+                },
+                {
+                  "id": "1770990708946",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990708946
+                },
+                {
+                  "id": "1771007528152",
+                  "categoryId": "1770991572571",
+                  "categoryName": "test",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 5,
+                  "weight": 0.3,
+                  "isPlusMinus": false,
+                  "name": "iiii",
+                  "createdAt": 1770894000000
+                }
               ],
               "participation": []
             },
             {
-              "id": "student-1a-8",
-              "firstName": "Jonas",
-              "lastName": "Bauer",
-              "middleName": "",
+              "id": "1770990686732-4655",
+              "firstName": "David",
+              "lastName": "Schulz",
+              "middleName": "Michael",
               "grades": [
-                {"id": "g33", "categoryId": "cat-test", "categoryName": "Test", "value": 4, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
-                {"id": "g34", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 4, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
-                {"id": "g35", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "-", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
-                {"id": "g36", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"}
+                {
+                  "id": "1770990697728",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 1,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990697728
+                },
+                {
+                  "id": "1770990708946",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990708946
+                }
               ],
               "participation": []
             },
             {
-              "id": "student-1a-9",
-              "firstName": "Laura",
-              "lastName": "Richter",
+              "id": "1770990686732-377",
+              "firstName": "Fabian",
+              "lastName": "Murauer",
               "middleName": "",
               "grades": [
-                {"id": "g37", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
-                {"id": "g38", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
-                {"id": "g39", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
-                {"id": "g40", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"},
-                {"id": "g41", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"}
-              ],
-              "participation": []
-            },
-            {
-              "id": "student-1a-10",
-              "firstName": "Max",
-              "lastName": "Schmid",
-              "middleName": "",
-              "grades": [
-                {"id": "g42", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "math-subject-1"},
-                {"id": "g43", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "math-subject-1"},
-                {"id": "g44", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "math-subject-1"},
-                {"id": "g45", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "math-subject-1"}
+                {
+                  "id": "1770990697728",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 1,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990697728
+                },
+                {
+                  "id": "1770990708946",
+                  "categoryId": "1770845143058",
+                  "categoryName": "sa",
+                  "subjectId": "1770845129941-sub-610",
+                  "value": 3,
+                  "weight": 0.5,
+                  "isPlusMinus": false,
+                  "name": "",
+                  "createdAt": 1770990708946
+                }
               ],
               "participation": []
             }
@@ -166,159 +569,115 @@
       ]
     },
     {
-      "id": "class-2b-2025",
-      "name": "2B",
-      "currentYearId": "year-2024-2025-2b",
+      "id": "1770993284617-83",
+      "name": "Test",
+      "currentYearId": "1770993284617-year-58",
       "years": [
         {
-          "id": "year-2024-2025-2b",
-          "name": "2024/2025",
-          "currentSubjectId": "german-subject-2b",
+          "id": "1770993284617-year-58",
+          "name": "2025/2026",
+          "currentSubjectId": "1770993284617-sub-605-0",
           "subjects": [
             {
-              "id": "german-subject-2b",
-              "name": "Deutsch"
+              "id": "1770993284617-sub-605-0",
+              "name": "Mathe"
             },
             {
-              "id": "english-subject-2b",
+              "id": "1770993284617-sub-792-1",
               "name": "Englisch"
             },
             {
-              "id": "history-subject-2b",
-              "name": "Geschichte"
+              "id": "1770993284617-sub-94-2",
+              "name": "ITSY"
             }
           ],
           "students": [
             {
-              "id": "student-2b-1",
-              "firstName": "Nina",
-              "lastName": "Berger",
+              "id": "1771008627695-504",
+              "firstName": "Anna",
+              "lastName": "Müller",
               "middleName": "",
-              "grades": [
-                {"id": "g46", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
-                {"id": "g47", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
-                {"id": "g48", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
-                {"id": "g49", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
-              ],
+              "grades": [],
               "participation": []
             },
             {
-              "id": "student-2b-2",
-              "firstName": "Oliver",
-              "lastName": "Lang",
-              "middleName": "",
-              "grades": [
-                {"id": "g50", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
-                {"id": "g51", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
-                {"id": "g52", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
-                {"id": "g53", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
-              ],
+              "id": "1771008627695-3572",
+              "firstName": "Lukas",
+              "lastName": "Schmidt",
+              "middleName": "Peter",
+              "grades": [],
               "participation": []
             },
             {
-              "id": "student-2b-3",
-              "firstName": "Paula",
+              "id": "1771008627695-9223",
+              "firstName": "Sophie",
+              "lastName": "Wagner",
+              "middleName": "",
+              "grades": [],
+              "participation": []
+            },
+            {
+              "id": "1771008627695-2825",
+              "firstName": "Max",
+              "lastName": "Bauer",
+              "middleName": "Alexander",
+              "grades": [],
+              "participation": []
+            },
+            {
+              "id": "1771008627695-9770",
+              "firstName": "Emma",
+              "lastName": "Fischer",
+              "middleName": "Marie",
+              "grades": [],
+              "participation": []
+            },
+            {
+              "id": "1771008627695-2801",
+              "firstName": "Jonas",
+              "lastName": "Weber",
+              "middleName": "",
+              "grades": [],
+              "participation": []
+            },
+            {
+              "id": "1771008627695-646",
+              "firstName": "Lena",
+              "lastName": "Hoffmann",
+              "middleName": "",
+              "grades": [],
+              "participation": []
+            },
+            {
+              "id": "1771008627695-6790",
+              "firstName": "Felix",
+              "lastName": "Schneider",
+              "middleName": "Thomas",
+              "grades": [],
+              "participation": []
+            },
+            {
+              "id": "1771008627695-7352",
+              "firstName": "Mia",
+              "lastName": "Klein",
+              "middleName": "",
+              "grades": [],
+              "participation": []
+            },
+            {
+              "id": "1771008627695-9738",
+              "firstName": "David",
+              "lastName": "Schulz",
+              "middleName": "Michael",
+              "grades": [],
+              "participation": []
+            },
+            {
+              "id": "1771008627695-7346",
+              "firstName": "Fabian",
               "lastName": "Huber",
               "middleName": "",
-              "grades": [
-                {"id": "g54", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
-                {"id": "g55", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 1, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
-                {"id": "g56", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
-                {"id": "g57", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"},
-                {"id": "g58", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 1, "weight": 0.5, "isPlusMinus": false, "name": "SA 2", "subjectId": "german-subject-2b"}
-              ],
-              "participation": []
-            },
-            {
-              "id": "student-2b-4",
-              "firstName": "Raphael",
-              "lastName": "Moser",
-              "middleName": "",
-              "grades": [
-                {"id": "g59", "categoryId": "cat-test", "categoryName": "Test", "value": 4, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
-                {"id": "g60", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 4, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
-                {"id": "g61", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "-", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
-                {"id": "g62", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
-              ],
-              "participation": []
-            },
-            {
-              "id": "student-2b-5",
-              "firstName": "Sophie",
-              "lastName": "Steiner",
-              "middleName": "",
-              "grades": [
-                {"id": "g63", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
-                {"id": "g64", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
-                {"id": "g65", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
-                {"id": "g66", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
-              ],
-              "participation": []
-            },
-            {
-              "id": "student-2b-6",
-              "firstName": "Tim",
-              "lastName": "Brunner",
-              "middleName": "",
-              "grades": [
-                {"id": "g67", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
-                {"id": "g68", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
-                {"id": "g69", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
-                {"id": "g70", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
-              ],
-              "participation": []
-            },
-            {
-              "id": "student-2b-7",
-              "firstName": "Valentina",
-              "lastName": "Wolf",
-              "middleName": "",
-              "grades": [
-                {"id": "g71", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
-                {"id": "g72", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
-                {"id": "g73", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
-                {"id": "g74", "categoryId": "cat-test", "categoryName": "Test", "value": 1, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"},
-                {"id": "g75", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"}
-              ],
-              "participation": []
-            },
-            {
-              "id": "student-2b-8",
-              "firstName": "Lukas",
-              "lastName": "Gruber",
-              "middleName": "",
-              "grades": [
-                {"id": "g76", "categoryId": "cat-test", "categoryName": "Test", "value": 4, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
-                {"id": "g77", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
-                {"id": "g78", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "-", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
-                {"id": "g79", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
-              ],
-              "participation": []
-            },
-            {
-              "id": "student-2b-9",
-              "firstName": "Mia",
-              "lastName": "Pichler",
-              "middleName": "",
-              "grades": [
-                {"id": "g80", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
-                {"id": "g81", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 2, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
-                {"id": "g82", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "+", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
-                {"id": "g83", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
-              ],
-              "participation": []
-            },
-            {
-              "id": "student-2b-10",
-              "firstName": "Noah",
-              "lastName": "Eder",
-              "middleName": "",
-              "grades": [
-                {"id": "g84", "categoryId": "cat-test", "categoryName": "Test", "value": 3, "weight": 0.4, "isPlusMinus": false, "name": "Test 1", "subjectId": "german-subject-2b"},
-                {"id": "g85", "categoryId": "cat-sa", "categoryName": "Schularbeit", "value": 3, "weight": 0.5, "isPlusMinus": false, "name": "SA 1", "subjectId": "german-subject-2b"},
-                {"id": "g86", "categoryId": "cat-mitarbeit", "categoryName": "Mitarbeit", "value": "~", "weight": 0.3, "isPlusMinus": true, "name": "", "subjectId": "german-subject-2b"},
-                {"id": "g87", "categoryId": "cat-test", "categoryName": "Test", "value": 2, "weight": 0.4, "isPlusMinus": false, "name": "Test 2", "subjectId": "german-subject-2b"}
-              ],
+              "grades": [],
               "participation": []
             }
           ]
@@ -328,72 +687,24 @@
   ],
   "categories": [
     {
-      "id": "cat-test",
-      "name": "Test",
-      "weight": 0.4,
-      "allowPlusMinus": false,
-      "onlyPlusMinus": false
-    },
-    {
-      "id": "cat-sa",
-      "name": "Schularbeit",
+      "id": "1770845143058",
+      "name": "sa",
       "weight": 0.5,
       "allowPlusMinus": false,
       "onlyPlusMinus": false
     },
     {
-      "id": "cat-mitarbeit",
-      "name": "Mitarbeit",
+      "id": "1770991572571",
+      "name": "test",
       "weight": 0.3,
-      "allowPlusMinus": true,
-      "onlyPlusMinus": true
+      "allowPlusMinus": false,
+      "onlyPlusMinus": false
     }
   ],
   "students": [],
-  "participationSettings": {
-    "plusValue": 0.1,
-    "minusValue": 0.1
-  },
   "plusMinusGradeSettings": {
     "startGrade": 3,
     "plusValue": 0.5,
     "minusValue": 0.5
-  },
-  "tutorial": {
-    "completed": true,
-    "currentStep": 0,
-    "neverShowAgain": false
-  },
-  "gradePercentageRanges": [
-    {
-      "grade": 1,
-      "minPercent": 85,
-      "maxPercent": 100
-    },
-    {
-      "grade": 2,
-      "minPercent": 70,
-      "maxPercent": 84
-    },
-    {
-      "grade": 3,
-      "minPercent": 55,
-      "maxPercent": 69
-    },
-    {
-      "grade": 4,
-      "minPercent": 40,
-      "maxPercent": 54
-    },
-    {
-      "grade": 5,
-      "minPercent": 0,
-      "maxPercent": 39
-    }
-  ],
-  "plusMinusPercentages": {
-    "plus": 100,
-    "neutral": 50,
-    "minus": 0
   }
 }
