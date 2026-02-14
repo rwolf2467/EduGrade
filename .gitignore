@@ -1,1 +1,7 @@
 .claude/settings.local.json
+
+# Config file with secret key (generated on first start)
+data/config.json
+
+# Database files (contain user data)
+data/edugrade.json

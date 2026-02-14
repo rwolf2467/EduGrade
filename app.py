@@ -118,9 +118,43 @@ def rate_limit(endpoint_type: str = 'default'):
 # Database path
 DATA_DIR = Path(__file__).parent / "data"
 DB_PATH = DATA_DIR / "edugrade.json"
+CONFIG_PATH = DATA_DIR / "config.json"
 
 # Ensure data directory exists
 DATA_DIR.mkdir(exist_ok=True)
+
+# ============ CONFIG MANAGEMENT ============
+
+def load_or_create_config():
+    """Load config from file or create a new one with secure secret key on first start"""
+    if CONFIG_PATH.exists():
+        try:
+            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+                print("Loaded existing config.json")
+                return config
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"Warning: Could not load config.json: {e}, creating new one")
+
+    # First start - generate secure secret key
+    print("First start detected - generating secure secret key...")
+    secret_key = secrets.token_hex(64)  # 128 character hexadecimal string (512 bits)
+
+    config = {
+        "secret_key": secret_key,
+        "created_at": datetime.now().isoformat(),
+        "version": "1.0"
+    }
+
+    # Save config to file
+    with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
+
+    print(f"Created new config.json with secure secret key at {CONFIG_PATH}")
+    return config
+
+# Load config on startup
+APP_CONFIG = load_or_create_config()
 
 # ============ ENCRYPTION ============
 
@@ -809,7 +843,8 @@ app = Quart(__name__,
             static_folder='static',
             static_url_path='/static')
 
-app.secret_key = 'eea304a198d6a9a860b2963de5991c3319040b665f2b912248ddc5be1c9f01f7' # Default secret key for session management. Change in production!
+# Use secret key from config (auto-generated on first start)
+app.secret_key = APP_CONFIG['secret_key']
 
 
 
