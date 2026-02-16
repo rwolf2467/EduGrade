@@ -323,6 +323,11 @@ const migrateData = () => {
         appData.participationSettings = { plusValue: 0.1, minusValue: 0.1 };
     }
 
+    // MIGRATION: Initialize attendance settings
+    if (!appData.attendanceSettings) {
+        appData.attendanceSettings = { enabled: false, minAttendancePercent: 75, warningThreshold: 5 };
+    }
+
     // MIGRATION: Initialize participation array for existing students
     if (appData.classes) {
         appData.classes.forEach(cls => {

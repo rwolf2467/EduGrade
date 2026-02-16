@@ -723,6 +723,14 @@
                                     </svg>
                                     <span data-i18n="class.addStudent">Add Student</span>
                                 </button>
+                                <button id="add-attendance-btn" class="btn-primary flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="9" cy="7" r="4"></circle>
+                                        <polyline points="16 11 18 13 22 9"></polyline>
+                                    </svg>
+                                    <span data-i18n="attendance.title">Anwesenheit</span>
+                                </button>
                                 <button id="import-students-btn" class="btn-secondary">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -921,6 +929,51 @@
                                 </div>
                             </div>
 
+                            <!-- Anwesenheitsstatistik -->
+                            <div class="mb-6 p-4 rounded-lg border" id="student-attendance-section">
+                                <h3 class="text-lg font-semibold mb-3" data-i18n="attendance.title">Anwesenheit</h3>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                    <div class="text-center">
+                                        <p class="text-sm mb-1" style="color: oklch(.708 0 0);">Gesamt</p>
+                                        <p class="text-2xl font-bold" id="student-attendance-total">0</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-sm mb-1" style="color: #10b981;" data-i18n="attendance.present">Anwesend</p>
+                                        <p class="text-2xl font-bold text-green-600" id="student-attendance-present">0</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-sm mb-1" style="color: #f59e0b;" data-i18n="attendance.late">Verspätet</p>
+                                        <p class="text-2xl font-bold text-orange-500" id="student-attendance-late">0</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-sm mb-1" style="color: #ef4444;" data-i18n="attendance.absent">Abwesend</p>
+                                        <p class="text-2xl font-bold text-red-600" id="student-attendance-absent">0</p>
+                                    </div>
+                                </div>
+                                <div class="mb-3 text-center">
+                                    <p class="text-sm" style="color: oklch(.708 0 0);">Anwesenheitsrate: <span class="font-semibold" id="student-attendance-rate">0%</span></p>
+                                </div>
+
+                                <!-- Anwesenheitsliste -->
+                                <div class="mt-4 border-t pt-4">
+                                    <h4 class="text-sm font-semibold mb-2" style="color: oklch(.708 0 0);">Einzelne Einträge</h4>
+                                    <div class="overflow-x-auto">
+                                        <table class="table w-full text-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th data-i18n="table.date">Datum</th>
+                                                    <th>Status</th>
+                                                    <th data-i18n="attendance.notes">Notizen</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="student-attendance-list">
+                                                <!-- Wird dynamisch gefüllt -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Chart Container -->
                             <div class="chart-container mb-6" style="position: relative; height: 300px;">
                                 <canvas id="student-grade-chart"></canvas>
@@ -1011,6 +1064,9 @@
                                         Ranges</button>
                                     <button type="button" role="tab" id="tab-plusminus" aria-controls="panel-plusminus"
                                         aria-selected="false" tabindex="0" data-i18n="category.plusMinusSettings">+/~/-
+                                        Settings</button>
+                                    <button type="button" role="tab" id="tab-attendance" aria-controls="panel-attendance"
+                                        aria-selected="false" tabindex="0" data-i18n="attendance.settings">Attendance
                                         Settings</button>
                                 </nav>
 
@@ -1127,6 +1183,60 @@
                                         <button id="save-plusminus-settings" class="btn-primary mt-4 w-full"
                                             data-i18n="category.saveSettings">Save
                                             Settings</button>
+                                    </div>
+                                </div>
+
+                                <div role="tabpanel" id="panel-attendance" aria-labelledby="tab-attendance" tabindex="-1"
+                                    aria-selected="false" hidden>
+                                    <div class="py-4">
+                                        <p class="text-sm mb-4" style="color: oklch(.708 0 0);"
+                                            data-i18n="attendance.autoGradingHint">
+                                            When enabled, students with low attendance automatically receive a failing grade.
+                                        </p>
+
+                                        <div class="space-y-4">
+                                            <label class="flex items-center gap-2 cursor-pointer">
+                                                <input type="checkbox" id="attendance-auto-grading" class="checkbox">
+                                                <span class="text-sm font-medium" data-i18n="attendance.autoGrading">Automatic Grading</span>
+                                            </label>
+
+                                            <div class="flex items-center gap-3">
+                                                <div class="flex-1">
+                                                    <label class="block text-sm mb-1 font-medium" data-i18n="attendance.minPercent">
+                                                        Minimum Attendance (%)
+                                                    </label>
+                                                    <div class="flex items-center gap-2">
+                                                        <input type="number" id="attendance-min-percent" step="1" min="0"
+                                                            max="100" class="input w-32" value="75">
+                                                        <span class="text-sm">%</span>
+                                                    </div>
+                                                    <p class="text-xs mt-1" style="color: oklch(.708 0 0);"
+                                                        data-i18n="attendance.minPercentHint">
+                                                        Students with less than this percentage automatically receive a grade of 5
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex items-center gap-3">
+                                                <div class="flex-1">
+                                                    <label class="block text-sm mb-1 font-medium" data-i18n="attendance.warningThreshold">
+                                                        Warning Threshold (%)
+                                                    </label>
+                                                    <div class="flex items-center gap-2">
+                                                        <input type="number" id="attendance-warning-threshold" step="1" min="0"
+                                                            max="20" class="input w-32" value="5">
+                                                        <span class="text-sm">%</span>
+                                                    </div>
+                                                    <p class="text-xs mt-1" style="color: oklch(.708 0 0);"
+                                                        data-i18n="attendance.warningThresholdHint">
+                                                        Students are warned when approaching this value
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button id="save-attendance-settings" class="btn-primary mt-4 w-full"
+                                            data-i18n="attendance.saveSettings">Save Settings</button>
                                     </div>
                                 </div>
                             </div>

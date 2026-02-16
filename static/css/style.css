@@ -999,3 +999,64 @@ html.dark .pending-grade {
     background-color: rgba(251, 191, 36, 0.05);
     border-left: 3px solid rgba(251, 191, 36, 0.3);
 }
+
+/* ============ Anwesenheits-Dialog ============ */
+
+.attendance-student-card {
+  position: relative;
+}
+
+.attendance-avatar {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.attendance-initials {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.attendance-status-btn {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dark Mode Avatar */
+html.dark .attendance-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Attendance Warning/Critical Row Styles */
+.attendance-critical-row {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+  border-left: 3px solid #ef4444;
+}
+
+.attendance-warning-row {
+  background-color: rgba(245, 158, 11, 0.06) !important;
+  border-left: 3px solid #f59e0b;
+}
+
+html.dark .attendance-critical-row {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+}
+
+html.dark .attendance-warning-row {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}

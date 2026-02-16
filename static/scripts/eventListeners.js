@@ -328,6 +328,16 @@ document.getElementById("manage-categories").addEventListener("click", () => {
     if (neutralInput) neutralInput.value = pmPercentages.neutral;
     if (minusInput) minusInput.value = pmPercentages.minus;
 
+    // Load current attendance settings
+    const attendanceSettings = appData.attendanceSettings || { enabled: false, minAttendancePercent: 75, warningThreshold: 5 };
+    const enabledInput = document.getElementById("attendance-auto-grading");
+    const minPercentInput = document.getElementById("attendance-min-percent");
+    const warningInput = document.getElementById("attendance-warning-threshold");
+
+    if (enabledInput) enabledInput.checked = attendanceSettings.enabled;
+    if (minPercentInput) minPercentInput.value = attendanceSettings.minAttendancePercent;
+    if (warningInput) warningInput.value = attendanceSettings.warningThreshold;
+
     // Load current percentage ranges
     const defaultRanges = [
         { grade: 1, minPercent: 85, maxPercent: 100 },
@@ -405,6 +415,41 @@ document.getElementById("save-percentage-ranges").addEventListener("click", () =
     if (updateGradePercentageRanges(ranges)) {
         settingsDirty = false;
         showToast(t("toast.gradeRangesSaved"), "success");
+    }
+});
+
+// Event listener for saving attendance settings
+document.getElementById("save-attendance-settings").addEventListener("click", () => {
+    const enabled = document.getElementById("attendance-auto-grading").checked;
+    const minPercent = parseFloat(document.getElementById("attendance-min-percent").value);
+    const warningThreshold = parseFloat(document.getElementById("attendance-warning-threshold").value);
+
+    // Validation
+    if (isNaN(minPercent) || minPercent < 0 || minPercent > 100) {
+        showAlertDialog("Mindest-Anwesenheit muss zwischen 0 und 100% liegen");
+        return;
+    }
+    if (isNaN(warningThreshold) || warningThreshold < 0 || warningThreshold > 20) {
+        showAlertDialog("Warnungs-Schwelle muss zwischen 0 und 20% liegen");
+        return;
+    }
+
+    // Save settings
+    appData.attendanceSettings = {
+        enabled: enabled,
+        minAttendancePercent: minPercent,
+        warningThreshold: warningThreshold
+    };
+
+    saveData(t("toast.attendanceSettingsSaved") || "Anwesenheitseinstellungen gespeichert", "success");
+    settingsDirty = false;
+    renderStudents();
+
+    // If student detail view is open, re-render it
+    const detailView = document.getElementById("student-detail-view");
+    if (detailView && !detailView.classList.contains("hidden")) {
+        const studentId = detailView.dataset.studentId;
+        if (studentId) renderStudentDetail(studentId);
     }
 });
 
@@ -501,5 +546,13 @@ document.getElementById("back-to-class").addEventListener("click", backToClassVi
 // Student Access (Share) Dialog
 document.getElementById("close-student-access").addEventListener("click", () => {
     document.getElementById("student-access-dialog").close();
+});
+
+// ============ Anwesenheit Event Listeners ============
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#add-attendance-btn')) {
+    renderAttendanceDialog();
+  }
 });
 

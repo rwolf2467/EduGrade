@@ -1446,3 +1446,245 @@ const renderActiveShare = (container, shareData, currentClass) => {
         });
     });
 };
+
+// ============ Anwesenheits-Management ============
+
+function addAttendance(studentId, date, status, notes = '') {
+  const validation = validateAttendanceInput(date, status, notes);
+  if (!validation.isValid) {
+    showAlertDialog(validation.error);
+    return false;
+  }
+
+  const currentYear = getCurrentYear();
+  const student = currentYear.students.find(s => s.id === studentId);
+
+  if (!student) {
+    showAlertDialog('Schüler nicht gefunden');
+    return false;
+  }
+
+  // Check if attendance already exists for this date
+  const existingIndex = student.participation.findIndex(p => p.date === date);
+
+  const attendanceEntry = {
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+    date: date,
+    status: status,
+    notes: escapeHtml(notes),
+    createdAt: Date.now()
+  };
+
+  if (existingIndex >= 0) {
+    // Update existing entry
+    student.participation[existingIndex] = attendanceEntry;
+  } else {
+    // Add new entry
+    student.participation.push(attendanceEntry);
+  }
+
+  return true;
+}
+
+function bulkAddAttendance(attendanceData, date) {
+  // attendanceData = { studentId: { status, notes }, ... }
+  let successCount = 0;
+
+  Object.entries(attendanceData).forEach(([studentId, data]) => {
+    if (addAttendance(studentId, date, data.status, data.notes || '')) {
+      successCount++;
+    }
+  });
+
+  if (successCount > 0) {
+    saveData(t('toast.attendanceAdded', { count: successCount }), 'success');
+    renderStudents();
+  }
+}
+
+function deleteAttendance(studentId, attendanceId) {
+  const currentYear = getCurrentYear();
+  const student = currentYear.students.find(s => s.id === studentId);
+
+  if (!student) return false;
+
+  const index = student.participation.findIndex(p => p.id === attendanceId);
+  if (index === -1) return false;
+
+  student.participation.splice(index, 1);
+  saveData(t('toast.attendanceDeleted'), 'success');
+  renderStudents();
+  return true;
+}
+
+/**
+ * Deletes a specific attendance entry for a student and re-renders the detail view.
+ * @param {string} studentId - The student ID
+ * @param {string} attendanceId - The attendance entry ID to delete
+ */
+function deleteAttendanceEntry(studentId, attendanceId) {
+  const currentYear = getCurrentYear();
+  const student = currentYear.students.find(s => s.id === studentId);
+
+  if (!student) return false;
+
+  const index = student.participation.findIndex(p => p.id === attendanceId);
+  if (index === -1) return false;
+
+  const entry = student.participation[index];
+  const date = new Date(entry.date).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+
+  const message = `${t('attendance.confirmDelete') || 'Möchten Sie diesen Eintrag wirklich löschen?'}\n\n${date}: ${t('attendance.' + entry.status)}`;
+
+  if (confirm(message)) {
+    student.participation.splice(index, 1);
+    saveData(t('toast.attendanceDeleted'), 'success');
+    // Re-render student detail view if open
+    const studentDetailView = document.getElementById('student-detail-view');
+    if (studentDetailView && studentDetailView.dataset.studentId === studentId) {
+      renderStudentDetail(studentId);
+    } else {
+      renderStudents();
+    }
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Opens a dialog to edit an existing attendance entry.
+ * @param {string} studentId - The student ID
+ * @param {string} attendanceId - The attendance entry ID to edit
+ */
+function openEditAttendanceDialog(studentId, attendanceId) {
+  const currentYear = getCurrentYear();
+  const student = currentYear.students.find(s => s.id === studentId);
+
+  if (!student) return;
+
+  const entry = student.participation.find(p => p.id === attendanceId);
+  if (!entry) return;
+
+  const date = new Date(entry.date).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+
+  const content = `
+    <div class="grid gap-4">
+      <div class="text-sm" style="color: oklch(.708 0 0);">
+        <strong>${date}</strong>
+      </div>
+      <div class="grid gap-2">
+        <label for="edit-attendance-status" class="text-sm font-medium">${t('attendance.status')}</label>
+        <select id="edit-attendance-status" class="select" required>
+          <option value="present" ${entry.status === 'present' ? 'selected' : ''}>${t('attendance.present')}</option>
+          <option value="late" ${entry.status === 'late' ? 'selected' : ''}>${t('attendance.late')}</option>
+          <option value="absent" ${entry.status === 'absent' ? 'selected' : ''}>${t('attendance.absent')}</option>
+        </select>
+      </div>
+      <div class="grid gap-2">
+        <label for="edit-attendance-notes" class="text-sm font-medium">${t('attendance.notes')}</label>
+        <textarea id="edit-attendance-notes" class="textarea" rows="3" maxlength="200">${escapeHtml(entry.notes || '')}</textarea>
+        <p class="text-xs" style="color: oklch(.708 0 0);">${t('attendance.notesHint') || 'Optional'}</p>
+      </div>
+    </div>
+  `;
+
+  showDialog('edit-dialog', t('attendance.editEntry') || 'Eintrag bearbeiten', content, (formData) => {
+    const newStatus = formData.get('edit-attendance-status');
+    const newNotes = formData.get('edit-attendance-notes') || '';
+
+    // Update the entry
+    entry.status = newStatus;
+    entry.notes = escapeHtml(newNotes);
+
+    saveData(t('toast.attendanceEdited') || 'Anwesenheitseintrag aktualisiert', 'success');
+
+    // Re-render student detail view if open
+    const studentDetailView = document.getElementById('student-detail-view');
+    if (studentDetailView && studentDetailView.dataset.studentId === studentId) {
+      renderStudentDetail(studentId);
+    } else {
+      renderStudents();
+    }
+  });
+}
+
+function getAttendanceForDate(studentId, date) {
+  const currentYear = getCurrentYear();
+  const student = currentYear.students.find(s => s.id === studentId);
+  if (!student) return null;
+
+  return student.participation.find(p => p.date === date) || null;
+}
+
+function calculateAttendanceStats(studentId) {
+  const currentYear = getCurrentYear();
+  const student = currentYear.students.find(s => s.id === studentId);
+  if (!student) return null;
+
+  const total = student.participation.length;
+  const present = student.participation.filter(p => p.status === 'present').length;
+  const absent = student.participation.filter(p => p.status === 'absent').length;
+  const late = student.participation.filter(p => p.status === 'late').length;
+
+  // presentRate = (present + late) / total — Verspätete sind anwesend
+  return {
+    total,
+    present,
+    absent,
+    late,
+    presentRate: total > 0 ? Math.round(((present + late) / total) * 100) : 0,
+    absentRate: total > 0 ? Math.round((absent / total) * 100) : 0
+  };
+}
+
+/**
+ * Prüft den Anwesenheitsstatus eines Schülers gegen die Einstellungen.
+ * Gibt zurück: 'critical' (unter Minimum), 'warning' (knapp darüber), 'ok'
+ */
+function getAttendanceStatus(studentId) {
+  const settings = appData.attendanceSettings || { enabled: false, minAttendancePercent: 75, warningThreshold: 5 };
+  if (!settings.enabled) return { status: 'ok', rate: null, hasData: false };
+
+  const stats = calculateAttendanceStats(studentId);
+  if (!stats || stats.total === 0) return { status: 'ok', rate: null, hasData: false };
+
+  const rate = stats.presentRate;
+  const minPercent = settings.minAttendancePercent;
+  const warningLimit = minPercent + settings.warningThreshold;
+
+  if (rate < minPercent) {
+    return { status: 'critical', rate: rate, minPercent: minPercent, hasData: true };
+  } else if (rate < warningLimit) {
+    return { status: 'warning', rate: rate, minPercent: minPercent, warningLimit: warningLimit, hasData: true };
+  }
+  return { status: 'ok', rate: rate, hasData: true };
+}
+
+function validateAttendanceInput(date, status, notes) {
+  // Validate date
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(date)) {
+    return { isValid: false, error: 'Ungültiges Datumsformat' };
+  }
+
+  // Validate status
+  const validStatuses = ['present', 'absent', 'late'];
+  if (!validStatuses.includes(status)) {
+    return { isValid: false, error: 'Ungültiger Status' };
+  }
+
+  // Validate notes (optional)
+  if (notes && notes.length > 500) {
+    return { isValid: false, error: 'Notizen zu lang (max. 500 Zeichen)' };
+  }
+
+  return { isValid: true };
+}

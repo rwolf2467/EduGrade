@@ -83,5 +83,10 @@ let appData = {
         plus: 100,                // Plus = 100% (Sehr gute Leistung)
         neutral: 50,              // Neutral = 50% (Durchschnittliche Leistung)
         minus: 0                  // Minus = 0% (Schwache Leistung)
+    },
+    attendanceSettings: {         // Einstellungen für Anwesenheitsbewertung
+        enabled: false,           // Automatische Note bei niedriger Anwesenheit
+        minAttendancePercent: 75, // Mindest-Anwesenheit in % (Standard: 75%)
+        warningThreshold: 5       // Warnung wenn X% über Minimum (Standard: 80%)
     }
 };

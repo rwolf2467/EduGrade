@@ -959,18 +959,49 @@ const renderStudents = () => {
             const simpleAvg = calculateSimpleAverage(filteredGrades);
             const weightedAvg = calculateWeightedAverage(filteredGrades);
             const gradeCount = filteredGrades.length;
+
+            // Anwesenheits-Check
+            const attendanceStatus = getAttendanceStatus(student.id);
+            let finalGradeDisplay = calculateFinalGrade(weightedAvg);
+            let attendanceBadge = '';
+            let rowClass = '';
+
+            if (attendanceStatus.status === 'critical') {
+              finalGradeDisplay = '5';
+              rowClass = 'attendance-critical-row';
+            } else if (attendanceStatus.status === 'warning') {
+              rowClass = 'attendance-warning-row';
+            }
+
+            // Attendance warning text (shown below name)
+            let attendanceWarningText = '';
+            if (attendanceStatus.status === 'critical') {
+              attendanceWarningText = `<span class="text-xs text-red-600 dark:text-red-400" title="${t('attendance.criticalWarning')}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                ${t('attendance.atLimitWarning') || 'Am Limit'} (${attendanceStatus.rate}%)
+              </span>`;
+            } else if (attendanceStatus.status === 'warning') {
+              attendanceWarningText = `<span class="text-xs text-orange-600 dark:text-orange-400" title="${t('attendance.lowWarning')}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="inline"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                ${t('attendance.nearLimit') || 'Knapp am Limit'} (${attendanceStatus.rate}%)
+              </span>`;
+            }
+
             return `
-            <tr>
+            <tr class="${rowClass}">
               <td>
                 <input type="checkbox" class="checkbox student-checkbox" data-student-id="${safeAttr(student.id)}">
               </td>
-              <td><span class="student-name-link" data-student-id="${safeAttr(student.id)}">${escapeHtml(student.lastName || '')}</span></td>
+              <td>
+                <span class="student-name-link" data-student-id="${safeAttr(student.id)}">${escapeHtml(student.lastName || '')}</span>
+                ${attendanceWarningText ? `<div class="text-xs mt-0.5">${attendanceWarningText}</div>` : ''}
+              </td>
               <td>${escapeHtml(student.firstName || '')}</td>
               <td>${escapeHtml(student.middleName || '')}</td>
               <td>${gradeCount}</td>
               <td>${simpleAvg ? simpleAvg.toFixed(2) : "—"}</td>
               <td>${weightedAvg ? weightedAvg.toFixed(2) : "—"}</td>
-              <td>${calculateFinalGrade(weightedAvg)}</td>
+              <td>${finalGradeDisplay}</td>
               <td>
                 <button class="btn-icon btn-secondary mr-1" data-view-student="${safeAttr(student.id)}" data-tooltip="${t("class.viewDetails")}" data-side="top">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
@@ -2266,10 +2297,16 @@ const renderStudentDetail = (studentId) => {
 
     // Calculate statistics with filtered grades
     const weightedAvg = calculateWeightedAverage(filteredGrades);
-    const finalGrade = calculateFinalGrade(weightedAvg);
+    let finalGrade = calculateFinalGrade(weightedAvg);
     const trend = calculateTrend(filteredGrades);
     const classAvg = calculateClassAverage();
     const numericGradeCount = filteredGrades.filter(g => !g.isPlusMinus).length;
+
+    // Check attendance status and override final grade if critical
+    const attendanceStatus = getAttendanceStatus(studentId);
+    if (attendanceStatus.status === 'critical') {
+        finalGrade = '5';
+    }
 
     // Populate stat cards
     document.getElementById("student-stat-average").textContent =
@@ -2325,6 +2362,60 @@ const renderStudentDetail = (studentId) => {
         }
     } else {
         comparisonEl.textContent = "-";
+    }
+
+    // Attendance warning/critical banner in detail view
+    let existingBanner = document.getElementById('attendance-status-banner');
+    if (existingBanner) existingBanner.remove();
+
+    if (attendanceStatus.status === 'critical') {
+        const banner = document.createElement('div');
+        banner.id = 'attendance-status-banner';
+        banner.className = 'mb-4 p-4 rounded-lg border-2 border-red-500 bg-red-50 dark:bg-red-900/20';
+        banner.innerHTML = `
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-600 dark:text-red-400 flex-shrink-0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div>
+                    <p class="font-semibold text-red-700 dark:text-red-400">${t('attendance.criticalWarning')}</p>
+                    <p class="text-sm text-red-600 dark:text-red-400/80">${t('attendance.title')}: ${attendanceStatus.rate}% — ${t('attendance.minPercent')}: ${attendanceStatus.minPercent}%</p>
+                </div>
+            </div>
+        `;
+        const statCards = document.querySelector('#student-detail-view .stat-card')?.closest('.grid');
+        if (statCards) statCards.parentNode.insertBefore(banner, statCards);
+    } else if (attendanceStatus.status === 'warning') {
+        const banner = document.createElement('div');
+        banner.id = 'attendance-status-banner';
+        banner.className = 'mb-4 p-4 rounded-lg border-2 border-orange-400 bg-orange-50 dark:bg-orange-900/20';
+        banner.innerHTML = `
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-500 dark:text-orange-400 flex-shrink-0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <div>
+                    <p class="font-semibold text-orange-700 dark:text-orange-400">${t('attendance.lowWarning')}</p>
+                    <p class="text-sm text-orange-600 dark:text-orange-400/80">${t('attendance.title')}: ${attendanceStatus.rate}% — ${t('attendance.minPercent')}: ${attendanceStatus.minPercent}%</p>
+                </div>
+            </div>
+        `;
+        const statCards = document.querySelector('#student-detail-view .stat-card')?.closest('.grid');
+        if (statCards) statCards.parentNode.insertBefore(banner, statCards);
+    }
+
+    // Update attendance statistics
+    const attendanceStats = calculateAttendanceStats(studentId);
+    if (attendanceStats && attendanceStats.total > 0) {
+        document.getElementById("student-attendance-total").textContent = attendanceStats.total;
+        document.getElementById("student-attendance-present").textContent = attendanceStats.present;
+        document.getElementById("student-attendance-late").textContent = attendanceStats.late;
+        document.getElementById("student-attendance-absent").textContent = attendanceStats.absent;
+        document.getElementById("student-attendance-rate").textContent = attendanceStats.presentRate + '%';
+
+        // Render attendance list
+        renderStudentAttendanceList(student);
+
+        document.getElementById("student-attendance-section").style.display = 'block';
+    } else {
+        // Hide attendance section if no data
+        document.getElementById("student-attendance-section").style.display = 'none';
     }
 
     // Render chart, category breakdown, and grades table with filtered grades
@@ -3099,3 +3190,293 @@ const setupGradeSearch = (student, filteredGrades) => {
     // Clear search when view changes
     newSearchInput.value = '';
 };
+
+// ============ Anwesenheits-Dialog ============
+
+function renderAttendanceDialog() {
+  const currentYear = getCurrentYear();
+  if (!currentYear || !currentYear.students || currentYear.students.length === 0) {
+    showAlertDialog(t('attendance.noStudents'));
+    return;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+
+  // Sort students alphabetically by last name, then first name
+  const students = [...currentYear.students].sort((a, b) => {
+    const lastNameCmp = (a.lastName || '').localeCompare(b.lastName || '', 'de');
+    if (lastNameCmp !== 0) return lastNameCmp;
+    return (a.firstName || '').localeCompare(b.firstName || '', 'de');
+  });
+
+  // Generate student cards
+  const studentCards = students.map(student => {
+    const initials = getStudentInitials(student);
+    const displayName = getStudentDisplayName(student);
+
+    return `
+      <div class="attendance-student-card" data-student-id="${safeAttr(student.id)}">
+        <div class="flex items-center gap-3 p-3 border rounded-lg">
+          <div class="attendance-avatar">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <div class="attendance-initials">${escapeHtml(initials)}</div>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium truncate">${escapeHtml(displayName)}</div>
+            <div class="attendance-notes-field hidden mt-1">
+              <input type="text" class="input w-full text-xs py-1 h-auto" placeholder="${t('attendance.notesPlaceholder') || 'Notiz (optional)'}" maxlength="200">
+            </div>
+          </div>
+          <div class="attendance-status-buttons flex gap-2 shrink-0">
+            <button type="button" class="btn-primary attendance-status-btn selected" data-status="present" title="${t('attendance.present')}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </button>
+            <button type="button" class="btn-secondary attendance-status-btn" data-status="late" title="${t('attendance.late')}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </button>
+            <button type="button" class="btn-secondary attendance-status-btn" data-status="absent" title="${t('attendance.absent')}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const content = `
+    <form id="attendance-form" class="form grid gap-4">
+      <div class="grid gap-2">
+        <label for="attendance-date">${t('attendance.date')}</label>
+        <input type="date" id="attendance-date" name="date" class="input" value="${today}" required>
+      </div>
+      <div class="grid gap-2">
+        <label>${t('attendance.students')}</label>
+        <div id="attendance-student-list" class="grid gap-2 max-h-96 overflow-y-auto">
+          ${studentCards}
+        </div>
+      </div>
+    </form>
+  `;
+
+  showDialog('edit-dialog', t('attendance.title'), content, (formData) => {
+    const date = formData.get('date');
+    const attendanceData = {};
+
+    // Collect attendance data from selected buttons
+    document.querySelectorAll('.attendance-student-card').forEach(card => {
+      const studentId = card.dataset.studentId;
+      const selectedBtn = card.querySelector('.attendance-status-btn.selected');
+
+      if (selectedBtn) {
+        const notesField = card.querySelector('.attendance-notes-field input');
+        attendanceData[studentId] = {
+          status: selectedBtn.dataset.status,
+          notes: notesField ? notesField.value : ''
+        };
+      }
+    });
+
+    if (Object.keys(attendanceData).length === 0) {
+      showAlertDialog(t('attendance.noStatusSelected'));
+      return;
+    }
+
+    bulkAddAttendance(attendanceData, date);
+  });
+
+  // Attach click handlers to status buttons
+  setTimeout(() => {
+    document.querySelectorAll('.attendance-status-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const card = btn.closest('.attendance-student-card');
+        const studentId = card.dataset.studentId;
+        const status = btn.dataset.status;
+
+        // Toggle selection and update button styles
+        const allBtns = card.querySelectorAll('.attendance-status-btn');
+        allBtns.forEach(b => {
+          b.classList.remove('selected', 'btn-primary');
+          b.classList.add('btn-secondary');
+        });
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('selected', 'btn-primary');
+
+        // Show/hide notes field based on status
+        const notesField = card.querySelector('.attendance-notes-field');
+        if (notesField) {
+          if (status === 'present') {
+            notesField.classList.add('hidden');
+          } else {
+            notesField.classList.remove('hidden');
+          }
+        }
+      });
+    });
+
+    // Pre-select based on existing attendance for the date
+    const dateInput = document.getElementById('attendance-date');
+    if (dateInput) {
+      dateInput.addEventListener('change', () => {
+        updateAttendanceDialogForDate(dateInput.value);
+      });
+
+      // Initial load
+      updateAttendanceDialogForDate(today);
+    }
+  }, 100);
+}
+
+function updateAttendanceDialogForDate(date) {
+  document.querySelectorAll('.attendance-student-card').forEach(card => {
+    const studentId = card.dataset.studentId;
+    const attendance = getAttendanceForDate(studentId, date);
+
+    // Reset all buttons to secondary
+    const allBtns = card.querySelectorAll('.attendance-status-btn');
+    allBtns.forEach(b => {
+      b.classList.remove('selected', 'btn-primary');
+      b.classList.add('btn-secondary');
+    });
+
+    // Select existing status if available, otherwise default to present
+    let selectedStatus = attendance ? attendance.status : 'present';
+    const btn = card.querySelector(`.attendance-status-btn[data-status="${selectedStatus}"]`);
+    if (btn) {
+      btn.classList.remove('btn-secondary');
+      btn.classList.add('selected', 'btn-primary');
+    }
+
+    // Show/hide notes field based on status
+    const notesField = card.querySelector('.attendance-notes-field');
+    const notesInput = card.querySelector('.attendance-notes-field input');
+    if (notesField && notesInput) {
+      if (selectedStatus === 'present') {
+        notesField.classList.add('hidden');
+        notesInput.value = '';
+      } else {
+        notesField.classList.remove('hidden');
+        // Populate notes if existing attendance has notes
+        if (attendance && attendance.notes) {
+          notesInput.value = attendance.notes;
+        } else {
+          notesInput.value = '';
+        }
+      }
+    }
+  });
+}
+
+function getStudentInitials(student) {
+  const first = (student.firstName || '').trim();
+  const last = (student.lastName || '').trim();
+
+  if (first && last) {
+    return (first[0] + last[0]).toUpperCase();
+  } else if (first) {
+    return first.substring(0, 2).toUpperCase();
+  } else if (last) {
+    return last.substring(0, 2).toUpperCase();
+  }
+  return '??';
+}
+
+function renderStudentAttendanceList(student) {
+  const attendanceList = document.getElementById('student-attendance-list');
+  if (!attendanceList) return;
+
+  if (!student.participation || student.participation.length === 0) {
+    attendanceList.innerHTML = `
+      <tr>
+        <td colspan="4" class="text-center" style="color: oklch(.708 0 0);">
+          Keine Anwesenheitseinträge vorhanden
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  // Sort by date (newest first)
+  const sortedAttendance = [...student.participation].sort((a, b) => {
+    return new Date(b.date) - new Date(a.date);
+  });
+
+  // Render attendance entries
+  attendanceList.innerHTML = sortedAttendance.map(entry => {
+    // Format date
+    const date = new Date(entry.date);
+    const formattedDate = date.toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+
+    // Status badge with color
+    let statusBadge = '';
+    let statusText = '';
+    if (entry.status === 'present') {
+      statusBadge = 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+      statusText = t('attendance.present');
+    } else if (entry.status === 'late') {
+      statusBadge = 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+      statusText = t('attendance.late');
+    } else if (entry.status === 'absent') {
+      statusBadge = 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+      statusText = t('attendance.absent');
+    }
+
+    return `
+      <tr>
+        <td>${escapeHtml(formattedDate)}</td>
+        <td>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge}">
+            ${escapeHtml(statusText)}
+          </span>
+        </td>
+        <td style="color: oklch(.708 0 0);">${escapeHtml(entry.notes || '—')}</td>
+        <td>
+          <div class="flex items-center justify-end gap-1">
+            <button class="btn-icon btn-secondary btn-small" data-edit-attendance="${escapeHtml(entry.id)}" data-tooltip="${t('attendance.editEntry')}" data-side="left">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+            <button class="btn-icon btn-destructive btn-small" data-delete-attendance="${escapeHtml(entry.id)}" data-tooltip="${t('dialog.delete')}" data-side="left">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Add event listeners for edit buttons
+  document.querySelectorAll('[data-edit-attendance]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const entryId = btn.dataset.editAttendance;
+      openEditAttendanceDialog(student.id, entryId);
+    });
+  });
+
+  // Add event listeners for delete buttons
+  document.querySelectorAll('[data-delete-attendance]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const entryId = btn.dataset.deleteAttendance;
+      deleteAttendanceEntry(student.id, entryId);
+    });
+  });
+}
