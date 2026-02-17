@@ -65,6 +65,7 @@ let appData = {
     classes: [],                  // Hauptarray mit allen Klassen und deren Daten
     categories: [],               // GLOBALE Kategorien (gelten für alle Klassen)
     defaultSubjects: [],          // Standard-Fächer (Objekte: { name, minAttendancePercent, warningThreshold, attendanceAutoGrading })
+    hiddenSubjectSuggestions: [], // Fächer, die aus der Vorschlagsliste ausgeblendet wurden (Array von Namen-Strings)
     students: [],                 // Legacy-Array (wird nicht aktiv verwendet)
     participationSettings: {      // Einstellungen für Mitarbeits-Funktion
         plusValue: 0.1,           // Wert pro Plus bei Mitarbeit

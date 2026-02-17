@@ -451,6 +451,7 @@ const renderSubjectTabs = () => {
             const globalSettings = appData.attendanceSettings || { minAttendancePercent: 75, warningThreshold: 5 };
 
             // Collect known subject templates (defaultSubjects first, then any names used in classes)
+            const hiddenSuggestions = new Set(appData.hiddenSubjectSuggestions || []);
             const knownSubjects = new Map(); // name → template object
             if (appData.defaultSubjects) {
                 appData.defaultSubjects.forEach(tmpl => knownSubjects.set(tmpl.name, tmpl));
@@ -459,7 +460,7 @@ const renderSubjectTabs = () => {
                 appData.classes.forEach(cls => {
                     if (cls.years) cls.years.forEach(year => {
                         if (year.subjects) year.subjects.forEach(s => {
-                            if (!knownSubjects.has(s.name)) {
+                            if (!knownSubjects.has(s.name) && !hiddenSuggestions.has(s.name)) {
                                 knownSubjects.set(s.name, { name: s.name, minAttendancePercent: null, warningThreshold: null, attendanceAutoGrading: null });
                             }
                         });
@@ -559,6 +560,24 @@ const renderSubjectTabs = () => {
                         if (autoInput) autoInput.checked = !!tmpl.attendanceAutoGrading;
                     }
                 });
+
+                chip.addEventListener('dblclick', () => {
+                    const name = chip.dataset.chipName;
+                    const isDefault = appData.defaultSubjects?.some(s => s.name === name);
+                    if (isDefault) {
+                        showAlertDialog(t('subject.chipDeleteDefaultError'));
+                    } else {
+                        showConfirmDialog(t('subject.chipDeleteConfirm', { name }), () => {
+                            if (!appData.hiddenSubjectSuggestions) appData.hiddenSubjectSuggestions = [];
+                            if (!appData.hiddenSubjectSuggestions.includes(name)) {
+                                appData.hiddenSubjectSuggestions.push(name);
+                            }
+                            knownSubjects.delete(name);
+                            chip.remove();
+                            saveData();
+                        });
+                    }
+                });
             });
 
             // "+" button: show new-chip input row
@@ -600,6 +619,22 @@ const renderSubjectTabs = () => {
                     chipEl.addEventListener('click', () => {
                         const nameInput = document.getElementById('subject-name-input');
                         if (nameInput) nameInput.value = name;
+                    });
+                    chipEl.addEventListener('dblclick', () => {
+                        const isDefault = appData.defaultSubjects?.some(s => s.name === name);
+                        if (isDefault) {
+                            showAlertDialog(t('subject.chipDeleteDefaultError'));
+                        } else {
+                            showConfirmDialog(t('subject.chipDeleteConfirm', { name }), () => {
+                                if (!appData.hiddenSubjectSuggestions) appData.hiddenSubjectSuggestions = [];
+                                if (!appData.hiddenSubjectSuggestions.includes(name)) {
+                                    appData.hiddenSubjectSuggestions.push(name);
+                                }
+                                knownSubjects.delete(name);
+                                chipEl.remove();
+                                saveData();
+                            });
+                        }
                     });
                     chipsContainer.insertBefore(chipEl, plusBtn);
                 }
