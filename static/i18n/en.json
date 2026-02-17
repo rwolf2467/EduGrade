@@ -628,7 +628,7 @@
   "attendance.warningThresholdHint": "Students are warned when only X% above minimum (e.g. at 5% → warning between 75-80%)",
   "attendance.lowWarning": "Low Attendance",
   "attendance.criticalWarning": "Critical Attendance - Automatic Fail",
-  "attendance.atLimitWarning": "At Limit",
+  "attendance.atLimitWarning": "At Attendance Limit",
   "attendance.nearLimit": "Near Attendance Limit",
   "attendance.edit": "Edit",
   "attendance.editEntry": "Edit Entry",

@@ -1576,13 +1576,13 @@ function openEditAttendanceDialog(studentId, attendanceId) {
   });
 
   const content = `
-    <div class="grid gap-4">
+    <form id="edit-attendance-form" class="form grid gap-4">
       <div class="text-sm" style="color: oklch(.708 0 0);">
         <strong>${date}</strong>
       </div>
       <div class="grid gap-2">
         <label for="edit-attendance-status" class="text-sm font-medium">${t('attendance.status')}</label>
-        <select id="edit-attendance-status" class="select" required>
+        <select id="edit-attendance-status" name="edit-attendance-status" class="select" required>
           <option value="present" ${entry.status === 'present' ? 'selected' : ''}>${t('attendance.present')}</option>
           <option value="late" ${entry.status === 'late' ? 'selected' : ''}>${t('attendance.late')}</option>
           <option value="absent" ${entry.status === 'absent' ? 'selected' : ''}>${t('attendance.absent')}</option>
@@ -1590,10 +1590,10 @@ function openEditAttendanceDialog(studentId, attendanceId) {
       </div>
       <div class="grid gap-2">
         <label for="edit-attendance-notes" class="text-sm font-medium">${t('attendance.notes')}</label>
-        <textarea id="edit-attendance-notes" class="textarea" rows="3" maxlength="200">${escapeHtml(entry.notes || '')}</textarea>
+        <textarea id="edit-attendance-notes" name="edit-attendance-notes" class="textarea" rows="3" maxlength="200">${escapeHtml(entry.notes || '')}</textarea>
         <p class="text-xs" style="color: oklch(.708 0 0);">${t('attendance.notesHint') || 'Optional'}</p>
       </div>
-    </div>
+    </form>
   `;
 
   showDialog('edit-dialog', t('attendance.editEntry') || 'Eintrag bearbeiten', content, (formData) => {

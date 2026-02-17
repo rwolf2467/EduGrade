@@ -628,7 +628,7 @@
   "attendance.warningThresholdHint": "Schüler werden gewarnt, wenn sie nur X% über dem Minimum liegen (z.B. bei 5% → Warnung zwischen 75-80%)",
   "attendance.lowWarning": "Niedrige Anwesenheit",
   "attendance.criticalWarning": "Kritische Anwesenheit - Automatisch Nicht Genügend",
-  "attendance.atLimitWarning": "Am Limit",
+  "attendance.atLimitWarning": "Am anwesenheits Limit",
   "attendance.nearLimit": "Nahe am Limit",
   "attendance.edit": "Bearbeiten",
   "attendance.editEntry": "Eintrag bearbeiten",
