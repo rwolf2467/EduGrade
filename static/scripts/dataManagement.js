@@ -1449,7 +1449,7 @@ const renderActiveShare = (container, shareData, currentClass) => {
 
 // ============ Anwesenheits-Management ============
 
-function addAttendance(studentId, date, status, notes = '') {
+function addAttendance(studentId, date, status, notes = '', subjectId = null) {
   const validation = validateAttendanceInput(date, status, notes);
   if (!validation.isValid) {
     showAlertDialog(validation.error);
@@ -1464,14 +1464,15 @@ function addAttendance(studentId, date, status, notes = '') {
     return false;
   }
 
-  // Check if attendance already exists for this date
-  const existingIndex = student.participation.findIndex(p => p.date === date);
+  // Check if attendance already exists for this date and subject
+  const existingIndex = student.participation.findIndex(p => p.date === date && p.subjectId === subjectId);
 
   const attendanceEntry = {
     id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     date: date,
     status: status,
     notes: escapeHtml(notes),
+    subjectId: subjectId,
     createdAt: Date.now()
   };
 
@@ -1486,12 +1487,12 @@ function addAttendance(studentId, date, status, notes = '') {
   return true;
 }
 
-function bulkAddAttendance(attendanceData, date) {
+function bulkAddAttendance(attendanceData, date, subjectId = null) {
   // attendanceData = { studentId: { status, notes }, ... }
   let successCount = 0;
 
   Object.entries(attendanceData).forEach(([studentId, data]) => {
-    if (addAttendance(studentId, date, data.status, data.notes || '')) {
+    if (addAttendance(studentId, date, data.status, data.notes || '', subjectId)) {
       successCount++;
     }
   });
@@ -1575,10 +1576,19 @@ function openEditAttendanceDialog(studentId, attendanceId) {
     year: 'numeric'
   });
 
+  // Get subject name
+  const subjects = currentYear.subjects || [];
+  const subject = subjects.find(s => s.id === entry.subjectId);
+  const subjectName = subject ? subject.name : '—';
+
   const content = `
     <form id="edit-attendance-form" class="form grid gap-4">
       <div class="text-sm" style="color: oklch(.708 0 0);">
         <strong>${date}</strong>
+      </div>
+      <div class="grid gap-2">
+        <label class="text-sm font-medium">${t('attendance.subject')}</label>
+        <div class="text-sm" style="color: oklch(.708 0 0);">${escapeHtml(subjectName)}</div>
       </div>
       <div class="grid gap-2">
         <label for="edit-attendance-status" class="text-sm font-medium">${t('attendance.status')}</label>
@@ -1616,23 +1626,29 @@ function openEditAttendanceDialog(studentId, attendanceId) {
   });
 }
 
-function getAttendanceForDate(studentId, date) {
+function getAttendanceForDate(studentId, date, subjectId = null) {
   const currentYear = getCurrentYear();
   const student = currentYear.students.find(s => s.id === studentId);
   if (!student) return null;
 
-  return student.participation.find(p => p.date === date) || null;
+  return student.participation.find(p => p.date === date && p.subjectId === subjectId) || null;
 }
 
-function calculateAttendanceStats(studentId) {
+function calculateAttendanceStats(studentId, subjectId = null) {
   const currentYear = getCurrentYear();
   const student = currentYear.students.find(s => s.id === studentId);
   if (!student) return null;
 
-  const total = student.participation.length;
-  const present = student.participation.filter(p => p.status === 'present').length;
-  const absent = student.participation.filter(p => p.status === 'absent').length;
-  const late = student.participation.filter(p => p.status === 'late').length;
+  // Filter by subject if provided
+  let participation = student.participation;
+  if (subjectId !== null) {
+    participation = participation.filter(p => p.subjectId === subjectId);
+  }
+
+  const total = participation.length;
+  const present = participation.filter(p => p.status === 'present').length;
+  const absent = participation.filter(p => p.status === 'absent').length;
+  const late = participation.filter(p => p.status === 'late').length;
 
   // presentRate = (present + late) / total — Verspätete sind anwesend
   return {
@@ -1649,11 +1665,11 @@ function calculateAttendanceStats(studentId) {
  * Prüft den Anwesenheitsstatus eines Schülers gegen die Einstellungen.
  * Gibt zurück: 'critical' (unter Minimum), 'warning' (knapp darüber), 'ok'
  */
-function getAttendanceStatus(studentId) {
+function getAttendanceStatus(studentId, subjectId = null) {
   const settings = appData.attendanceSettings || { enabled: false, minAttendancePercent: 75, warningThreshold: 5 };
   if (!settings.enabled) return { status: 'ok', rate: null, hasData: false };
 
-  const stats = calculateAttendanceStats(studentId);
+  const stats = calculateAttendanceStats(studentId, subjectId);
   if (!stats || stats.total === 0) return { status: 'ok', rate: null, hasData: false };
 
   const rate = stats.presentRate;

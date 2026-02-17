@@ -26,6 +26,9 @@ A secure web application for teachers to manage student grades, classes, and per
 - **Customizable Categories** - Define grade categories with custom weights and names
 - **Plus/Minus Grade System** - Configurable percentage-based grading system with plus, neutral, and minus values
 - **Participation Tracking** - Track and record student participation grades
+- **Attendance Management** - Track student attendance (present, late, absent) with detailed statistics and history
+- **Automatic Attendance Warnings** - Teachers are automatically warned when students approach or fall below the minimum attendance requirement
+- **Auto-Grading for Attendance** - Optionally assign failing grades to students with critically low attendance
 - **Grade Percentage Ranges** - Customizable percentage-to-grade mapping
 - **Data Export/Import** - Backup and restore data in JSON format
 - **Dark/Light Mode** - Comfortable viewing in any environment
@@ -169,6 +172,41 @@ Students can view:
 - Performance charts
 - Subject information
 - Teacher name
+
+## Attendance Management
+
+EduGrade includes a comprehensive attendance tracking system to help teachers monitor student participation:
+
+### Features
+
+- **Track Attendance Status** - Mark students as present, late, or absent for each session
+- **Attendance Statistics** - View detailed statistics including total sessions, present/late/absent counts, and attendance rate
+- **Automatic Warnings** - Visual warnings in the student list when attendance drops near or below the minimum threshold
+- **Color-Coded Alerts**:
+  - 🟠 **Orange Warning**: Student is approaching the minimum attendance (within warning threshold)
+  - 🔴 **Red Critical**: Student has reached or fallen below the minimum attendance requirement
+- **Customizable Settings**:
+  - **Minimum Attendance (%)**: Set the minimum required attendance percentage (e.g., 75%)
+  - **Warning Threshold (%)**: Define how close to the limit a warning should appear (e.g., 5%)
+  - **Auto-Grading**: Optionally assign failing grades to students with critically low attendance
+- **Attendance History** - View complete attendance history for each student with dates and notes
+- **Bulk Entry** - Quickly record attendance for all students at once
+
+### How It Works
+
+1. Go to **Settings → Attendance** to configure thresholds
+2. Enable auto-grading if students should receive failing grades for low attendance
+3. Click **Attendance** button to record attendance for a session
+4. Select date and mark each student's status (present/late/absent)
+5. Add optional notes for absences or late arrivals
+6. Students at risk are automatically highlighted in the student list
+7. View detailed attendance stats in the student detail view
+
+### Example Configuration
+
+- **Minimum Attendance**: 75% (students must attend at least 75% of sessions)
+- **Warning Threshold**: 5% (warn when student is within 5% of the limit, i.e., at 80%)
+- **Auto-Grading**: Enabled (students below 75% automatically receive a failing grade)
 
 ## Detailed Student View
 

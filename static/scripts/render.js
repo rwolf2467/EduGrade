@@ -960,8 +960,8 @@ const renderStudents = () => {
             const weightedAvg = calculateWeightedAverage(filteredGrades);
             const gradeCount = filteredGrades.length;
 
-            // Anwesenheits-Check
-            const attendanceStatus = getAttendanceStatus(student.id);
+            // Anwesenheits-Check für aktuelles Fach
+            const attendanceStatus = getAttendanceStatus(student.id, currentYear.currentSubjectId);
             let finalGradeDisplay = calculateFinalGrade(weightedAvg);
             let attendanceBadge = '';
             let rowClass = '';
@@ -1499,7 +1499,12 @@ const renderClassStats = () => {
         if (avg > 0) {
             classAverages.push(avg);
             studentWithGradesCount++;
-            if (avg <= 4.5) passCount++;
+            
+            // Check attendance for current subject - student fails if attendance is critical
+            const attendanceStatus = getAttendanceStatus(student.id, currentYear.currentSubjectId);
+            const finalGrade = attendanceStatus.status === 'critical' ? 5 : avg;
+            
+            if (finalGrade <= 4.5) passCount++;
         }
     });
 
@@ -2302,8 +2307,9 @@ const renderStudentDetail = (studentId) => {
     const classAvg = calculateClassAverage();
     const numericGradeCount = filteredGrades.filter(g => !g.isPlusMinus).length;
 
-    // Check attendance status and override final grade if critical
-    const attendanceStatus = getAttendanceStatus(studentId);
+    // Check attendance status for current subject and override final grade if critical
+    const currentSubjectId = currentYear.currentSubjectId || null;
+    const attendanceStatus = getAttendanceStatus(studentId, currentSubjectId);
     if (attendanceStatus.status === 'critical') {
         finalGrade = '5';
     }
@@ -2400,8 +2406,8 @@ const renderStudentDetail = (studentId) => {
         if (statCards) statCards.parentNode.insertBefore(banner, statCards);
     }
 
-    // Update attendance statistics
-    const attendanceStats = calculateAttendanceStats(studentId);
+    // Update attendance statistics for current subject
+    const attendanceStats = calculateAttendanceStats(studentId, currentSubjectId);
     if (attendanceStats && attendanceStats.total > 0) {
         document.getElementById("student-attendance-total").textContent = attendanceStats.total;
         document.getElementById("student-attendance-present").textContent = attendanceStats.present;
@@ -3201,6 +3207,10 @@ function renderAttendanceDialog() {
   }
 
   const today = new Date().toISOString().split('T')[0];
+  
+  // Get subjects for the current class
+  const subjects = currentYear.subjects || [];
+  const currentSubjectId = currentYear.currentSubjectId || (subjects.length > 0 ? subjects[0].id : null);
 
   // Sort students alphabetically by last name, then first name
   const students = [...currentYear.students].sort((a, b) => {
@@ -3254,8 +3264,19 @@ function renderAttendanceDialog() {
     `;
   }).join('');
 
+  // Generate subject options
+  const subjectOptions = subjects.map(subject => 
+    `<option value="${safeAttr(subject.id)}" ${subject.id === currentSubjectId ? 'selected' : ''}>${escapeHtml(subject.name)}</option>`
+  ).join('');
+
   const content = `
     <form id="attendance-form" class="form grid gap-4">
+      <div class="grid gap-2">
+        <label for="attendance-subject">${t('attendance.subject')}</label>
+        <select id="attendance-subject" name="subject" class="select" required>
+          ${subjectOptions}
+        </select>
+      </div>
       <div class="grid gap-2">
         <label for="attendance-date">${t('attendance.date')}</label>
         <input type="date" id="attendance-date" name="date" class="input" value="${today}" required>
@@ -3271,6 +3292,7 @@ function renderAttendanceDialog() {
 
   showDialog('edit-dialog', t('attendance.title'), content, (formData) => {
     const date = formData.get('date');
+    const subjectId = formData.get('subject');
     const attendanceData = {};
 
     // Collect attendance data from selected buttons
@@ -3292,7 +3314,7 @@ function renderAttendanceDialog() {
       return;
     }
 
-    bulkAddAttendance(attendanceData, date);
+    bulkAddAttendance(attendanceData, date, subjectId);
   });
 
   // Attach click handlers to status buttons
@@ -3325,23 +3347,28 @@ function renderAttendanceDialog() {
       });
     });
 
-    // Pre-select based on existing attendance for the date
+    // Pre-select based on existing attendance for the date and subject
     const dateInput = document.getElementById('attendance-date');
-    if (dateInput) {
-      dateInput.addEventListener('change', () => {
-        updateAttendanceDialogForDate(dateInput.value);
-      });
+    const subjectSelect = document.getElementById('attendance-subject');
+    
+    if (dateInput && subjectSelect) {
+      const loadAttendanceForDateAndSubject = () => {
+        updateAttendanceDialogForDateAndSubject(dateInput.value, subjectSelect.value);
+      };
+      
+      dateInput.addEventListener('change', loadAttendanceForDateAndSubject);
+      subjectSelect.addEventListener('change', loadAttendanceForDateAndSubject);
 
       // Initial load
-      updateAttendanceDialogForDate(today);
+      updateAttendanceDialogForDateAndSubject(today, currentSubjectId);
     }
   }, 100);
 }
 
-function updateAttendanceDialogForDate(date) {
+function updateAttendanceDialogForDateAndSubject(date, subjectId) {
   document.querySelectorAll('.attendance-student-card').forEach(card => {
     const studentId = card.dataset.studentId;
-    const attendance = getAttendanceForDate(studentId, date);
+    const attendance = getAttendanceForDate(studentId, date, subjectId);
 
     // Reset all buttons to secondary
     const allBtns = card.querySelectorAll('.attendance-status-btn');
@@ -3396,10 +3423,13 @@ function renderStudentAttendanceList(student) {
   const attendanceList = document.getElementById('student-attendance-list');
   if (!attendanceList) return;
 
+  const currentYear = getCurrentYear();
+  const subjects = currentYear?.subjects || [];
+
   if (!student.participation || student.participation.length === 0) {
     attendanceList.innerHTML = `
       <tr>
-        <td colspan="4" class="text-center" style="color: oklch(.708 0 0);">
+        <td colspan="5" class="text-center" style="color: oklch(.708 0 0);">
           Keine Anwesenheitseinträge vorhanden
         </td>
       </tr>
@@ -3422,6 +3452,10 @@ function renderStudentAttendanceList(student) {
       year: 'numeric'
     });
 
+    // Get subject name
+    const subject = subjects.find(s => s.id === entry.subjectId);
+    const subjectName = subject ? subject.name : '—';
+
     // Status badge with color
     let statusBadge = '';
     let statusText = '';
@@ -3439,6 +3473,7 @@ function renderStudentAttendanceList(student) {
     return `
       <tr>
         <td>${escapeHtml(formattedDate)}</td>
+        <td>${escapeHtml(subjectName)}</td>
         <td>
           <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge}">
             ${escapeHtml(statusText)}

@@ -606,9 +606,11 @@
   "confirm.gradeDetails": "Details",
 
   "table.value": "Value",
+  "table.date": "Date",
 
   "attendance.title": "Attendance",
   "attendance.date": "Date",
+  "attendance.subject": "Subject",
   "attendance.students": "Students",
   "attendance.status": "Status",
   "attendance.present": "Present",

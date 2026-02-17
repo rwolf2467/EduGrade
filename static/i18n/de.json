@@ -606,9 +606,11 @@
   "confirm.gradeDetails": "Details",
 
   "table.value": "Wert",
+  "table.date": "Datum",
 
   "attendance.title": "Anwesenheit",
   "attendance.date": "Datum",
+  "attendance.subject": "Fach",
   "attendance.students": "Schüler",
   "attendance.status": "Status",
   "attendance.present": "Anwesend",
