@@ -368,6 +368,15 @@ document.getElementById("manage-categories").addEventListener("click", () => {
         }
     });
 
+    // Show/hide "Add Category" button based on active tab
+    const addCategoryBtn = document.getElementById("add-category");
+    if (addCategoryBtn) addCategoryBtn.classList.remove("invisible");
+    document.querySelectorAll("#manage-categories-tabs [role='tab']").forEach(tab => {
+        tab.addEventListener("click", () => {
+            if (addCategoryBtn) addCategoryBtn.classList.toggle("invisible", tab.id !== "tab-categories");
+        });
+    });
+
     document.getElementById("manage-categories-dialog").showModal();
 });
 
@@ -459,19 +468,19 @@ document.getElementById("add-category").addEventListener("click", () => {
         <div class="grid gap-2">
           <label class="block mb-2">${t("category.categoryName")}</label>
           <input type="text" name="name" class="input w-full" required>
-          <p class="text-sm" style="color: oklch(.708 0 0);">${t("category.categoryNameHint")}</p>
+          <p class="text-gray-400 text-sm">${t("category.categoryNameHint")}</p>
         </div>
         <div class="grid gap-2">
           <label class="block mb-2">${t("category.weight")}</label>
           <input type="number" name="weight" step="1" min="1" max="100" class="input w-full" required>
-          <p class="text-sm" style="color: oklch(.708 0 0);">${t("category.weightHint")} (${t("category.inPercent")})</p>
+          <p class="text-gray-400 text-sm">${t("category.weightHint")} (${t("category.inPercent")})</p>
         </div>
         <div class="grid gap-2">
           <label class="flex items-center gap-2">
             <input type="checkbox" name="onlyPlusMinus" class="checkbox">
             <span>${t("category.plusMinusOnly")}</span>
           </label>
-          <p class="text-sm" style="color: oklch(.708 0 0);">${t("category.plusMinusHint")}</p>
+          <p class="text-gray-400 text-sm">${t("category.plusMinusHint")}</p>
         </div>
       `;
 

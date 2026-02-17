@@ -61,7 +61,7 @@ const showLoadingOverlay = (title = t('loading.processing'), description = t('lo
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="status" aria-label="Loading" class="animate-spin size-4"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
                 </div>
                 <h3 class="text-lg font-semibold tracking-tight">${title}</h3>
-                <p class="text-muted-foreground text-sm/relaxed">${description}</p>
+                <p class="text-gray-400 text-sm/relaxed">${description}</p>
             </header>
         </div>
     `;
@@ -228,7 +228,7 @@ const showRateLimitDialog = (message = t("error.tooManyRequestsMsg")) => {
                     </div>
                 </header>
                 <section class="py-4">
-                    <p id="rate-limit-message" class="text-muted-foreground"></p>
+                    <p id="rate-limit-message" class="text-gray-400"></p>
                 </section>
                 <footer class="flex justify-end">
                     <button type="button" class="btn-primary" id="rate-limit-close">${t("error.understood")}</button>
@@ -285,8 +285,8 @@ const showSessionExpiredDialog = (message = t("error.sessionExpiredMsg")) => {
                     </div>
                 </header>
                 <section class="py-4">
-                    <p id="session-expired-message" class="text-muted-foreground"></p>
-                    <p class="text-sm mt-3" style="color: oklch(.708 0 0);">${t("error.localDataSaved")}</p>
+                    <p id="session-expired-message" class="text-gray-400"></p>
+                    <p class="text-gray-400 text-sm mt-3">${t("error.localDataSaved")}</p>
                 </section>
                 <footer class="flex justify-end">
                     <button type="button" class="btn-primary" id="session-expired-login">${t("error.logIn")}</button>
@@ -555,7 +555,7 @@ const showUnsavedChangesWarning = () => {
                     </div>
                 </header>
                 <section class="py-4">
-                    <p class="text-muted-foreground">${t('dialog.unsavedMessage')}</p>
+                    <p class="text-gray-400">${t('dialog.unsavedMessage')}</p>
                 </section>
                 <footer class="flex justify-end gap-2">
                     <button type="button" class="btn-outline" id="unsaved-back-btn">${t('dialog.unsavedBack')}</button>
@@ -652,7 +652,7 @@ const createEmptyState = (icon, title, description, buttons = [], learnMoreLink 
     ).join('');
 
     const learnMoreHtml = learnMoreLink ? `
-        <a href="${learnMoreLink}" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive underline-offset-4 hover:underline h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 text-muted-foreground">
+        <a href="${learnMoreLink}" class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive underline-offset-4 hover:underline h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 text-gray-400">
             ${t('emptyState.learnMore') || 'Learn More'}
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10" /><path d="M7 17 17 7" /></svg>
         </a>
@@ -665,7 +665,7 @@ const createEmptyState = (icon, title, description, buttons = [], learnMoreLink 
                     ${icon}
                 </div>
                 <h3 class="text-lg font-medium tracking-tight">${title}</h3>
-                <p class="text-muted-foreground [&>a:hover]:text-primary text-sm/relaxed [&>a]:underline [&>a]:underline-offset-4">
+                <p class="text-gray-400 [&>a:hover]:text-primary text-sm/relaxed [&>a]:underline [&>a]:underline-offset-4">
                     ${description}
                 </p>
             </header>

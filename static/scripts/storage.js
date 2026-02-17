@@ -345,6 +345,36 @@ const migrateData = () => {
         });
     }
 
+    // MIGRATION: defaultSubjects from string[] to object[]
+    if (appData.defaultSubjects && appData.defaultSubjects.length > 0) {
+        appData.defaultSubjects = appData.defaultSubjects.map(s => {
+            if (typeof s === 'string') {
+                return { name: s, minAttendancePercent: null, warningThreshold: null, attendanceAutoGrading: null };
+            }
+            if (!('minAttendancePercent' in s)) s.minAttendancePercent = null;
+            if (!('warningThreshold' in s)) s.warningThreshold = null;
+            if (!('attendanceAutoGrading' in s)) s.attendanceAutoGrading = null;
+            return s;
+        });
+    }
+
+    // MIGRATION: Add per-subject attendance settings fields to existing subjects
+    if (appData.classes) {
+        appData.classes.forEach(cls => {
+            if (cls.years) {
+                cls.years.forEach(year => {
+                    if (year.subjects) {
+                        year.subjects.forEach(subject => {
+                            if (!('minAttendancePercent' in subject)) subject.minAttendancePercent = null;
+                            if (!('warningThreshold' in subject)) subject.warningThreshold = null;
+                            if (!('attendanceAutoGrading' in subject)) subject.attendanceAutoGrading = null;
+                        });
+                    }
+                });
+            }
+        });
+    }
+
     // MIGRATION: Move categories from class level to global level
     if (!appData.categories) {
         appData.categories = [];
@@ -566,8 +596,8 @@ const showVersionUpdateDialog = () => {
                 </div>
             </header>
             <section class="py-4">
-                <p class="text-muted-foreground">${t('version.updateMessage')}</p>
-                <p class="text-sm mt-3" style="color: oklch(.708 0 0);">${t('version.reloadHint')}</p>
+                <p class="text-gray-400">${t('version.updateMessage')}</p>
+                <p class="text-gray-400 text-sm mt-3">${t('version.reloadHint')}</p>
             </section>
             <footer class="flex justify-end">
                 <button type="button" class="btn-primary" id="version-reload-btn">${t('version.reloadButton')}</button>

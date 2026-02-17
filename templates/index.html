@@ -54,19 +54,19 @@
                         <p data-i18n="setup.welcomeText">Welcome to EduGrade! A tool to help you manage and track
                             student grades effectively.</p>
                     </header>
-                    <section>
+                    <section class="overflow-y-auto max-h-[60vh]">
                         <form id="setup-form" class="form grid gap-6">
                             <div class="grid gap-2">
                                 <p class="text-lg font-medium">Welcome, <span class="text-primary font-semibold">{{
                                         user.username }}</span>!</p>
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="setup.welcomeSubtext">
+                                <p class="text-gray-400 text-sm" data-i18n="setup.welcomeSubtext">
                                     Great to have you here! Let's set up
                                     your first classroom.</p>
                             </div>
                             <div class="grid gap-2">
                                 <label for="class-name" data-i18n="setup.className">Class name (e.g., "1A")</label>
                                 <input type="text" id="class-name" class="input" value="1A">
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="setup.classHint">Create
+                                <p class="text-gray-400 text-sm" data-i18n="setup.classHint">Create
                                     your first class. You can
                                     always add more or make changes later.</p>
                             </div>
@@ -100,7 +100,7 @@
                                         <span data-i18n="setup.themeDark">Dark</span>
                                     </button>
                                 </div>
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="setup.themeHint">Choose
+                                <p class="text-gray-400 text-sm" data-i18n="setup.themeHint">Choose
                                     your preferred theme. You can change this anytime.</p>
                             </div>
                             <div class="grid gap-2">
@@ -115,7 +115,7 @@
                                         Deutsch
                                     </button>
                                 </div>
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="profile.languageHint">
+                                <p class="text-gray-400 text-sm" data-i18n="profile.languageHint">
                                     Choose your preferred language.</p>
                             </div>
                             <div class="grid gap-2">
@@ -127,8 +127,8 @@
                                         <span data-i18n="setup.addSubject">Add Subject</span>
                                     </button>
                                 </div>
-                                <div id="setup-subjects-list" class="flex flex-wrap gap-2 min-h-[32px]"></div>
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="setup.defaultSubjectsHint">
+                                <div id="setup-subjects-list" class="grid gap-1"></div>
+                                <p class="text-gray-400 text-sm" data-i18n="setup.defaultSubjectsHint">
                                     These subjects will be automatically created for new classes.</p>
                             </div>
                     </section>
@@ -148,7 +148,7 @@
                 <header>
                     <h2 data-i18n="import.title">Import Data</h2>
                 </header>
-                <section>
+                <section class="overflow-y-auto max-h-[60vh]">
                     <form id="import-form" class="form grid gap-6">
                         <div class="grid gap-2">
                             <label for="import-file" data-i18n="import.selectFile">Select JSON File</label>
@@ -346,7 +346,7 @@
                             <div>
                                 <p class="mb-2"><strong data-i18n="profile.clearAllDataWarning">This will delete all
                                         your data from the server!</strong></p>
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="profile.clearAllDataHint">
+                                <p class="text-gray-400 text-sm" data-i18n="profile.clearAllDataHint">
                                     All classes, students, and grades
                                     will be permanently deleted. Please export your data first if you want to keep a
                                     backup. This action cannot be undone.</p>
@@ -383,7 +383,7 @@
                     <div>
                         <header>
                             <h2 id="profile-dialog-title" data-i18n="profile.title">Profile</h2>
-                            <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="profile.subtitle">Manage your
+                            <p class="text-gray-400 text-sm" data-i18n="profile.subtitle">Manage your
                                 profile and account settings
                             </p>
                         </header>
@@ -392,7 +392,7 @@
                             <div class="p-4 rounded-lg">
                                 <h3 class="text-sm font-medium mb-2" data-i18n="profile.accountInfo">Account Information
                                 </h3>
-                                <div class="space-y-1 text-sm" style="color: oklch(.708 0 0);">
+                                <div class="space-y-1 text-sm text-gray-400">
                                     <p><span class="font-medium" data-i18n="profile.username">Username:</span> {{
                                         user.username }}</p>
                                     <p><span class="font-medium" data-i18n="profile.email">Email:</span> {{ user.email
@@ -406,7 +406,7 @@
                                     data-i18n="profile.displayName">Display Name</label>
                                 <input type="text" id="profile-teacher-name" class="input" placeholder="Your name"
                                     data-i18n-placeholder="profile.displayNamePlaceholder">
-                                <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="profile.displayNameHint">
+                                <p class="text-gray-400 text-sm" data-i18n="profile.displayNameHint">
                                     This name will be shown in the
                                     greeting message.</p>
                             </div>
@@ -417,7 +417,7 @@
                                     data-i18n="profile.school">School</label>
                                 <input type="text" id="profile-school" class="input"
                                     data-i18n-placeholder="profile.schoolPlaceholder" placeholder="Your school name">
-                                <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="profile.schoolHint">
+                                <p class="text-gray-400 text-sm" data-i18n="profile.schoolHint">
                                     Optional: Name of your school or
                                     educational institution.</p>
                             </div>
@@ -430,7 +430,7 @@
                                     <option value="en">English</option>
                                     <option value="de">Deutsch</option>
                                 </select>
-                                <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="profile.languageHint">
+                                <p class="text-gray-400 text-sm" data-i18n="profile.languageHint">
                                     Choose your preferred language.</p>
                             </div>
 
@@ -444,8 +444,8 @@
                                         <span data-i18n="profile.addSubject">Add Subject</span>
                                     </button>
                                 </div>
-                                <div id="profile-subjects-list" class="flex flex-wrap gap-2 min-h-[32px]"></div>
-                                <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="profile.defaultSubjectsHint">
+                                <div id="profile-subjects-list" class="grid gap-1"></div>
+                                <p class="text-gray-400 text-sm" data-i18n="profile.defaultSubjectsHint">
                                     These subjects will be automatically created for new classes.</p>
                             </div>
 
@@ -467,7 +467,7 @@
                                         <div>
                                             <p class="text-sm font-medium" data-i18n="profile.clearAllData">Clear All
                                                 Data</p>
-                                            <p class="text-xs" style="color: oklch(.708 0 0);"
+                                            <p class="text-gray-400 text-sm"
                                                 data-i18n="profile.clearDataDesc">Deletes all classes,
                                                 students and grades. Your account will be preserved.</p>
                                         </div>
@@ -482,7 +482,7 @@
                                         <div>
                                             <p class="text-sm font-medium" data-i18n="profile.deleteAccount">Delete
                                                 Account</p>
-                                            <p class="text-xs" style="color: oklch(.708 0 0);"
+                                            <p class="text-gray-400 text-sm"
                                                 data-i18n="profile.deleteAccountDesc">Permanently deletes your
                                                 account and all associated data.</p>
                                         </div>
@@ -530,7 +530,7 @@
                             <div>
                                 <p class="mb-2"><strong data-i18n="profile.deleteAccountWarning">This action cannot be
                                         undone!</strong></p>
-                                <p class="text-sm" style="color: oklch(.708 0 0);"
+                                <p class="text-gray-400 text-sm"
                                     data-i18n="profile.deleteAccountHint">Your account and all associated data
                                     will be permanently deleted. You will be logged out immediately.</p>
                             </div>
@@ -567,7 +567,7 @@
                         <header>
                             <h2 id="category-management-title" data-i18n="class.manageCategories">Manage Categories</h2>
                         </header>
-                        <section>
+                        <section class="overflow-y-auto max-h-[60vh]">
                             <div id="category-management-list" class="space-y-2"></div>
                         </section>
                         <footer class="flex justify-end gap-2">
@@ -590,7 +590,7 @@
                 <section id="home-view" class="mt-10">
                     <!-- Breadcrumb -->
                     <nav aria-label="Breadcrumb" class="mb-6">
-                        <ol class="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5">
+                        <ol class="text-gray-400 flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5">
                             <li class="inline-flex items-center gap-1.5">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -615,7 +615,7 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="home.totalClasses">
+                                    <p class="text-gray-400 text-sm" data-i18n="home.totalClasses">
                                         Total Classes</p>
                                     <p class="text-2xl font-bold" id="stat-total-classes">0</p>
                                 </div>
@@ -634,7 +634,7 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="home.totalStudents">
+                                    <p class="text-gray-400 text-sm" data-i18n="home.totalStudents">
                                         Total Students</p>
                                     <p class="text-2xl font-bold" id="stat-total-students">0</p>
                                 </div>
@@ -651,7 +651,7 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="home.overallAverage">
+                                    <p class="text-gray-400 text-sm" data-i18n="home.overallAverage">
                                         Overall Average</p>
                                     <p class="text-2xl font-bold" id="stat-overall-average">-</p>
                                 </div>
@@ -668,7 +668,7 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="home.totalGrades">
+                                    <p class="text-gray-400 text-sm" data-i18n="home.totalGrades">
                                         Total Grades</p>
                                     <p class="text-2xl font-bold" id="stat-total-grades">0</p>
                                 </div>
@@ -688,7 +688,7 @@
                 <section id="class-view" class="hidden mt-10">
                     <!-- Breadcrumb -->
                     <nav aria-label="Breadcrumb" class="mb-6">
-                        <ol id="class-view-breadcrumb" class="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5">
+                        <ol id="class-view-breadcrumb" class="text-gray-400 flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5">
                             <li class="inline-flex items-center gap-1.5">
                                 <a href="#" id="breadcrumb-home" class="hover:text-foreground transition-colors" data-i18n="nav.home">Home</a>
                             </li>
@@ -761,22 +761,22 @@
                         <!-- Class Stats -->
                         <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                             <div class="stat-card p-4 rounded-lg border">
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.classAverage">Class
+                                <p class="text-gray-400 text-sm" data-i18n="class.classAverage">Class
                                     Average</p>
                                 <p class="text-2xl font-bold" id="class-stat-average">-</p>
                             </div>
                             <div class="stat-card p-4 rounded-lg border">
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.students">Students
+                                <p class="text-gray-400 text-sm" data-i18n="class.students">Students
                                 </p>
                                 <p class="text-2xl font-bold" id="class-stat-students">0</p>
                             </div>
                             <div class="stat-card p-4 rounded-lg border">
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.totalGrades">Total
+                                <p class="text-gray-400 text-sm" data-i18n="class.totalGrades">Total
                                     Grades</p>
                                 <p class="text-2xl font-bold" id="class-stat-grades">0</p>
                             </div>
                             <div class="stat-card p-4 rounded-lg border">
-                                <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.passRate">Pass Rate
+                                <p class="text-gray-400 text-sm" data-i18n="class.passRate">Pass Rate
                                 </p>
                                 <p class="text-2xl font-bold" id="class-stat-pass-rate">-</p>
                             </div>
@@ -834,7 +834,7 @@
                 <section id="student-detail-view" class="hidden mt-10">
                     <!-- Breadcrumb -->
                     <nav aria-label="Breadcrumb" class="mb-6">
-                        <ol id="student-detail-breadcrumb" class="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5">
+                        <ol id="student-detail-breadcrumb" class="text-gray-400 flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5">
                             <li class="inline-flex items-center gap-1.5">
                                 <a href="#" id="breadcrumb-student-home" class="hover:text-foreground transition-colors" data-i18n="nav.home">Home</a>
                             </li>
@@ -901,29 +901,29 @@
                             <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                                 <div class="stat-card p-4 rounded-lg border">
                                     <div class="flex justify-between items-start mb-2">
-                                        <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.average">
+                                        <p class="text-gray-400 text-sm" data-i18n="student.average">
                                             Average</p>
                                         <span id="student-stat-average-percent"></span>
                                     </div>
                                     <p class="text-2xl font-bold" id="student-stat-average">-</p>
                                 </div>
                                 <div class="stat-card p-4 rounded-lg border">
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.finalGrade">
+                                    <p class="text-gray-400 text-sm" data-i18n="student.finalGrade">
                                         Final Grade</p>
                                     <p class="text-2xl font-bold" id="student-stat-final">-</p>
                                 </div>
                                 <div class="stat-card p-4 rounded-lg border">
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.trend">Trend
+                                    <p class="text-gray-400 text-sm" data-i18n="student.trend">Trend
                                     </p>
                                     <p class="text-2xl font-bold flex items-center gap-1" id="student-stat-trend">-</p>
                                 </div>
                                 <div class="stat-card p-4 rounded-lg border">
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.gradeCount">
+                                    <p class="text-gray-400 text-sm" data-i18n="student.gradeCount">
                                         Grade Count</p>
                                     <p class="text-2xl font-bold" id="student-stat-count">0</p>
                                 </div>
                                 <div class="stat-card p-4 rounded-lg border">
-                                    <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="student.vsClassAvg">
+                                    <p class="text-gray-400 text-sm" data-i18n="student.vsClassAvg">
                                         vs. Class Avg</p>
                                     <p class="text-2xl font-bold" id="student-stat-comparison">-</p>
                                 </div>
@@ -934,7 +934,7 @@
                                 <h3 class="text-lg font-semibold mb-3" data-i18n="attendance.title">Anwesenheit</h3>
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                     <div class="text-center">
-                                        <p class="text-sm mb-1" style="color: oklch(.708 0 0);">Gesamt</p>
+                                        <p class="text-gray-400 text-sm mb-1" data-i18n="attendance.total">Gesamt</p>
                                         <p class="text-2xl font-bold" id="student-attendance-total">0</p>
                                     </div>
                                     <div class="text-center">
@@ -951,12 +951,12 @@
                                     </div>
                                 </div>
                                 <div class="mb-3 text-center">
-                                    <p class="text-sm" style="color: oklch(.708 0 0);">Anwesenheitsrate: <span class="font-semibold" id="student-attendance-rate">0%</span></p>
+                                    <p class="text-gray-400 text-sm"><span data-i18n="attendance.rate">Anwesenheitsrate</span>: <span class="font-semibold" id="student-attendance-rate">0%</span></p>
                                 </div>
 
                                 <!-- Anwesenheitsliste -->
                                 <div class="mt-4 border-t pt-4">
-                                    <h4 class="text-sm font-semibold mb-2" style="color: oklch(.708 0 0);">Einzelne Einträge</h4>
+                                    <h4 class="text-gray-400 text-sm font-semibold mb-2" data-i18n="attendance.entries">Einzelne Einträge</h4>
                                     <div class="overflow-x-auto">
                                         <table class="table w-full text-sm">
                                             <thead>
@@ -1026,7 +1026,7 @@
                         <header>
                             <h2 id="edit-dialog-title"></h2>
                         </header>
-                        <section>
+                        <section class="overflow-y-auto max-h-[60vh]">
                             <form id="edit-form" class="form grid gap-4"></form>
                         </section>
                         <footer class="flex justify-end gap-2">
@@ -1053,7 +1053,7 @@
                         <header>
                             <h2 id="manage-categories-title" data-i18n="class.manageCategories">Manage Categories</h2>
                         </header>
-                        <section>
+                        <section class="overflow-y-auto max-h-[60vh]">
                             <div class="tabs w-full" id="manage-categories-tabs">
                                 <nav role="tablist" aria-orientation="horizontal" class="w-full">
                                     <button type="button" role="tab" id="tab-categories"
@@ -1081,7 +1081,7 @@
                                 <div role="tabpanel" id="panel-percentage" aria-labelledby="tab-percentage"
                                     tabindex="-1" aria-selected="false" hidden>
                                     <div class="py-4">
-                                        <p class="text-sm mb-4" style="color: oklch(.708 0 0);"
+                                        <p class="text-gray-400 text-sm mb-4"
                                             data-i18n="category.gradeRangesHint">Define the percentage
                                             ranges for each grade. These are used when entering grades as percentages.
                                         </p>
@@ -1141,7 +1141,7 @@
                                 <div role="tabpanel" id="panel-plusminus" aria-labelledby="tab-plusminus" tabindex="-1"
                                     aria-selected="false" hidden>
                                     <div class="py-4">
-                                        <p class="text-sm mb-3" style="color: oklch(.708 0 0);"
+                                        <p class="text-gray-400 text-sm mb-3"
                                             data-i18n="category.plusMinusSettingsHint">Configure the percentage values for +/~/- grades. These values are used to calculate the grade average for categories with +/~/- grades.</p>
                                         <div class="space-y-3">
                                             <div class="flex items-center gap-3">
@@ -1152,7 +1152,7 @@
                                                         <input type="number" id="plusminus-plus-percent" step="1" min="0"
                                                             max="100" class="input w-32" value="100">
                                                         <span class="text-sm">%</span>
-                                                        <span class="text-xs" style="color: oklch(.708 0 0);" data-i18n="category.plusHint">(Excellent performance)</span>
+                                                        <span class="text-gray-400 text-sm" data-i18n="category.plusHint">(Excellent performance)</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1164,7 +1164,7 @@
                                                         <input type="number" id="plusminus-neutral-percent" step="1" min="0"
                                                             max="100" class="input w-32" value="50">
                                                         <span class="text-sm">%</span>
-                                                        <span class="text-xs" style="color: oklch(.708 0 0);" data-i18n="category.neutralHint">(Average performance)</span>
+                                                        <span class="text-gray-400 text-sm" data-i18n="category.neutralHint">(Average performance)</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1176,7 +1176,7 @@
                                                         <input type="number" id="plusminus-minus-percent" step="1" min="0"
                                                             max="100" class="input w-32" value="0">
                                                         <span class="text-sm">%</span>
-                                                        <span class="text-xs" style="color: oklch(.708 0 0);" data-i18n="category.minusHint">(Poor performance)</span>
+                                                        <span class="text-gray-400 text-sm" data-i18n="category.minusHint">(Poor performance)</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1190,7 +1190,7 @@
                                 <div role="tabpanel" id="panel-attendance" aria-labelledby="tab-attendance" tabindex="-1"
                                     aria-selected="false" hidden>
                                     <div class="py-4">
-                                        <p class="text-sm mb-4" style="color: oklch(.708 0 0);"
+                                        <p class="text-gray-400 text-sm mb-4"
                                             data-i18n="attendance.autoGradingHint">
                                             When enabled, students with low attendance automatically receive a failing grade.
                                         </p>
@@ -1211,7 +1211,7 @@
                                                             max="100" class="input w-32" value="75">
                                                         <span class="text-sm">%</span>
                                                     </div>
-                                                    <p class="text-xs mt-1" style="color: oklch(.708 0 0);"
+                                                    <p class="text-gray-400 text-sm mt-1"
                                                         data-i18n="attendance.minPercentHint">
                                                         Students with less than this percentage automatically receive a grade of 5
                                                     </p>
@@ -1228,7 +1228,7 @@
                                                             max="20" class="input w-32" value="5">
                                                         <span class="text-sm">%</span>
                                                     </div>
-                                                    <p class="text-xs mt-1" style="color: oklch(.708 0 0);"
+                                                    <p class="text-gray-400 text-sm mt-1"
                                                         data-i18n="attendance.warningThresholdHint">
                                                         Students are warned when approaching this value
                                                     </p>
@@ -1285,8 +1285,8 @@
                             </svg>
                             <div class="flex-1">
                                 <p id="confirm-message" class="mb-3 font-semibold"></p>
-                                <div id="confirm-details" class="text-sm" style="color: oklch(.708 0 0);"></div>
-                                <p id="confirm-warning" class="text-sm mt-2 font-medium" style="color: oklch(.708 0 0);"></p>
+                                <div id="confirm-details" class="text-gray-400 text-sm"></div>
+                                <p id="confirm-warning" class="text-gray-400 text-sm mt-2 font-medium"></p>
                             </div>
                         </section>
                         <footer class="flex justify-end gap-2">
@@ -1313,7 +1313,7 @@
                         <header>
                             <h2 id="add-class-dialog-title" data-i18n="class.addClass">Add Class</h2>
                         </header>
-                        <section>
+                        <section class="overflow-y-auto max-h-[60vh]">
                             <form id="add-class-form" class="form grid gap-4">
                                 <div class="grid gap-2">
                                     <label for="class-name-input" class="block mb-2"
@@ -1345,10 +1345,10 @@
                     <div>
                         <header>
                             <h2 id="student-access-dialog-title" data-i18n="class.studentAccess">Student Access</h2>
-                            <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="class.studentAccessSubtitle">
+                            <p class="text-gray-400 text-sm" data-i18n="class.studentAccessSubtitle">
                                 Manage access link for students</p>
                         </header>
-                        <section>
+                        <section class="overflow-y-auto max-h-[60vh]">
                             <div id="student-access-content" class="py-2">
                                 <div class="flex items-center justify-center p-8">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -1381,7 +1381,7 @@
                         <header>
                             <h2 id="add-student-dialog-title" data-i18n="class.addStudent">Add Student</h2>
                         </header>
-                        <section>
+                        <section class="overflow-y-auto max-h-[60vh]">
                             <form id="add-student-form" class="form grid gap-4">
                                 <div class="grid gap-2">
                                     <label for="student-firstname-input" class="block mb-2"
@@ -1393,7 +1393,7 @@
                                     <label for="student-middlename-input" class="block mb-2"
                                         data-i18n="student.middleName">Middle Name</label>
                                     <input type="text" id="student-middlename-input" name="middleName" class="input w-full">
-                                    <p class="text-sm" style="color: oklch(.708 0 0);"
+                                    <p class="text-gray-400 text-sm"
                                         data-i18n="student.middleNameHint">Optional: if the student has a second first name.</p>
                                 </div>
                                 <div class="grid gap-2">
@@ -1435,7 +1435,7 @@
                         <header>
                             <h2 id="import-students-dialog-title" data-i18n="class.importStudents">Import Students</h2>
                         </header>
-                        <section>
+                        <section class="overflow-y-auto max-h-[60vh]">
                             <div class="grid gap-4">
                                 <div class="grid gap-2">
                                     <label for="import-students-file" class="block mb-2"
@@ -1452,7 +1452,7 @@
                                 <!-- Format explanation -->
                                 <div class="p-3 rounded-lg border bg-primary/5">
                                     <h3 class="text-sm font-semibold mb-2" data-i18n="import.csvFormat">CSV-Format</h3>
-                                    <p class="text-sm mb-3" style="color: oklch(.708 0 0);" data-i18n="import.csvFormatExplainer">Die CSV-Datei kann mit oder ohne Kopfzeile sein:</p>
+                                    <p class="text-gray-400 text-sm mb-3" data-i18n="import.csvFormatExplainer">Die CSV-Datei kann mit oder ohne Kopfzeile sein:</p>
 
                                     <div class="grid gap-3">
                                         <div>
@@ -1471,10 +1471,10 @@ Anna,,Schmidt</code></pre>
 
                                     <div class="mt-3">
                                         <p class="text-sm font-medium mb-1" data-i18n="import.csvNotes">Hinweise:</p>
-                                        <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="import.csvNote1">• Komma (,) oder Semikolon (;) als Trennzeichen</p>
-                                        <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="import.csvNote2">• Zweitname ist optional (kann leer bleiben)</p>
-                                        <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="import.csvNote3">• Mit Kopfzeile: Spalten werden automatisch erkannt</p>
-                                        <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="import.csvNote4">• Ohne Kopfzeile: Reihenfolge Vorname, Zweitname, Nachname</p>
+                                        <p class="text-gray-400 text-sm" data-i18n="import.csvNote1">• Komma (,) oder Semikolon (;) als Trennzeichen</p>
+                                        <p class="text-gray-400 text-sm" data-i18n="import.csvNote2">• Zweitname ist optional (kann leer bleiben)</p>
+                                        <p class="text-gray-400 text-sm" data-i18n="import.csvNote3">• Mit Kopfzeile: Spalten werden automatisch erkannt</p>
+                                        <p class="text-gray-400 text-sm" data-i18n="import.csvNote4">• Ohne Kopfzeile: Reihenfolge Vorname, Zweitname, Nachname</p>
                                     </div>
                                 </div>
 
@@ -1675,30 +1675,102 @@ Anna,,Schmidt</code></pre>
             });
 
             // Default Subjects Management
+            const buildSettingsSummary = (subject) => {
+                const parts = [];
+                if (subject.minAttendancePercent !== null) parts.push(`Min. ${subject.minAttendancePercent}% Anwesenheit`);
+                if (subject.warningThreshold !== null) parts.push(`Warnung +${subject.warningThreshold}%`);
+                if (subject.attendanceAutoGrading) parts.push('Auto-Grading');
+                return parts.length > 0 ? parts.join(' · ') : 'Globale Einstellung';
+            };
+
+
             const renderDefaultSubjects = (containerId) => {
                 const container = document.getElementById(containerId);
-                if (!appData.defaultSubjects) {
-                    appData.defaultSubjects = [];
+                if (!appData.defaultSubjects) appData.defaultSubjects = [];
+                const globalSettings = appData.attendanceSettings || { minAttendancePercent: 75, warningThreshold: 5 };
+
+                if (appData.defaultSubjects.length === 0) {
+                    container.innerHTML = `<p class="text-gray-400 text-sm py-2">${t("subject.noDefaultSubjects")}</p>`;
+                    return;
                 }
 
                 container.innerHTML = appData.defaultSubjects.map((subject, index) => `
-                    <div class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
-                        <span>${escapeHtml(subject)}</span>
-                        <button type="button" class="remove-subject-btn ml-1 hover:text-red-500 transition-colors" data-index="${index}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
+                    <div class="flex items-center gap-3 px-3 py-2 rounded-md border">
+                        <div class="flex-1 min-w-0">
+                            <span class="text-sm font-medium">${escapeHtml(subject.name)}</span>
+                            <span class="text-gray-400 text-sm ml-2">${escapeHtml(buildSettingsSummary(subject))}</span>
+                        </div>
+                        <button type="button" class="edit-subject-btn btn-sm-icon-outline shrink-0" data-index="${index}" title="${t("subject.editAttendanceTooltip")}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                        </button>
+                        <button type="button" class="remove-subject-btn btn-sm-icon-outline shrink-0" data-index="${index}" title="${t("subject.removeTooltip")}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
                     </div>
                 `).join('');
 
-                // Add event listeners to remove buttons
                 container.querySelectorAll('.remove-subject-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const index = parseInt(e.currentTarget.dataset.index);
+                    btn.addEventListener('click', () => {
+                        const index = parseInt(btn.dataset.index);
                         appData.defaultSubjects.splice(index, 1);
                         renderDefaultSubjects(containerId);
+                    });
+                });
+
+                container.querySelectorAll('.edit-subject-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const index = parseInt(btn.dataset.index);
+                        const subject = appData.defaultSubjects[index];
+                        const hasCustom = subject.minAttendancePercent !== null || subject.warningThreshold !== null || subject.attendanceAutoGrading !== null;
+                        const content = `
+                            <div class="grid gap-4">
+                                <div>
+                                    <p class="text-sm font-medium mb-1">${t("common.subject")}</p>
+                                    <p class="text-base font-semibold">${escapeHtml(subject.name)}</p>
+                                </div>
+                                <hr>
+                                <div class="grid gap-3">
+                                    <p class="text-sm font-medium">${t("subject.attendanceSectionTitle")}</p>
+                                    <p class="text-gray-400 text-sm">
+                                        ${t("subject.templateSyncHint", { name: escapeHtml(subject.name) })}
+                                    </p>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1">${t("subject.minAttendanceLabel")}</label>
+                                        <input type="number" name="minAttendancePercent" class="input w-full" min="0" max="100"
+                                            value="${subject.minAttendancePercent !== null ? subject.minAttendancePercent : ''}"
+                                            placeholder="Leer = global (${globalSettings.minAttendancePercent}%)">
+                                        <p class="text-gray-400 text-sm mt-1">${t("subject.minAttendanceTemplateHint")}</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1">${t("subject.warningThresholdLabel")}</label>
+                                        <input type="number" name="warningThreshold" class="input w-full" min="0" max="100"
+                                            value="${subject.warningThreshold !== null ? subject.warningThreshold : ''}"
+                                            placeholder="Leer = global (${globalSettings.warningThreshold}%)">
+                                        <p class="text-gray-400 text-sm mt-1">${t("subject.warningThresholdTemplateHint")}</p>
+                                    </div>
+                                    <label class="flex items-start gap-2 text-sm cursor-pointer">
+                                        <input type="checkbox" name="attendanceAutoGrading" class="checkbox mt-0.5" ${subject.attendanceAutoGrading ? 'checked' : ''}>
+                                        <span>
+                                            <span class="font-medium">${t("subject.autoGradingLabel")}</span><br>
+                                            <span class="text-gray-400 text-sm">${t("subject.autoGradingTemplateHint")}</span>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                        `;
+                        showDialog('edit-dialog', t("subject.attendanceDialogTitle", { name: escapeHtml(subject.name) }), content, (formData) => {
+                            const minVal = formData.get('minAttendancePercent');
+                            const warnVal = formData.get('warningThreshold');
+                            subject.minAttendancePercent = minVal !== '' ? Math.min(100, Math.max(0, Number(minVal))) : null;
+                            subject.warningThreshold = warnVal !== '' ? Math.min(100, Math.max(0, Number(warnVal))) : null;
+                            subject.attendanceAutoGrading = formData.has('attendanceAutoGrading') ? true : null;
+
+                            // Sync settings to all class subjects with this name
+                            syncSubjectByName(subject.name);
+
+                            renderDefaultSubjects(containerId);
+                            saveData(t("toast.attendanceSettingsSaved"), 'success');
+                        });
                     });
                 });
             };
@@ -1723,12 +1795,12 @@ Anna,,Schmidt</code></pre>
                     appData.defaultSubjects = [];
                 }
 
-                if (appData.defaultSubjects.includes(validation.value)) {
+                if (appData.defaultSubjects.some(s => s.name === validation.value)) {
                     showAlertDialog(t('validation.duplicateEntry'));
                     return;
                 }
 
-                appData.defaultSubjects.push(validation.value);
+                appData.defaultSubjects.push({ name: validation.value, minAttendancePercent: null, warningThreshold: null, attendanceAutoGrading: null });
                 renderDefaultSubjects('setup-subjects-list');
                 input.value = '';
                 input.focus();
@@ -1762,12 +1834,12 @@ Anna,,Schmidt</code></pre>
                     appData.defaultSubjects = [];
                 }
 
-                if (appData.defaultSubjects.includes(validation.value)) {
+                if (appData.defaultSubjects.some(s => s.name === validation.value)) {
                     showAlertDialog(t('validation.duplicateEntry'));
                     return;
                 }
 
-                appData.defaultSubjects.push(validation.value);
+                appData.defaultSubjects.push({ name: validation.value, minAttendancePercent: null, warningThreshold: null, attendanceAutoGrading: null });
                 renderDefaultSubjects('profile-subjects-list');
                 input.value = '';
                 input.focus();
@@ -1874,7 +1946,7 @@ Anna,,Schmidt</code></pre>
         });
     </script>
 
-    <footer class="fixed bottom-0 left-0 right-0 py-2 text-center text-xs" style="color: oklch(.708 0 0);">
+    <footer class="text-gray-400 fixed bottom-0 left-0 right-0 py-2 text-center text-xs">
         <p>
             Entwickelt von Fabian Murauer - Semester Abschlussprojekt 2025
             <span style="margin-left: 1rem; padding: 2px 8px; background: oklch(.2 0 0); border-radius: 4px; font-weight: 600; color: oklch(.9 0 0);">

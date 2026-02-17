@@ -40,12 +40,15 @@ const addClass = (name) => {
 
     if (appData.defaultSubjects && appData.defaultSubjects.length > 0) {
         // Use configured default subjects
-        subjects = appData.defaultSubjects.map((subjectName, index) => {
+        subjects = appData.defaultSubjects.map((subjectTemplate, index) => {
             const subjectId = Date.now().toString() + '-sub-' + Math.floor(Math.random() * 1000) + '-' + index;
             if (index === 0) firstSubjectId = subjectId;
             return {
                 id: subjectId,
-                name: subjectName
+                name: subjectTemplate.name,
+                minAttendancePercent: subjectTemplate.minAttendancePercent ?? null,
+                warningThreshold: subjectTemplate.warningThreshold ?? null,
+                attendanceAutoGrading: subjectTemplate.attendanceAutoGrading ?? null
             };
         });
     } else {
@@ -53,7 +56,10 @@ const addClass = (name) => {
         firstSubjectId = Date.now().toString() + '-sub-' + Math.floor(Math.random() * 1000);
         subjects = [{
             id: firstSubjectId,
-            name: t("class.defaultSubject")
+            name: t("class.defaultSubject"),
+            minAttendancePercent: null,
+            warningThreshold: null,
+            attendanceAutoGrading: null
         }];
     }
 
@@ -125,10 +131,13 @@ const addYear = (classId, name, copyFromYearId = null) => {
     if (copyFromYearId) {
         const sourceYear = cls.years.find(y => y.id === copyFromYearId);
         if (sourceYear) {
-            // Copy subjects (with new IDs)
+            // Copy subjects (with new IDs, preserving attendance settings)
             newYear.subjects = sourceYear.subjects.map(subj => ({
                 id: Date.now().toString() + '-sub-' + Math.floor(Math.random() * 10000),
-                name: subj.name
+                name: subj.name,
+                minAttendancePercent: subj.minAttendancePercent ?? null,
+                warningThreshold: subj.warningThreshold ?? null,
+                attendanceAutoGrading: subj.attendanceAutoGrading ?? null
             }));
 
             // Copy students (with new IDs, but NO grades)
@@ -705,14 +714,73 @@ const gradeToPercent = (grade) => {
 // ========== FÄCHER-VERWALTUNG (Subjects) ==========
 
 /**
+ * FACH-TEMPLATE AKTUALISIEREN (Upsert)
+ *
+ * Legt ein Fach in appData.defaultSubjects an oder aktualisiert es.
+ * Der Fachname ist der eindeutige Schlüssel.
+ *
+ * @param {string} name - Fachname
+ * @param {{ minAttendancePercent, warningThreshold, attendanceAutoGrading }} settings
+ */
+const upsertSubjectTemplate = (name, settings) => {
+    if (!appData.defaultSubjects) appData.defaultSubjects = [];
+    const existing = appData.defaultSubjects.find(t => t.name === name);
+    if (existing) {
+        existing.minAttendancePercent = settings.minAttendancePercent;
+        existing.warningThreshold = settings.warningThreshold;
+        existing.attendanceAutoGrading = settings.attendanceAutoGrading;
+    } else {
+        appData.defaultSubjects.push({
+            name,
+            minAttendancePercent: settings.minAttendancePercent,
+            warningThreshold: settings.warningThreshold,
+            attendanceAutoGrading: settings.attendanceAutoGrading
+        });
+    }
+};
+
+/**
+ * ALLE FÄCHER EINES NAMENS SYNCHRONISIEREN
+ *
+ * Liest die Anwesenheitseinstellungen aus dem Template (defaultSubjects)
+ * und schreibt sie in alle Fächer mit diesem Namen in allen Klassen/Jahrgängen.
+ *
+ * @param {string} name - Fachname
+ */
+const syncSubjectByName = (name) => {
+    if (!appData.defaultSubjects || !appData.classes) return;
+    const template = appData.defaultSubjects.find(t => t.name === name);
+    if (!template) return;
+    appData.classes.forEach(cls => {
+        if (!cls.years) return;
+        cls.years.forEach(year => {
+            if (!year.subjects) return;
+            year.subjects.forEach(subj => {
+                if (subj.name === name) {
+                    subj.minAttendancePercent = template.minAttendancePercent;
+                    subj.warningThreshold = template.warningThreshold;
+                    subj.attendanceAutoGrading = template.attendanceAutoGrading;
+                }
+            });
+        });
+    });
+};
+
+/**
  * FACH HINZUFÜGEN
  *
  * Erstellt ein neues Unterrichtsfach für die aktuelle Klasse.
+ * Anwesenheitseinstellungen werden aus dem globalen Template geerbt
+ * wenn nicht explizit angegeben. Änderungen werden in alle Fächer
+ * mit demselben Namen synchronisiert.
  *
  * @param {string} classId - ID der Klasse
  * @param {string} name - Name des Fachs (z.B. "Mathematik")
+ * @param {number|null} minAttendancePercent - Mindest-Anwesenheit (null = aus Template/global)
+ * @param {number|null} warningThreshold - Warnschwelle (null = aus Template/global)
+ * @param {boolean|null} attendanceAutoGrading - Auto-Grading (null = aus Template/global)
  */
-const addSubject = (classId, name) => {
+const addSubject = (classId, name, minAttendancePercent = null, warningThreshold = null, attendanceAutoGrading = null) => {
     const validation = validateStringInput(name, 50);
     if (!validation.isValid) {
         showAlertDialog(validation.error);
@@ -731,27 +799,47 @@ const addSubject = (classId, name) => {
         return;
     }
 
-    // Sicherstellen, dass subjects-Array existiert (Rückwärtskompatibilität)
     if (!currentYear.subjects) currentYear.subjects = [];
+
+    // Inherit from template if settings not explicitly provided
+    const template = appData.defaultSubjects?.find(t => t.name === validation.value);
+    const resolvedMin = minAttendancePercent !== null ? minAttendancePercent : (template?.minAttendancePercent ?? null);
+    const resolvedWarn = warningThreshold !== null ? warningThreshold : (template?.warningThreshold ?? null);
+    const resolvedAutoGrading = attendanceAutoGrading !== null ? attendanceAutoGrading : (template?.attendanceAutoGrading ?? null);
 
     const newSubject = {
         id: Date.now().toString() + '-' + Math.floor(Math.random() * 1000),
-        name: validation.value
+        name: validation.value,
+        minAttendancePercent: (resolvedMin !== null && !isNaN(resolvedMin)) ? Math.min(100, Math.max(0, Number(resolvedMin))) : null,
+        warningThreshold: (resolvedWarn !== null && !isNaN(resolvedWarn)) ? Math.min(100, Math.max(0, Number(resolvedWarn))) : null,
+        attendanceAutoGrading: resolvedAutoGrading !== null ? Boolean(resolvedAutoGrading) : null
     };
 
     currentYear.subjects.push(newSubject);
+
+    // Update global template and sync all subjects with this name
+    upsertSubjectTemplate(newSubject.name, newSubject);
+    syncSubjectByName(newSubject.name);
+
     saveData(t("toast.subjectAdded"), "success");
     renderSubjectTabs();
 };
 
 /**
- * FACH BEARBEITEN (Umbenennen)
+ * FACH BEARBEITEN
+ *
+ * Ändert Name und Anwesenheitseinstellungen eines Fachs.
+ * Aktualisiert das globale Template und synchronisiert alle Fächer
+ * mit demselben Namen in allen Klassen und Jahrgängen.
  *
  * @param {string} classId - ID der Klasse
  * @param {string} subjectId - ID des Fachs
  * @param {string} newName - Neuer Name
+ * @param {number|null} minAttendancePercent - Mindest-Anwesenheit
+ * @param {number|null} warningThreshold - Warnschwelle
+ * @param {boolean|null} attendanceAutoGrading - Auto-Grading
  */
-const editSubject = (classId, subjectId, newName) => {
+const editSubject = (classId, subjectId, newName, minAttendancePercent = null, warningThreshold = null, attendanceAutoGrading = null) => {
     const validation = validateStringInput(newName, 50);
     if (!validation.isValid) {
         showAlertDialog(validation.error);
@@ -767,6 +855,14 @@ const editSubject = (classId, subjectId, newName) => {
     const subject = currentYear.subjects.find(s => s.id === subjectId);
     if (subject) {
         subject.name = validation.value;
+        subject.minAttendancePercent = (minAttendancePercent !== null && !isNaN(minAttendancePercent)) ? Math.min(100, Math.max(0, Number(minAttendancePercent))) : null;
+        subject.warningThreshold = (warningThreshold !== null && !isNaN(warningThreshold)) ? Math.min(100, Math.max(0, Number(warningThreshold))) : null;
+        subject.attendanceAutoGrading = attendanceAutoGrading !== null ? Boolean(attendanceAutoGrading) : null;
+
+        // Update global template and sync all subjects with this name
+        upsertSubjectTemplate(subject.name, subject);
+        syncSubjectByName(subject.name);
+
         saveData(t("toast.subjectRenamed"), "success");
         renderSubjectTabs();
         renderStudents();
@@ -878,7 +974,7 @@ const renderCreateShare = (container, currentClass) => {
 
     container.innerHTML = `
         <div class="space-y-4">
-            <p class="text-sm" style="color: oklch(.708 0 0);">
+            <p class="text-gray-400 text-sm">
                 ${t("share.createLink", { name: escapeHtml(currentClass.name) })}
             </p>
 
@@ -1053,7 +1149,7 @@ const renderPinListView = (container, token, pins, currentClass) => {
         <div class="space-y-4">
             <div class="p-3 rounded-lg border bg-green-500/10 border-green-500/30">
                 <p class="text-sm font-medium text-green-500 mb-1">${t("share.accessCreated")}</p>
-                <p class="text-xs" style="color: oklch(.708 0 0);">${t("share.pinWarning")}</p>
+                <p class="text-gray-400 text-sm">${t("share.pinWarning")}</p>
             </div>
 
             <div class="grid gap-2">
@@ -1080,7 +1176,7 @@ const renderPinListView = (container, token, pins, currentClass) => {
                     </div>
                     <img id="qr-code-image" class="hidden max-w-xs max-h-xs" alt="${t("share.qrCodeAlt")}">
                 </div>
-                <p class="text-xs mt-2 text-center" style="color: oklch(.708 0 0);">${t("share.qrCodeDescription")}</p>
+                <p class="text-gray-400 text-sm mt-2 text-center">${t("share.qrCodeDescription")}</p>
             </div>
 
             <div>
@@ -1242,7 +1338,7 @@ const renderActiveShare = (container, shareData, currentClass) => {
                     <div class="w-2 h-2 rounded-full bg-green-500"></div>
                     <span class="text-sm font-medium">${t("share.accessActive")}</span>
                 </div>
-                <p class="text-xs" style="color: oklch(.708 0 0);">${t("share.validUntil", { date: escapeHtml(expiresFormatted), count: shareData.student_count })}</p>
+                <p class="text-gray-400 text-sm">${t("share.validUntil", { date: escapeHtml(expiresFormatted), count: shareData.student_count })}</p>
             </div>
 
             <div class="grid gap-2">
@@ -1269,7 +1365,7 @@ const renderActiveShare = (container, shareData, currentClass) => {
                     </div>
                     <img id="qr-code-image" class="hidden max-w-xs max-h-xs" alt="${t("share.qrCodeAlt")}">
                 </div>
-                <p class="text-xs mt-2 text-center" style="color: oklch(.708 0 0);">${t("share.qrCodeDescription")}</p>
+                <p class="text-gray-400 text-sm mt-2 text-center">${t("share.qrCodeDescription")}</p>
             </div>
 
             ${subjectCheckboxes}
@@ -1583,12 +1679,12 @@ function openEditAttendanceDialog(studentId, attendanceId) {
 
   const content = `
     <form id="edit-attendance-form" class="form grid gap-4">
-      <div class="text-sm" style="color: oklch(.708 0 0);">
+      <div class="text-gray-400 text-sm">
         <strong>${date}</strong>
       </div>
       <div class="grid gap-2">
         <label class="text-sm font-medium">${t('attendance.subject')}</label>
-        <div class="text-sm" style="color: oklch(.708 0 0);">${escapeHtml(subjectName)}</div>
+        <div class="text-gray-400 text-sm">${escapeHtml(subjectName)}</div>
       </div>
       <div class="grid gap-2">
         <label for="edit-attendance-status" class="text-sm font-medium">${t('attendance.status')}</label>
@@ -1601,7 +1697,7 @@ function openEditAttendanceDialog(studentId, attendanceId) {
       <div class="grid gap-2">
         <label for="edit-attendance-notes" class="text-sm font-medium">${t('attendance.notes')}</label>
         <textarea id="edit-attendance-notes" name="edit-attendance-notes" class="textarea" rows="3" maxlength="200">${escapeHtml(entry.notes || '')}</textarea>
-        <p class="text-xs" style="color: oklch(.708 0 0);">${t('attendance.notesHint') || 'Optional'}</p>
+        <p class="text-gray-400 text-sm">${t('attendance.notesHint') || 'Optional'}</p>
       </div>
     </form>
   `;
@@ -1666,7 +1762,22 @@ function calculateAttendanceStats(studentId, subjectId = null) {
  * Gibt zurück: 'critical' (unter Minimum), 'warning' (knapp darüber), 'ok'
  */
 function getAttendanceStatus(studentId, subjectId = null) {
-  const settings = appData.attendanceSettings || { enabled: false, minAttendancePercent: 75, warningThreshold: 5 };
+  const globalSettings = appData.attendanceSettings || { enabled: false, minAttendancePercent: 75, warningThreshold: 5 };
+
+  // Merge subject-specific settings with global fallback
+  let settings = { ...globalSettings };
+  if (subjectId !== null) {
+    const currentYear = getCurrentYear();
+    const subject = currentYear?.subjects?.find(s => s.id === subjectId);
+    if (subject) {
+      settings = {
+        enabled: subject.attendanceAutoGrading ?? globalSettings.enabled,
+        minAttendancePercent: subject.minAttendancePercent ?? globalSettings.minAttendancePercent,
+        warningThreshold: subject.warningThreshold ?? globalSettings.warningThreshold
+      };
+    }
+  }
+
   if (!settings.enabled) return { status: 'ok', rate: null, hasData: false };
 
   const stats = calculateAttendanceStats(studentId, subjectId);

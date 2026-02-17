@@ -262,11 +262,11 @@ const showTutorialPrompt = () => {
         <div class="tutorial-overlay"></div>
         <div class="tutorial-dialog" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">
             <h3 class="text-xl font-semibold mb-3">${escapeHtml(t("tutorial.prompt"))}</h3>
-            <p class="mb-4" style="color: oklch(.708 0 0);">${escapeHtml(t("tutorial.promptSubtext"))}</p>
+            <p class="text-gray-400 mb-4">${escapeHtml(t("tutorial.promptSubtext"))}</p>
             <div class="flex justify-between items-center">
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" class="checkbox" id="tutorial-never-again">
-                    <span class="text-sm" style="color: oklch(.708 0 0);">${escapeHtml(t("tutorial.dontShowAgain"))}</span>
+                    <span class="text-gray-400 text-sm">${escapeHtml(t("tutorial.dontShowAgain"))}</span>
                 </label>
                 <div class="flex gap-2">
                     <button type="button" class="btn-outline" id="tutorial-skip">${escapeHtml(t("tutorial.skip"))}</button>
@@ -422,10 +422,10 @@ const renderTutorialStep = (step, stepIndex) => {
         <div class="tutorial-dialog-content">
             <div class="flex justify-between items-center mb-2">
                 <div class="tutorial-progress">${progressDots}</div>
-                <span class="text-xs" style="color: oklch(.708 0 0);">${stepNumber}</span>
+                <span class="text-gray-400 text-sm">${stepNumber}</span>
             </div>
             <h3 class="text-lg font-semibold mb-2">${escapeHtml(step.title)}</h3>
-            <p class="mb-4" style="color: oklch(.708 0 0); white-space: pre-line;">${escapeHtml(step.content)}</p>
+            <p class="text-gray-400 mb-4" style="white-space: pre-line;">${escapeHtml(step.content)}</p>
             ${waitingHint}
             <div class="flex justify-between items-center mt-4">
                 <button type="button" class="btn-outline" id="tutorial-skip-btn">

@@ -89,7 +89,7 @@ const renderClassList = () => {
                     <div class="grid gap-2">
                         <label class="block mb-2">${t("class.newClassName")}</label>
                         <input type="text" name="name" class="input w-full" value="${escapeHtml(cls.name)}" required maxlength="100">
-                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("class.renameHint")}<p>
+                        <p class="text-gray-400 text-sm">${t("class.renameHint")}<p>
                     </div>
                 `;
                 showDialog("edit-dialog", t("class.editClass"), content, (formData) => {
@@ -272,7 +272,7 @@ const showAddYearDialog = (classId) => {
                 <input type="checkbox" name="useSchoolYearFormat" id="use-school-year-format" class="checkbox" checked>
                 <span>${t("year.useSchoolYearFormat")}</span>
             </label>
-            <p class="text-sm" style="color: oklch(.708 0 0);">${t("year.schoolYearFormatHint")}</p>
+            <p class="text-gray-400 text-sm">${t("year.schoolYearFormatHint")}</p>
         </div>
         ${previousYear ? `
             <div class="grid gap-2 mt-3">
@@ -280,7 +280,7 @@ const showAddYearDialog = (classId) => {
                     <input type="checkbox" name="copyFromPrevious" id="copy-from-previous" class="checkbox" checked>
                     <span>${t("year.copyFromPrevious").replace('{name}', escapeHtml(previousYear.name))}</span>
                 </label>
-                <p class="text-sm" style="color: oklch(.708 0 0);">${t("year.copyHint")}</p>
+                <p class="text-gray-400 text-sm">${t("year.copyHint")}</p>
             </div>
         ` : ''}
     `;
@@ -448,16 +448,183 @@ const renderSubjectTabs = () => {
     if (addBtn) {
         addBtn.addEventListener("click", () => {
             const currentClass = getCurrentClass();
+            const globalSettings = appData.attendanceSettings || { minAttendancePercent: 75, warningThreshold: 5 };
+
+            // Collect known subject templates (defaultSubjects first, then any names used in classes)
+            const knownSubjects = new Map(); // name → template object
+            if (appData.defaultSubjects) {
+                appData.defaultSubjects.forEach(tmpl => knownSubjects.set(tmpl.name, tmpl));
+            }
+            if (appData.classes) {
+                appData.classes.forEach(cls => {
+                    if (cls.years) cls.years.forEach(year => {
+                        if (year.subjects) year.subjects.forEach(s => {
+                            if (!knownSubjects.has(s.name)) {
+                                knownSubjects.set(s.name, { name: s.name, minAttendancePercent: null, warningThreshold: null, attendanceAutoGrading: null });
+                            }
+                        });
+                    });
+                });
+            }
+            const sortedTemplates = [...knownSubjects.values()].sort((a, b) => a.name.localeCompare(b.name));
+            const chipsHtml = sortedTemplates.map(tmpl => {
+                const hasCustom = tmpl.minAttendancePercent !== null || tmpl.warningThreshold !== null || tmpl.attendanceAutoGrading !== null;
+                const tooltip = hasCustom
+                    ? safeAttr(t("subject.chipTooltipCustom", { min: tmpl.minAttendancePercent ?? '?' }))
+                    : safeAttr(t("subject.chipTooltipGlobal"));
+                return `<button type="button" class="btn-sm-outline" data-chip-name="${safeAttr(tmpl.name)}" title="${tooltip}">${escapeHtml(tmpl.name)}</button>`;
+            }).join('');
+
             const content = `
-                <div class="grid gap-2">
-                    <label class="block mb-2">${t("subject.subjectName")}</label>
-                    <input type="text" name="name" class="input w-full" required maxlength="50" placeholder="${t("subject.subjectPlaceholder")}">
-                    <p class="text-sm" style="color: oklch(.708 0 0);">${t("subject.subjectHint")}</p>
+                <div class="grid gap-3">
+                    <div>
+                        <p class="text-sm font-medium mb-1">${t("subject.knownSubjects")}</p>
+                        <div class="flex flex-wrap gap-1" id="subject-chips-container">
+                            ${chipsHtml}
+                            <button type="button" id="add-chip-btn" class="btn-sm-icon-outline" title="${t("subject.addChipTooltip")}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16m8-8H4"/></svg>
+                            </button>
+                        </div>
+                        <div id="new-chip-row" class="hidden flex gap-1 mt-2">
+                            <input type="text" id="new-chip-input" class="input flex-1" placeholder="${t("subject.newChipPlaceholder")}" maxlength="50">
+                            <button type="button" id="confirm-new-chip" class="btn-sm-primary">OK</button>
+                            <button type="button" id="cancel-new-chip" class="btn-sm-outline">✕</button>
+                        </div>
+                        <p class="text-gray-400 text-sm mt-2">${t("subject.chipsHint")}</p>
+                    </div>
+                    <hr>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium">${t("subject.subjectName")}</label>
+                        <input type="text" name="name" id="subject-name-input" class="input w-full" required maxlength="50" placeholder="${t("subject.subjectPlaceholder")}">
+                        <p class="text-gray-400 text-sm mt-1">${t("subject.nameShareHint")}</p>
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                            <input type="checkbox" id="custom-attendance-toggle" class="checkbox">
+                            <span>${t("subject.attendanceToggleLabel")}</span>
+                        </label>
+                        <p class="text-gray-400 text-sm mt-1">${t("subject.attendanceGlobalFallbackHint", { min: globalSettings.minAttendancePercent, warn: globalSettings.warningThreshold })}</p>
+                    </div>
+                    <div id="custom-attendance-fields" class="grid gap-3 hidden pl-1 border-l-2 border-border">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">${t("subject.minAttendanceLabel")}</label>
+                            <input type="number" name="minAttendancePercent" class="input w-full" min="0" max="100" placeholder="${globalSettings.minAttendancePercent}">
+                            <p class="text-gray-400 text-sm mt-1">${t("subject.minAttendanceHint")}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">${t("subject.warningThresholdLabel")}</label>
+                            <input type="number" name="warningThreshold" class="input w-full" min="0" max="100" placeholder="${globalSettings.warningThreshold}">
+                            <p class="text-gray-400 text-sm mt-1">${t("subject.warningThresholdHint")}</p>
+                        </div>
+                        <label class="flex items-start gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" name="attendanceAutoGrading" class="checkbox mt-0.5">
+                            <span>
+                                <span class="font-medium">${t("subject.autoGradingLabel")}</span><br>
+                                <span class="text-gray-400 text-sm">${t("subject.autoGradingHint")}</span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
             `;
+
             showDialog("edit-dialog", t("subject.addSubject"), content, (formData) => {
-                addSubject(currentClass.id, formData.get("name"));
+                const useCustom = document.getElementById("custom-attendance-toggle")?.checked;
+                const minAttendancePercent = useCustom ? (formData.get("minAttendancePercent") !== "" ? Number(formData.get("minAttendancePercent")) : null) : null;
+                const warningThreshold = useCustom ? (formData.get("warningThreshold") !== "" ? Number(formData.get("warningThreshold")) : null) : null;
+                const attendanceAutoGrading = useCustom ? formData.has("attendanceAutoGrading") : null;
+                addSubject(currentClass.id, formData.get("name"), minAttendancePercent, warningThreshold, attendanceAutoGrading);
             });
+
+            // Chip click: fill name + pre-fill attendance settings from template
+            document.querySelectorAll('[data-chip-name]').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const name = chip.dataset.chipName;
+                    const tmpl = knownSubjects.get(name) || {};
+                    const nameInput = document.getElementById('subject-name-input');
+                    if (nameInput) nameInput.value = name;
+
+                    const hasCustom = tmpl.minAttendancePercent !== null || tmpl.warningThreshold !== null || tmpl.attendanceAutoGrading !== null;
+                    const toggle = document.getElementById('custom-attendance-toggle');
+                    const fields = document.getElementById('custom-attendance-fields');
+                    if (toggle && fields) {
+                        toggle.checked = hasCustom;
+                        fields.classList.toggle('hidden', !hasCustom);
+                    }
+                    if (hasCustom) {
+                        const minInput = document.querySelector('#edit-dialog [name="minAttendancePercent"]');
+                        const warnInput = document.querySelector('#edit-dialog [name="warningThreshold"]');
+                        const autoInput = document.querySelector('#edit-dialog [name="attendanceAutoGrading"]');
+                        if (minInput) minInput.value = tmpl.minAttendancePercent !== null ? tmpl.minAttendancePercent : '';
+                        if (warnInput) warnInput.value = tmpl.warningThreshold !== null ? tmpl.warningThreshold : '';
+                        if (autoInput) autoInput.checked = !!tmpl.attendanceAutoGrading;
+                    }
+                });
+            });
+
+            // "+" button: show new-chip input row
+            const addChipBtn = document.getElementById('add-chip-btn');
+            const newChipRow = document.getElementById('new-chip-row');
+            const newChipInput = document.getElementById('new-chip-input');
+            const confirmNewChip = document.getElementById('confirm-new-chip');
+            const cancelNewChip = document.getElementById('cancel-new-chip');
+
+            addChipBtn?.addEventListener('click', () => {
+                newChipRow?.classList.remove('hidden');
+                newChipInput?.focus();
+            });
+
+            cancelNewChip?.addEventListener('click', () => {
+                newChipRow?.classList.add('hidden');
+                if (newChipInput) newChipInput.value = '';
+            });
+
+            const addNewChip = () => {
+                const name = newChipInput?.value?.trim();
+                if (!name) return;
+
+                // Persist to defaultSubjects in memory (saved on next saveData call)
+                if (!appData.defaultSubjects) appData.defaultSubjects = [];
+                if (!appData.defaultSubjects.some(s => s.name === name)) {
+                    appData.defaultSubjects.push({ name, minAttendancePercent: null, warningThreshold: null, attendanceAutoGrading: null });
+                }
+
+                // Insert chip before the "+" button
+                const chipsContainer = document.getElementById('subject-chips-container');
+                const plusBtn = document.getElementById('add-chip-btn');
+                if (chipsContainer && plusBtn) {
+                    const chipEl = document.createElement('button');
+                    chipEl.type = 'button';
+                    chipEl.className = 'btn-sm-outline';
+                    chipEl.dataset.chipName = name;
+                    chipEl.textContent = name;
+                    chipEl.addEventListener('click', () => {
+                        const nameInput = document.getElementById('subject-name-input');
+                        if (nameInput) nameInput.value = name;
+                    });
+                    chipsContainer.insertBefore(chipEl, plusBtn);
+                }
+
+                // Fill name input and close the row
+                const nameInput = document.getElementById('subject-name-input');
+                if (nameInput) nameInput.value = name;
+                newChipRow?.classList.add('hidden');
+                if (newChipInput) newChipInput.value = '';
+            };
+
+            confirmNewChip?.addEventListener('click', addNewChip);
+            newChipInput?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); addNewChip(); }
+                if (e.key === 'Escape') { newChipRow?.classList.add('hidden'); if (newChipInput) newChipInput.value = ''; }
+            });
+
+            // Toggle attendance fields
+            const toggle = document.getElementById("custom-attendance-toggle");
+            const fields = document.getElementById("custom-attendance-fields");
+            if (toggle && fields) {
+                toggle.addEventListener("change", () => {
+                    fields.classList.toggle("hidden", !toggle.checked);
+                });
+            }
         });
     }
 
@@ -469,15 +636,62 @@ const renderSubjectTabs = () => {
             const subjectId = btn.dataset.editSubject;
             const subject = currentYear.subjects.find(s => s.id === subjectId);
             if (subject) {
+                const hasCustom = subject.minAttendancePercent !== null || subject.warningThreshold !== null || subject.attendanceAutoGrading !== null;
+                const globalSettings = appData.attendanceSettings || { minAttendancePercent: 75, warningThreshold: 5 };
                 const content = `
-                    <div class="grid gap-2">
-                        <label class="block mb-2">${t("subject.newSubjectName")}</label>
-                        <input type="text" name="name" class="input w-full" value="${escapeHtml(subject.name)}" required maxlength="50">
+                    <div class="grid gap-3">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">${t("subject.newSubjectName")}</label>
+                            <input type="text" name="name" class="input w-full" value="${escapeHtml(subject.name)}" required maxlength="50">
+                            <p class="text-gray-400 text-sm mt-1">${t("subject.renameOnlyThisHint")}</p>
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                                <input type="checkbox" id="custom-attendance-toggle" class="checkbox" ${hasCustom ? 'checked' : ''}>
+                                <span>${t("subject.attendanceToggleLabel")}</span>
+                            </label>
+                            <p class="text-gray-400 text-sm mt-1">${t("subject.attendanceSyncHint", { name: escapeHtml(subject.name) })}</p>
+                        </div>
+                        <div id="custom-attendance-fields" class="grid gap-3 ${hasCustom ? '' : 'hidden'} pl-1 border-l-2 border-border">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">${t("subject.minAttendanceLabel")}</label>
+                                <input type="number" name="minAttendancePercent" class="input w-full" min="0" max="100"
+                                    value="${subject.minAttendancePercent !== null ? subject.minAttendancePercent : ''}"
+                                    placeholder="${globalSettings.minAttendancePercent} (global)">
+                                <p class="text-gray-400 text-sm mt-1">${t("subject.minAttendanceEditHint", { global: globalSettings.minAttendancePercent })}</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">${t("subject.warningThresholdLabel")}</label>
+                                <input type="number" name="warningThreshold" class="input w-full" min="0" max="100"
+                                    value="${subject.warningThreshold !== null ? subject.warningThreshold : ''}"
+                                    placeholder="${globalSettings.warningThreshold} (global)">
+                                <p class="text-gray-400 text-sm mt-1">${t("subject.warningThresholdEditHint", { global: globalSettings.warningThreshold })}</p>
+                            </div>
+                            <label class="flex items-start gap-2 text-sm cursor-pointer">
+                                <input type="checkbox" name="attendanceAutoGrading" class="checkbox mt-0.5" ${subject.attendanceAutoGrading ? 'checked' : ''}>
+                                <span>
+                                    <span class="font-medium">${t("subject.autoGradingLabel")}</span><br>
+                                    <span class="text-gray-400 text-sm">${t("subject.autoGradingHint")}</span>
+                                </span>
+                            </label>
+                        </div>
                     </div>
                 `;
                 showDialog("edit-dialog", t("subject.editSubject"), content, (formData) => {
-                    editSubject(currentClass.id, subjectId, formData.get("name"));
+                    const useCustom = document.getElementById("custom-attendance-toggle")?.checked;
+                    const minAttendancePercent = useCustom ? (formData.get("minAttendancePercent") !== "" ? Number(formData.get("minAttendancePercent")) : null) : null;
+                    const warningThreshold = useCustom ? (formData.get("warningThreshold") !== "" ? Number(formData.get("warningThreshold")) : null) : null;
+                    const attendanceAutoGrading = useCustom ? formData.has("attendanceAutoGrading") : null;
+                    editSubject(currentClass.id, subjectId, formData.get("name"), minAttendancePercent, warningThreshold, attendanceAutoGrading);
                 });
+                // Toggle visibility of custom fields
+                const toggle = document.getElementById("custom-attendance-toggle");
+                const fields = document.getElementById("custom-attendance-fields");
+                if (toggle && fields) {
+                    toggle.addEventListener("change", () => {
+                        fields.classList.toggle("hidden", !toggle.checked);
+                    });
+                }
             }
         });
     });
@@ -601,7 +815,7 @@ const openAddGradeDialog = (studentId, onSuccess) => {
     <div class="grid gap-2">
       <label class="block mb-2">${t("grade.gradeDate")}</label>
       <input type="date" name="gradeDate" class="input w-full" value="${today}" required>
-      <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.gradeDateHint")}</p>
+      <p class="text-gray-400 text-sm">${t("grade.gradeDateHint")}</p>
     </div>
     <div class="grid gap-2">
       <label class="block mb-2">${t("grade.gradeName")}</label>
@@ -616,21 +830,21 @@ const openAddGradeDialog = (studentId, onSuccess) => {
           ${existingGradeNames.map(name => `<button type="button" class="grade-name-option w-full text-left px-3 py-2 cursor-pointer" style="border: none; background: none; color: inherit;" onmouseover="this.style.background='rgba(128,128,128,0.15)'" onmouseout="this.style.background='none'" data-name="${safeAttr(name)}">${escapeHtml(name)}</button>`).join('')}
         </div>` : ''}
       </div>
-      <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.gradeNameHint")}</p>
+      <p class="text-gray-400 text-sm">${t("grade.gradeNameHint")}</p>
     </div>
     <div class="grid gap-2">
       <label class="block mb-2">${t("grade.category")}</label>
       <select name="categoryId" id="grade-category-select" class="select w-full" required>
         ${categoryOptions}
       </select>
-      <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.categoryHint")}</p>
+      <p class="text-gray-400 text-sm">${t("grade.categoryHint")}</p>
     </div>
     <div class="grid gap-2 mb-3">
       <label class="flex items-center gap-2 cursor-pointer">
         <input type="checkbox" name="isPending" id="grade-is-pending" class="checkbox">
         <span>${t("grade.pendingGrade")}</span>
       </label>
-      <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.pendingGradeHint")}</p>
+      <p class="text-gray-400 text-sm">${t("grade.pendingGradeHint")}</p>
     </div>
     <div class="grid gap-2" id="grade-value-container">
       <div class="tabs w-full" id="grade-input-tabs">
@@ -641,7 +855,7 @@ const openAddGradeDialog = (studentId, onSuccess) => {
         <div role="tabpanel" id="panel-grade-direct" aria-labelledby="tab-grade-direct" tabindex="-1" aria-selected="true">
           <div class="pt-3">
             <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input" placeholder="1-6">
-            <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterGrade")}</p>
+            <p class="text-gray-400 text-sm mt-2">${t("grade.enterGrade")}</p>
           </div>
         </div>
         <div role="tabpanel" id="panel-grade-percent" aria-labelledby="tab-grade-percent" tabindex="-1" aria-selected="false" hidden>
@@ -650,7 +864,7 @@ const openAddGradeDialog = (studentId, onSuccess) => {
               <input type="number" id="grade-percent-input" step="0.1" min="0" max="100" class="input flex-1" placeholder="0-100">
               <span>%</span>
             </div>
-            <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterPercentage")}</p>
+            <p class="text-gray-400 text-sm mt-2">${t("grade.enterPercentage")}</p>
             <p class="text-sm mt-1 font-semibold" id="percent-preview"></p>
           </div>
         </div>
@@ -746,7 +960,7 @@ const openAddGradeDialog = (studentId, onSuccess) => {
                     <option value="~">${t("grade.neutral")}</option>
                     <option value="-">${t("grade.minus")}</option>
                 </select>
-                <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.plusMinusOnlyHint")}</p>
+                <p class="text-gray-400 text-sm">${t("grade.plusMinusOnlyHint")}</p>
             `;
         } else if (allowPlusMinus) {
             // Allow +/- but also numeric - no percentage for mixed
@@ -764,7 +978,7 @@ const openAddGradeDialog = (studentId, onSuccess) => {
                     <option value="~">${t("grade.neutral")}</option>
                     <option value="-">${t("grade.minus")}</option>
                 </select>
-                <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.mixedHint")}</p>
+                <p class="text-gray-400 text-sm">${t("grade.mixedHint")}</p>
             `;
         } else {
             // Normal numeric grades - show tabs with percentage option
@@ -777,7 +991,7 @@ const openAddGradeDialog = (studentId, onSuccess) => {
                   <div role="tabpanel" id="panel-grade-direct" aria-labelledby="tab-grade-direct" tabindex="-1" aria-selected="true">
                     <div class="pt-3">
                       <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input" placeholder="1-6">
-                      <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterGrade")}</p>
+                      <p class="text-gray-400 text-sm mt-2">${t("grade.enterGrade")}</p>
                     </div>
                   </div>
                   <div role="tabpanel" id="panel-grade-percent" aria-labelledby="tab-grade-percent" tabindex="-1" aria-selected="false" hidden>
@@ -786,7 +1000,7 @@ const openAddGradeDialog = (studentId, onSuccess) => {
                         <input type="number" id="grade-percent-input" step="0.1" min="0" max="100" class="input flex-1" placeholder="0-100">
                         <span>%</span>
                       </div>
-                      <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterPercentage")}</p>
+                      <p class="text-gray-400 text-sm mt-2">${t("grade.enterPercentage")}</p>
                       <p class="text-sm mt-1 font-semibold" id="percent-preview"></p>
                     </div>
                   </div>
@@ -1189,7 +1403,7 @@ const renderStudents = () => {
             <div class="grid gap-2">
               <label class="block mb-2">${t("grade.gradeDate")}</label>
               <input type="date" name="gradeDate" class="input w-full" value="${today}" required>
-              <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.gradeDateHint")}</p>
+              <p class="text-gray-400 text-sm">${t("grade.gradeDateHint")}</p>
             </div>
             <div class="grid gap-2">
               <label class="block mb-2">${t("grade.gradeName")}</label>
@@ -1204,21 +1418,21 @@ const renderStudents = () => {
                   ${existingGradeNames.map(name => `<button type="button" class="grade-name-option w-full text-left px-3 py-2 cursor-pointer" style="border: none; background: none; color: inherit;" onmouseover="this.style.background='rgba(128,128,128,0.15)'" onmouseout="this.style.background='none'" data-name="${safeAttr(name)}">${escapeHtml(name)}</button>`).join('')}
                 </div>` : ''}
               </div>
-              <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.gradeNameHint")}</p>
+              <p class="text-gray-400 text-sm">${t("grade.gradeNameHint")}</p>
             </div>
             <div class="grid gap-2">
               <label class="block mb-2">${t("grade.category")}</label>
               <select name="categoryId" id="grade-category-select" class="select w-full" required>
                 ${categoryOptions}
               </select>
-              <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.categoryHint")}</p>
+              <p class="text-gray-400 text-sm">${t("grade.categoryHint")}</p>
             </div>
             <div class="grid gap-2 mb-3">
               <label class="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" name="isPending" id="grade-is-pending-bulk" class="checkbox">
                 <span>${t("grade.pendingGrade")}</span>
               </label>
-              <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.pendingGradeHint")}</p>
+              <p class="text-gray-400 text-sm">${t("grade.pendingGradeHint")}</p>
             </div>
             <div class="grid gap-2" id="grade-value-container">
               <div class="tabs w-full" id="grade-input-tabs">
@@ -1229,7 +1443,7 @@ const renderStudents = () => {
                 <div role="tabpanel" id="panel-grade-direct" aria-labelledby="tab-grade-direct" tabindex="-1" aria-selected="true">
                   <div class="pt-3">
                     <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input" placeholder="1-6">
-                    <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterGrade")}</p>
+                    <p class="text-gray-400 text-sm mt-2">${t("grade.enterGrade")}</p>
                   </div>
                 </div>
                 <div role="tabpanel" id="panel-grade-percent" aria-labelledby="tab-grade-percent" tabindex="-1" aria-selected="false" hidden>
@@ -1238,7 +1452,7 @@ const renderStudents = () => {
                       <input type="number" id="grade-percent-input" step="0.1" min="0" max="100" class="input flex-1" placeholder="0-100">
                       <span>%</span>
                     </div>
-                    <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterPercentage")}</p>
+                    <p class="text-gray-400 text-sm mt-2">${t("grade.enterPercentage")}</p>
                     <p class="text-sm mt-1 font-semibold" id="percent-preview"></p>
                   </div>
                 </div>
@@ -1391,7 +1605,7 @@ const renderStudents = () => {
                                     <option value="~">${t("grade.neutral")}</option>
                                     <option value="-">${t("grade.minus")}</option>
                                 </select>
-                                <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.plusMinusOnlyHint")}</p>
+                                <p class="text-gray-400 text-sm">${t("grade.plusMinusOnlyHint")}</p>
                             `;
                         } else if (allowPlusMinus) {
                             valueContainer.innerHTML = `
@@ -1408,7 +1622,7 @@ const renderStudents = () => {
                                     <option value="~">${t("grade.neutral")}</option>
                                     <option value="-">${t("grade.minus")}</option>
                                 </select>
-                                <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.mixedHint")}</p>
+                                <p class="text-gray-400 text-sm">${t("grade.mixedHint")}</p>
                             `;
                         }
                     };
@@ -1572,19 +1786,19 @@ const renderCategoryManagement = () => {
                     <div class="grid gap-2">
                         <label class="block mb-2">${t("category.categoryName")}</label>
                         <input type="text" name="name" class="input w-full" value="${escapeHtml(category.name)}" required maxlength="100">
-                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("category.editCategoryNameHint")}</p>
+                        <p class="text-gray-400 text-sm">${t("category.editCategoryNameHint")}</p>
                     </div>
                     <div class="grid gap-2">
                         <label class="block mb-2">${t("category.weight")}</label>
                         <input type="number" name="weight" step="1" min="1" max="100" class="input w-full" value="${escapeHtml(category.weight * 100)}" required>
-                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("category.editWeightHint")} (${t("category.inPercent")})</p>
+                        <p class="text-gray-400 text-sm">${t("category.editWeightHint")} (${t("category.inPercent")})</p>
                     </div>
                     <div class="grid gap-2">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" name="onlyPlusMinus" class="checkbox" ${category.onlyPlusMinus ? 'checked' : ''}>
                             <span>${t("category.plusMinusOnly")}</span>
                         </label>
-                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("category.editPlusMinusHint")}</p>
+                        <p class="text-gray-400 text-sm">${t("category.editPlusMinusHint")}</p>
                     </div>
                 `;
                 showDialog("edit-dialog", t("category.editCategory"), content, (formData) => {
@@ -1981,11 +2195,11 @@ const renderHome = () => {
             <div class="flex items-center justify-between p-3 border rounded cursor-pointer" data-goto-class="${safeAttr(cls.id)}">
                 <div>
                     <h3 class="font-semibold">${escapeHtml(cls.name)}</h3>
-                    <p class="text-sm" style="color: oklch(.708 0 0);">${t("home.studentCount", { count: studentCount })}</p>
+                    <p class="text-gray-400 text-sm">${t("home.studentCount", { count: studentCount })}</p>
                 </div>
                 <div class="text-right">
                     <p class="text-lg font-bold">${escapeHtml(classAverage)}</p>
-                    <p class="text-sm" style="color: oklch(.708 0 0);">${t("home.average")}</p>
+                    <p class="text-gray-400 text-sm">${t("home.average")}</p>
                 </div>
             </div>
         `;
@@ -2622,7 +2836,7 @@ const renderCategoryBreakdown = (student) => {
     });
 
     if (Object.keys(gradesByCategory).length === 0) {
-        container.innerHTML = `<p class="text-sm" style="color: oklch(.708 0 0);">${t("student.noGrades")}</p>`;
+        container.innerHTML = `<p class="text-gray-400 text-sm">${t("student.noGrades")}</p>`;
         return;
     }
 
@@ -2693,7 +2907,7 @@ const renderCategoryBreakdown = (student) => {
                     </div>
                 </div>
                 <p class="text-2xl font-bold">${avgText}</p>
-                <p class="text-xs" style="color: oklch(.708 0 0);">${gradeInfo}</p>
+                <p class="text-gray-400 text-sm">${gradeInfo}</p>
             </div>
         `;
     }).join('');
@@ -2815,7 +3029,7 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                 if (grade.isPending) {
                     valueInput = `
                         <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input-edit" placeholder="1-6">
-                        <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterGrade")}</p>
+                        <p class="text-gray-400 text-sm mt-2">${t("grade.enterGrade")}</p>
                     `;
                 } else if (isPlusMinus) {
                     valueInput = `
@@ -2842,7 +3056,7 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                           <div role="tabpanel" id="panel-grade-direct-edit" aria-labelledby="tab-grade-direct-edit" tabindex="-1" aria-selected="${gradeSelected}" ${gradeSelected ? '' : 'hidden'}>
                             <div class="pt-3">
                               <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input-edit" value="${escapeHtml(grade.value || '')}" placeholder="1-6">
-                              <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterGrade")}</p>
+                              <p class="text-gray-400 text-sm mt-2">${t("grade.enterGrade")}</p>
                             </div>
                           </div>
                           <div role="tabpanel" id="panel-grade-percent-edit" aria-labelledby="tab-grade-percent-edit" tabindex="-1" aria-selected="${percentSelected}" ${percentSelected ? '' : 'hidden'}>
@@ -2851,7 +3065,7 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                                 <input type="number" id="grade-percent-input-edit" step="0.1" min="0" max="100" class="input flex-1" value="${escapeHtml(initialPercent || '')}" placeholder="0-100">
                                 <span>%</span>
                               </div>
-                              <p class="text-sm mt-2" style="color: oklch(.708 0 0);">${t("grade.enterPercentage")}</p>
+                              <p class="text-gray-400 text-sm mt-2">${t("grade.enterPercentage")}</p>
                               <p class="text-sm mt-1 font-semibold" id="percent-preview-edit"></p>
                             </div>
                           </div>
@@ -2880,7 +3094,7 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                     <div class="grid gap-2">
                         <label class="block mb-2">${t("grade.gradeDate")}</label>
                         <input type="date" name="gradeDate" class="input w-full" value="${gradeDateStr}" required>
-                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.gradeDateHint")}</p>
+                        <p class="text-gray-400 text-sm">${t("grade.gradeDateHint")}</p>
                     </div>
                     <div class="grid gap-2">
                         <label class="block mb-2">${t("grade.gradeName")}</label>
@@ -2891,7 +3105,7 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                         <select name="categoryId" class="select w-full" required>
                             ${categoryOptions}
                         </select>
-                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.categoryHint")}</p>
+                        <p class="text-gray-400 text-sm">${t("grade.categoryHint")}</p>
                     </div>
                     <div class="grid gap-2">
                         <label class="flex items-center gap-2 cursor-pointer">
@@ -2904,7 +3118,7 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                             <input type="checkbox" name="isPending" id="grade-is-pending-edit" class="checkbox" ${grade.isPending ? 'checked' : ''}>
                             <span>${t("grade.pendingGrade")}</span>
                         </label>
-                        <p class="text-sm" style="color: oklch(.708 0 0);">${t("grade.pendingGradeHint")}</p>
+                        <p class="text-gray-400 text-sm">${t("grade.pendingGradeHint")}</p>
                     </div>
                     <div class="grid gap-2" id="grade-value-container-edit">
                         <label class="block mb-2">${t("grade.gradeValue")}</label>
@@ -3429,7 +3643,7 @@ function renderStudentAttendanceList(student) {
   if (!student.participation || student.participation.length === 0) {
     attendanceList.innerHTML = `
       <tr>
-        <td colspan="5" class="text-center" style="color: oklch(.708 0 0);">
+        <td colspan="5" class="text-center text-gray-400">
           Keine Anwesenheitseinträge vorhanden
         </td>
       </tr>
@@ -3479,7 +3693,7 @@ function renderStudentAttendanceList(student) {
             ${escapeHtml(statusText)}
           </span>
         </td>
-        <td style="color: oklch(.708 0 0);">${escapeHtml(entry.notes || '—')}</td>
+        <td class="text-gray-400">${escapeHtml(entry.notes || '—')}</td>
         <td>
           <div class="flex items-center justify-end gap-1">
             <button class="btn-icon btn-secondary btn-small" data-edit-attendance="${escapeHtml(entry.id)}" data-tooltip="${t('attendance.editEntry')}" data-side="left">

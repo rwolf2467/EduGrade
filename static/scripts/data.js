@@ -21,7 +21,10 @@
  * │       │       ├── subjects: Array - Unterrichtsfächer dieses Jahrgangs
  * │       │       │   └── [Fach]
  * │       │       │       ├── id: String - Eindeutige ID
- * │       │       │       └── name: String - Name des Fachs (z.B. "Mathematik")
+ * │       │       │       ├── name: String - Name des Fachs (z.B. "Mathematik")
+ * │       │       │       ├── minAttendancePercent: null|Number - Mindest-Anwesenheit in % (null = globale Einstellung)
+ * │       │       │       ├── warningThreshold: null|Number - Warnschwelle in % (null = globale Einstellung)
+ * │       │       │       └── attendanceAutoGrading: null|Boolean - Auto-Grading aktiv (null = globale Einstellung)
  * │       │       ├── currentSubjectId: null|String - Aktives Fach-Tab (null = Alle Fächer)
  * │       │       └── students: Array - Schüler dieses Jahrgangs
  * │       │           └── [Schüler]
@@ -61,7 +64,7 @@ let appData = {
     currentClassId: null,         // ID der aktuell angezeigten Klasse
     classes: [],                  // Hauptarray mit allen Klassen und deren Daten
     categories: [],               // GLOBALE Kategorien (gelten für alle Klassen)
-    defaultSubjects: [],          // Standard-Fächer die beim Anlegen neuer Klassen erstellt werden
+    defaultSubjects: [],          // Standard-Fächer (Objekte: { name, minAttendancePercent, warningThreshold, attendanceAutoGrading })
     students: [],                 // Legacy-Array (wird nicht aktiv verwendet)
     participationSettings: {      // Einstellungen für Mitarbeits-Funktion
         plusValue: 0.1,           // Wert pro Plus bei Mitarbeit

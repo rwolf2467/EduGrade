@@ -254,7 +254,7 @@
         if (visibility.average !== false) {
             html += `
                 <div class="stat-card p-4 rounded-lg border">
-                    <p class="text-sm" style="color: oklch(.708 0 0);">${t("studentView.average")}</p>
+                    <p class="text-gray-400 text-sm">${t("studentView.average")}</p>
                     <p class="text-2xl font-bold">${weightedAvg ? weightedAvg.toFixed(2) : '-'}</p>
                 </div>`;
         }
@@ -262,7 +262,7 @@
         if (visibility.finalGrade !== false) {
             html += `
                 <div class="stat-card p-4 rounded-lg border">
-                    <p class="text-sm" style="color: oklch(.708 0 0);">${t("studentView.finalGrade")}</p>
+                    <p class="text-gray-400 text-sm">${t("studentView.finalGrade")}</p>
                     <p class="text-2xl font-bold">${finalGrade}</p>
                 </div>`;
         }
@@ -275,14 +275,14 @@
         const visibility = allData.visibility || {};
 
         if (!visibility.grades && visibility.grades !== undefined) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center" style="color: oklch(.708 0 0);">${t("studentView.gradesNotShared")}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-400">${t("studentView.gradesNotShared")}</td></tr>`;
             return;
         }
 
         const sorted = [...grades].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
         if (sorted.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center" style="color: oklch(.708 0 0);">${t("studentView.noGradesYet")}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-gray-400">${t("studentView.noGradesYet")}</td></tr>`;
             return;
         }
 
@@ -319,7 +319,7 @@
         });
 
         if (Object.keys(byCategory).length === 0) {
-            container.innerHTML = `<p class="text-sm" style="color: oklch(.708 0 0);">${t("studentView.noGrades")}</p>`;
+            container.innerHTML = `<p class="text-gray-400 text-sm">${t("studentView.noGrades")}</p>`;
             return;
         }
 
@@ -350,7 +350,7 @@
                         <span class="badge badge-secondary text-xs">${(cat.weight * 100).toFixed(0)}%</span>
                     </div>
                     <p class="text-2xl font-bold">${avgText}</p>
-                    <p class="text-xs" style="color: oklch(.708 0 0);">${info}</p>
+                    <p class="text-gray-400 text-sm">${info}</p>
                 </div>`;
         }).join('');
     };
