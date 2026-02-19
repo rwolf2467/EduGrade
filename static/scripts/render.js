@@ -1166,6 +1166,7 @@ const renderStudents = () => {
     // Suchbegriff und Kategoriefilter aus den Input-Feldern holen
     const searchTerm = document.getElementById("search-students").value.toLowerCase();
     const filterCategory = document.getElementById("filter-category").value;
+    const filterAttendance = document.getElementById("filter-attendance").value;
 
     const studentsTable = document.getElementById("students-table");
 
@@ -1181,7 +1182,10 @@ const renderStudents = () => {
 
             const matchesSearch = fullName.includes(searchTerm) || finalGrade.includes(searchTerm);
             const matchesCategory = filterCategory ? student.grades.some(g => g.categoryId === filterCategory) : true;
-            return matchesSearch && matchesCategory;
+            const matchesAttendance = filterAttendance
+                ? getAttendanceStatus(student.id, currentYear.currentSubjectId).status === filterAttendance
+                : true;
+            return matchesSearch && matchesCategory && matchesAttendance;
         })
         // 2. SORTIEREN: Alphabetisch nach Nachname, dann Vorname
         .sort((a, b) => {

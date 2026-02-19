@@ -76,6 +76,9 @@
   "class.passRate": "Bestehensrate",
   "class.searchPlaceholder": "Nach Name oder Note suchen...",
   "class.allCategories": "Alle Kategorien",
+  "class.filterAttendanceAll": "Alle Anwesenheit",
+  "class.filterAttendanceWarning": "Am Limit",
+  "class.filterAttendanceCritical": "Über dem Limit",
   "class.close": "Schließen",
 
   "year.selectYear": "Jahr auswählen",

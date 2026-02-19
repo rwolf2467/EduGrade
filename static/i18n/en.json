@@ -76,6 +76,9 @@
   "class.passRate": "Pass Rate",
   "class.searchPlaceholder": "Search by name or grade...",
   "class.allCategories": "All Categories",
+  "class.filterAttendanceAll": "All Attendance",
+  "class.filterAttendanceWarning": "Near Limit",
+  "class.filterAttendanceCritical": "Over Limit",
   "class.close": "Close",
 
   "year.selectYear": "Select Year",

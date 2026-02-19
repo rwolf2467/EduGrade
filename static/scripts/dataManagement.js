@@ -1635,9 +1635,10 @@ function deleteAttendanceEntry(studentId, attendanceId) {
     year: 'numeric'
   });
 
-  const message = `${t('attendance.confirmDelete') || 'Möchten Sie diesen Eintrag wirklich löschen?'}\n\n${date}: ${t('attendance.' + entry.status)}`;
+  const message = t('attendance.confirmDelete') || 'Möchten Sie diesen Eintrag wirklich löschen?';
+  const details = `${date}: ${t('attendance.' + entry.status)}`;
 
-  if (confirm(message)) {
+  showConfirmDialog(message, () => {
     student.participation.splice(index, 1);
     saveData(t('toast.attendanceDeleted'), 'success');
     // Re-render student detail view if open
@@ -1647,9 +1648,7 @@ function deleteAttendanceEntry(studentId, attendanceId) {
     } else {
       renderStudents();
     }
-    return true;
-  }
-  return false;
+  }, details);
 }
 
 /**

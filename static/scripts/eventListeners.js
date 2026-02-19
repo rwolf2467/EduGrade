@@ -426,6 +426,7 @@ document.getElementById("export-data").addEventListener("click", exportData);
 
 document.getElementById("search-students").addEventListener("input", renderStudents);
 document.getElementById("filter-category").addEventListener("change", renderStudents);
+document.getElementById("filter-attendance").addEventListener("change", renderStudents);
 
 // Ensure data is loaded when the page loads
 document.addEventListener("DOMContentLoaded", async () => {
