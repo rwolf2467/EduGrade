@@ -301,109 +301,28 @@ document.getElementById("cancel-import-students").addEventListener("click", () =
     resetImportStudentsDialog();
 });
 
-// Track dirty state for settings dialog (grade ranges + plusminus settings)
-let settingsDirty = false;
-const markSettingsDirty = () => { settingsDirty = true; };
+// Settings dirty-tracking flag
+window.settingsDirty = false;
 
-const tryCloseSettingsDialog = async () => {
-    if (settingsDirty) {
-        const discard = await showUnsavedChangesWarning();
-        if (!discard) return;
-    }
-    settingsDirty = false;
-    document.getElementById("manage-categories-dialog").close();
-};
+// Event delegation: any input/change inside settings-view marks it dirty.
+// This covers all inputs (grade ranges, plus/minus, attendance) without naming them individually.
+const settingsViewEl = document.getElementById("settings-view");
+if (settingsViewEl) {
+    settingsViewEl.addEventListener("input", () => { window.settingsDirty = true; });
+    settingsViewEl.addEventListener("change", () => { window.settingsDirty = true; });
+}
 
-document.getElementById("manage-categories").addEventListener("click", () => {
-    renderCategoryManagement();
-    settingsDirty = false;
-
-    // Load current plus/minus percentage settings
-    const pmPercentages = appData.plusMinusPercentages || { plus: 100, neutral: 50, minus: 0 };
-    const plusInput = document.getElementById("plusminus-plus-percent");
-    const neutralInput = document.getElementById("plusminus-neutral-percent");
-    const minusInput = document.getElementById("plusminus-minus-percent");
-
-    if (plusInput) plusInput.value = pmPercentages.plus;
-    if (neutralInput) neutralInput.value = pmPercentages.neutral;
-    if (minusInput) minusInput.value = pmPercentages.minus;
-
-    // Load current attendance settings
-    const attendanceSettings = appData.attendanceSettings || { enabled: false, minAttendancePercent: 75, warningThreshold: 5 };
-    const enabledInput = document.getElementById("attendance-auto-grading");
-    const minPercentInput = document.getElementById("attendance-min-percent");
-    const warningInput = document.getElementById("attendance-warning-threshold");
-
-    if (enabledInput) enabledInput.checked = attendanceSettings.enabled;
-    if (minPercentInput) minPercentInput.value = attendanceSettings.minAttendancePercent;
-    if (warningInput) warningInput.value = attendanceSettings.warningThreshold;
-
-    // Load current percentage ranges
-    const defaultRanges = [
-        { grade: 1, minPercent: 85, maxPercent: 100 },
-        { grade: 2, minPercent: 70, maxPercent: 84 },
-        { grade: 3, minPercent: 55, maxPercent: 69 },
-        { grade: 4, minPercent: 40, maxPercent: 54 },
-        { grade: 5, minPercent: 0, maxPercent: 39 }
-    ];
-    const ranges = appData.gradePercentageRanges || defaultRanges;
-    ranges.forEach(range => {
-        const minInput = document.getElementById(`grade-${range.grade}-min`);
-        const maxInput = document.getElementById(`grade-${range.grade}-max`);
-        if (minInput) minInput.value = range.minPercent;
-        if (maxInput) maxInput.value = range.maxPercent;
-    });
-
-    // Dirty-Tracking für Settings-Inputs
-    const settingsInputs = [
-        'plusminus-plus-percent', 'plusminus-neutral-percent', 'plusminus-minus-percent',
-        'grade-1-min', 'grade-1-max', 'grade-2-min', 'grade-2-max',
-        'grade-3-min', 'grade-3-max', 'grade-4-min', 'grade-4-max',
-        'grade-5-min', 'grade-5-max'
-    ];
-    settingsInputs.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.addEventListener("input", markSettingsDirty);
-        }
-    });
-
-    // Show/hide "Add Category" button based on active tab
-    const addCategoryBtn = document.getElementById("add-category");
-    if (addCategoryBtn) addCategoryBtn.classList.remove("invisible");
-    document.querySelectorAll("#manage-categories-tabs [role='tab']").forEach(tab => {
-        tab.addEventListener("click", () => {
-            if (addCategoryBtn) addCategoryBtn.classList.toggle("invisible", tab.id !== "tab-categories");
-        });
-    });
-
-    document.getElementById("manage-categories-dialog").showModal();
+// Nav settings button → open settings view
+document.getElementById("nav-settings").addEventListener("click", () => {
+    showSettingsView();
 });
-
-document.getElementById("close-manage-categories").addEventListener("click", () => {
-    tryCloseSettingsDialog();
-});
-
-// X-Button in settings dialog
-document.getElementById("close-manage-categories-x").addEventListener("click", () => {
-    tryCloseSettingsDialog();
-});
-
-// Escape-key protection for settings dialog
-document.getElementById("manage-categories-dialog").addEventListener("cancel", (e) => {
-    e.preventDefault();
-    tryCloseSettingsDialog();
-});
-
-// Event listener for cancel button in edit dialog
-// cancel-edit is now handled inside showDialog() with unsaved-changes protection
 
 document.getElementById("save-plusminus-settings").addEventListener("click", () => {
     const plusPercent = document.getElementById("plusminus-plus-percent").value;
     const neutralPercent = document.getElementById("plusminus-neutral-percent").value;
     const minusPercent = document.getElementById("plusminus-minus-percent").value;
     updatePlusMinusPercentages(plusPercent, neutralPercent, minusPercent);
-    settingsDirty = false;
+    window.settingsDirty = false;
     showToast(t("toast.plusMinusSettingsSaved"), "success");
 });
 
@@ -422,7 +341,7 @@ document.getElementById("save-percentage-ranges").addEventListener("click", () =
         }
     }
     if (updateGradePercentageRanges(ranges)) {
-        settingsDirty = false;
+        window.settingsDirty = false;
         showToast(t("toast.gradeRangesSaved"), "success");
     }
 });
@@ -450,8 +369,8 @@ document.getElementById("save-attendance-settings").addEventListener("click", ()
         warningThreshold: warningThreshold
     };
 
+    window.settingsDirty = false;
     saveData(t("toast.attendanceSettingsSaved") || "Anwesenheitseinstellungen gespeichert", "success");
-    settingsDirty = false;
     renderStudents();
 
     // If student detail view is open, re-render it

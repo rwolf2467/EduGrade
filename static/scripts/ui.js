@@ -442,8 +442,10 @@ const showDialog = (dialogId, title, content, onConfirm = null) => {
  * @param {string} message - Die Bestätigungsfrage
  * @param {function} onConfirm - Funktion die bei Bestätigung ausgeführt wird
  */
-const showConfirmDialog = (message, onConfirm, details = null, warning = null) => {
+const showConfirmDialog = (message, onConfirm, details = null, warning = null, options = {}) => {
     const dialog = document.getElementById("confirm-dialog");
+    const confirmBtn = document.getElementById("confirm-action");
+    const cancelBtn = document.getElementById("cancel-action");
 
     // Personalisierte Nachricht mit Lehrernamen
     const teacherName = appData.teacherName || "there";
@@ -473,17 +475,29 @@ const showConfirmDialog = (message, onConfirm, details = null, warning = null) =
         warningEl.style.display = 'none';
     }
 
+    // Optionale benutzerdefinierte Button-Labels (z.B. für "Verwerfen" / "Zurück")
+    if (options.confirmText || options.cancelText) {
+        const origConfirmText = confirmBtn.textContent;
+        const origCancelText = cancelBtn.textContent;
+        if (options.confirmText) confirmBtn.textContent = options.confirmText;
+        if (options.cancelText) cancelBtn.textContent = options.cancelText;
+        dialog.addEventListener('close', () => {
+            confirmBtn.textContent = origConfirmText;
+            cancelBtn.textContent = origCancelText;
+        }, { once: true });
+    }
+
     // Dialog öffnen
     dialog.showModal();
 
     // "Delete"-Button: Führt Aktion aus und schließt Dialog
-    document.getElementById("confirm-action").onclick = () => {
+    confirmBtn.onclick = () => {
         onConfirm();      // Übergebene Funktion ausführen
         dialog.close();   // Dialog schließen
     };
 
     // "Cancel"-Button: Nur Dialog schließen
-    document.getElementById("cancel-action").onclick = () => {
+    cancelBtn.onclick = () => {
         dialog.close();
     };
 };

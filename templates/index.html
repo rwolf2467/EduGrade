@@ -224,16 +224,6 @@
                                 <li class="w-full">
                                     <div id="class-list" class="space-y-1 w-full"></div>
                                 </li>
-                                <li class="w-full mt-2">
-                                    <button id="manage-categories" class="btn-block btn-secondary w-full">
-                                        <svg class="lucide lucide-settings" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0h-3.75" />
-                                        </svg>
-                                        <span data-i18n="nav.gradeSettings">Grade Settings</span>
-                                    </button>
-                                </li>
                             </ul>
                         </div>
                     </section>
@@ -252,6 +242,15 @@
                                             d="M12 15V3" />
                                     </svg>
                                     <span data-i18n="nav.export">Export</span>
+                                </button>
+                                <button id="nav-settings" class="btn-outline w-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                    <span data-i18n="nav.settings">Settings</span>
                                 </button>
                                 <button id="profile-btn" class="btn-outline w-full">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -383,122 +382,73 @@
                     <div>
                         <header>
                             <h2 id="profile-dialog-title" data-i18n="profile.title">Profile</h2>
-                            <p class="text-gray-400 text-sm" data-i18n="profile.subtitle">Manage your
-                                profile and account settings
-                            </p>
                         </header>
-                        <section class="space-y-6 max-h-[60vh] overflow-y-auto">
+                        <section class="space-y-4 overflow-y-auto max-h-[70vh]">
                             <!-- Account Info -->
-                            <div class="p-4 rounded-lg">
-                                <h3 class="text-sm font-medium mb-2" data-i18n="profile.accountInfo">Account Information
-                                </h3>
+                            <div class="p-4 rounded-lg border">
+                                <h3 class="text-sm font-medium mb-2" data-i18n="profile.accountInfo">Account Information</h3>
                                 <div class="space-y-1 text-sm text-gray-400">
-                                    <p><span class="font-medium" data-i18n="profile.username">Username:</span> {{
-                                        user.username }}</p>
-                                    <p><span class="font-medium" data-i18n="profile.email">Email:</span> {{ user.email
-                                        }}</p>
+                                    <p><span class="font-medium" data-i18n="profile.username">Username:</span> {{ user.username }}</p>
+                                    <p><span class="font-medium" data-i18n="profile.email">Email:</span> {{ user.email }}</p>
                                 </div>
                             </div>
-
                             <!-- Teacher Name -->
                             <div class="grid gap-2">
-                                <label for="profile-teacher-name" class="text-sm font-medium"
-                                    data-i18n="profile.displayName">Display Name</label>
-                                <input type="text" id="profile-teacher-name" class="input" placeholder="Your name"
-                                    data-i18n-placeholder="profile.displayNamePlaceholder">
-                                <p class="text-gray-400 text-sm" data-i18n="profile.displayNameHint">
-                                    This name will be shown in the
-                                    greeting message.</p>
+                                <label for="profile-teacher-name" class="text-sm font-medium" data-i18n="profile.displayName">Display Name</label>
+                                <input type="text" id="profile-teacher-name" class="input" placeholder="Your name" data-i18n-placeholder="profile.displayNamePlaceholder">
+                                <p class="text-gray-400 text-sm" data-i18n="profile.displayNameHint">This name will be shown in the greeting message.</p>
                             </div>
-
                             <!-- School -->
                             <div class="grid gap-2">
-                                <label for="profile-school" class="text-sm font-medium"
-                                    data-i18n="profile.school">School</label>
-                                <input type="text" id="profile-school" class="input"
-                                    data-i18n-placeholder="profile.schoolPlaceholder" placeholder="Your school name">
-                                <p class="text-gray-400 text-sm" data-i18n="profile.schoolHint">
-                                    Optional: Name of your school or
-                                    educational institution.</p>
+                                <label for="profile-school" class="text-sm font-medium" data-i18n="profile.school">School</label>
+                                <input type="text" id="profile-school" class="input" data-i18n-placeholder="profile.schoolPlaceholder" placeholder="Your school name">
+                                <p class="text-gray-400 text-sm" data-i18n="profile.schoolHint">Optional: Name of your school or educational institution.</p>
                             </div>
-
                             <!-- Language -->
                             <div class="grid gap-2">
-                                <label for="profile-language" class="text-sm font-medium"
-                                    data-i18n="profile.language">Language</label>
+                                <label for="profile-language" class="text-sm font-medium" data-i18n="profile.language">Language</label>
                                 <select id="profile-language" class="select">
                                     <option value="en">English</option>
                                     <option value="de">Deutsch</option>
                                 </select>
-                                <p class="text-gray-400 text-sm" data-i18n="profile.languageHint">
-                                    Choose your preferred language.</p>
+                                <p class="text-gray-400 text-sm" data-i18n="profile.languageHint">Choose your preferred language.</p>
                             </div>
-
-                            <!-- Default Subjects -->
-                            <div class="grid gap-2">
-                                <label class="text-sm font-medium" data-i18n="profile.defaultSubjects">Default Subjects</label>
-                                <div class="flex gap-2">
-                                    <input type="text" id="profile-subject-input" class="input flex-1"
-                                        data-i18n-placeholder="profile.subjectPlaceholder" placeholder="Subject name (e.g. Mathematics)">
-                                    <button type="button" id="profile-add-subject-btn" class="btn-primary">
-                                        <span data-i18n="profile.addSubject">Add Subject</span>
-                                    </button>
-                                </div>
-                                <div id="profile-subjects-list" class="grid gap-1"></div>
-                                <p class="text-gray-400 text-sm" data-i18n="profile.defaultSubjectsHint">
-                                    These subjects will be automatically created for new classes.</p>
-                            </div>
-
                             <!-- Danger Zone -->
                             <div class="alert-destructive p-4 rounded-lg border border-red-500/30">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    class="lucide lucide-octagon-alert-icon lucide-octagon-alert">
+                                    stroke-linejoin="round" class="lucide lucide-octagon-alert-icon lucide-octagon-alert">
                                     <path d="M12 16h.01" />
                                     <path d="M12 8v4" />
-                                    <path
-                                        d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z" />
+                                    <path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z" />
                                 </svg>
-                                <h3 class="text-sm font-medium mb-3 text-red-400" data-i18n="profile.dangerZone">Danger
-                                    Zone</h3>
-                                <section class="space-y-3">
+                                <h3 class="text-sm font-medium mb-3 text-red-400" data-i18n="settings.dangerZone">Danger Zone</h3>
+                                <div class="space-y-3">
                                     <div class="flex items-center justify-between gap-4">
                                         <div>
-                                            <p class="text-sm font-medium" data-i18n="profile.clearAllData">Clear All
-                                                Data</p>
-                                            <p class="text-gray-400 text-sm"
-                                                data-i18n="profile.clearDataDesc">Deletes all classes,
-                                                students and grades. Your account will be preserved.</p>
+                                            <p class="text-sm font-medium" data-i18n="profile.clearAllData">Clear All Data</p>
+                                            <p class="text-gray-400 text-sm" data-i18n="profile.clearDataDesc">Deletes all classes, students and grades.</p>
                                         </div>
-                                        <button type="button"
-                                            class="btn-outline text-red-400 border-red-400 hover:bg-red-500/10"
-                                            id="profile-clear-data" data-i18n="profile.clearData">
-                                            Clear Data
-                                        </button>
+                                        <button type="button" class="btn-outline text-red-400 border-red-400 hover:bg-red-500/10 shrink-0"
+                                            id="profile-clear-data" data-i18n="profile.clearData">Clear Data</button>
                                     </div>
                                     <hr class="border-red-500/20">
                                     <div class="flex items-center justify-between gap-4">
                                         <div>
-                                            <p class="text-sm font-medium" data-i18n="profile.deleteAccount">Delete
-                                                Account</p>
-                                            <p class="text-gray-400 text-sm"
-                                                data-i18n="profile.deleteAccountDesc">Permanently deletes your
-                                                account and all associated data.</p>
+                                            <p class="text-sm font-medium" data-i18n="profile.deleteAccount">Delete Account</p>
+                                            <p class="text-gray-400 text-sm" data-i18n="profile.deleteAccountDesc">Permanently deletes your account and all data.</p>
                                         </div>
-                                        <button type="button" class="btn-destructive" id="profile-delete-account"
-                                            data-i18n="profile.deleteAccount">
-                                            Delete Account
-                                        </button>
+                                        <button type="button" class="btn-destructive shrink-0" id="profile-delete-account"
+                                            data-i18n="profile.deleteAccount">Delete Account</button>
                                     </div>
-                                </section>
+                                </div>
                             </div>
                         </section>
                         <footer class="flex justify-end gap-2">
                             <button type="button" class="btn-outline" id="cancel-profile"
                                 data-i18n="dialog.cancel">Cancel</button>
                             <button type="button" class="btn-primary" id="save-profile"
-                                data-i18n="dialog.save">Save</button>
+                                data-i18n="settings.saveProfile">Save Profile</button>
                         </footer>
                         <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -1020,6 +970,213 @@
                     </div>
                 </section>
 
+                <!-- Settings View -->
+                <section id="settings-view" class="hidden mt-10">
+                    <!-- Breadcrumb -->
+                    <nav aria-label="Breadcrumb" class="mb-6">
+                        <ol class="text-gray-400 flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5">
+                            <li class="inline-flex items-center gap-1.5">
+                                <a href="#" id="settings-breadcrumb-home" class="hover:text-foreground transition-colors" data-i18n="nav.home">Home</a>
+                            </li>
+                            <li>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="size-3.5">
+                                    <path d="m9 18 6-6-6-6" />
+                                </svg>
+                            </li>
+                            <li class="inline-flex items-center gap-1.5">
+                                <span class="text-foreground font-medium" data-i18n="settings.title">Settings</span>
+                            </li>
+                        </ol>
+                    </nav>
+
+                    <!-- Settings Tabs -->
+                    <div class="tabs" id="settings-tabs">
+                        <nav role="tablist" class="border-b mb-6 flex gap-1 flex-wrap">
+                            <button role="tab" aria-controls="settings-panel-subjects" aria-selected="true" tabindex="0" data-i18n="settings.defaultSubjects">Default Subjects</button>
+                            <button role="tab" aria-controls="settings-panel-categories" aria-selected="false" tabindex="-1" data-i18n="settings.categories">Grade Categories</button>
+                            <button role="tab" aria-controls="settings-panel-grading" aria-selected="false" tabindex="-1" data-i18n="settings.grading">Grading</button>
+                            <button role="tab" aria-controls="settings-panel-attendance" aria-selected="false" tabindex="-1" data-i18n="settings.attendance">Attendance</button>
+                        </nav>
+
+                        <!-- Panel: Default Subjects -->
+                        <div role="tabpanel" id="settings-panel-subjects" class="pb-6">
+                            <div class="card">
+                                <header class="mb-4 px-4 pt-4">
+                                    <h2 class="text-xl font-semibold" data-i18n="settings.defaultSubjects">Default Subjects</h2>
+                                </header>
+                                <div class="px-4 pb-4">
+                                    <p class="text-gray-400 text-sm mb-3" data-i18n="profile.defaultSubjectsHint">These subjects will be automatically created for new classes.</p>
+                                    <div class="flex gap-2 mb-3">
+                                        <input type="text" id="settings-subject-input" class="input flex-1"
+                                            data-i18n-placeholder="profile.subjectPlaceholder" placeholder="Subject name (e.g. Mathematics)">
+                                        <button type="button" id="settings-add-subject-btn" class="btn-primary">
+                                            <span data-i18n="profile.addSubject">Add Subject</span>
+                                        </button>
+                                    </div>
+                                    <div id="settings-subjects-list" class="grid gap-1 mb-4"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Grade Categories -->
+                        <div role="tabpanel" id="settings-panel-categories" hidden class="pb-6">
+                            <div class="card">
+                                <header class="mb-4 px-4 pt-4 flex items-center justify-between">
+                                    <h2 class="text-xl font-semibold" data-i18n="settings.categories">Grade Categories</h2>
+                                    <button id="add-category" class="btn-secondary">
+                                        <svg class="lucide lucide-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42Z" />
+                                            <circle cx="7.5" cy="15.5" r="1" />
+                                        </svg>
+                                        <span data-i18n="category.addCategory">Add Category</span>
+                                    </button>
+                                </header>
+                                <div class="px-4 pb-4">
+                                    <div id="categories-list" class="space-y-2"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Grading (Ranges + Plus/Minus) -->
+                        <div role="tabpanel" id="settings-panel-grading" hidden class="space-y-6 pb-6">
+                            <!-- Grade Ranges -->
+                            <div class="card">
+                                <header class="mb-4 px-4 pt-4">
+                                    <h2 class="text-xl font-semibold" data-i18n="settings.gradeRanges">Grade Ranges</h2>
+                                </header>
+                                <div class="px-4 pb-4">
+                                    <p class="text-gray-400 text-sm mb-4" data-i18n="category.gradeRangesHint">Define the percentage ranges for each grade. These are used when entering grades as percentages.</p>
+                                    <div class="space-y-3" id="percentage-ranges-list">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-12 font-semibold">1</span>
+                                            <input type="number" id="grade-1-min" min="0" max="100" class="input w-20" value="85">
+                                            <span>% -</span>
+                                            <input type="number" id="grade-1-max" min="0" max="100" class="input w-20" value="100">
+                                            <span>%</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-12 font-semibold">2</span>
+                                            <input type="number" id="grade-2-min" min="0" max="100" class="input w-20" value="70">
+                                            <span>% -</span>
+                                            <input type="number" id="grade-2-max" min="0" max="100" class="input w-20" value="84">
+                                            <span>%</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-12 font-semibold">3</span>
+                                            <input type="number" id="grade-3-min" min="0" max="100" class="input w-20" value="55">
+                                            <span>% -</span>
+                                            <input type="number" id="grade-3-max" min="0" max="100" class="input w-20" value="69">
+                                            <span>%</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-12 font-semibold">4</span>
+                                            <input type="number" id="grade-4-min" min="0" max="100" class="input w-20" value="40">
+                                            <span>% -</span>
+                                            <input type="number" id="grade-4-max" min="0" max="100" class="input w-20" value="54">
+                                            <span>%</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-12 font-semibold">5</span>
+                                            <input type="number" id="grade-5-min" min="0" max="100" class="input w-20" value="0">
+                                            <span>% -</span>
+                                            <input type="number" id="grade-5-max" min="0" max="100" class="input w-20" value="39">
+                                            <span>%</span>
+                                        </div>
+                                    </div>
+                                    <button id="save-percentage-ranges" class="btn-primary mt-4 w-full" data-i18n="category.saveRanges">Save Ranges</button>
+                                </div>
+                            </div>
+                            <!-- Plus/Minus Settings -->
+                            <div class="card">
+                                <header class="mb-4 px-4 pt-4">
+                                    <h2 class="text-xl font-semibold" data-i18n="settings.plusMinus">+/~/- Settings</h2>
+                                </header>
+                                <div class="px-4 pb-4">
+                                    <p class="text-gray-400 text-sm mb-3" data-i18n="category.plusMinusSettingsHint">Configure the percentage values for +/~/- grades. These values are used to calculate the grade average for categories with +/~/- grades.</p>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-2xl font-bold text-green-600 w-12 text-center">+</span>
+                                            <div class="flex-1">
+                                                <label class="block text-sm mb-1" data-i18n="category.plusPercent">Plus percentage</label>
+                                                <div class="flex items-center gap-2">
+                                                    <input type="number" id="plusminus-plus-percent" step="1" min="0" max="100" class="input w-32" value="100">
+                                                    <span class="text-sm">%</span>
+                                                    <span class="text-gray-400 text-sm" data-i18n="category.plusHint">(Excellent performance)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-2xl font-bold text-yellow-600 w-12 text-center">~</span>
+                                            <div class="flex-1">
+                                                <label class="block text-sm mb-1" data-i18n="category.neutralPercent">Neutral percentage</label>
+                                                <div class="flex items-center gap-2">
+                                                    <input type="number" id="plusminus-neutral-percent" step="1" min="0" max="100" class="input w-32" value="50">
+                                                    <span class="text-sm">%</span>
+                                                    <span class="text-gray-400 text-sm" data-i18n="category.neutralHint">(Average performance)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-2xl font-bold text-red-600 w-12 text-center">-</span>
+                                            <div class="flex-1">
+                                                <label class="block text-sm mb-1" data-i18n="category.minusPercent">Minus percentage</label>
+                                                <div class="flex items-center gap-2">
+                                                    <input type="number" id="plusminus-minus-percent" step="1" min="0" max="100" class="input w-32" value="0">
+                                                    <span class="text-sm">%</span>
+                                                    <span class="text-gray-400 text-sm" data-i18n="category.minusHint">(Poor performance)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button id="save-plusminus-settings" class="btn-primary mt-4 w-full" data-i18n="category.saveSettings">Save Settings</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel: Attendance -->
+                        <div role="tabpanel" id="settings-panel-attendance" hidden class="pb-6">
+                            <div class="card">
+                                <header class="mb-4 px-4 pt-4">
+                                    <h2 class="text-xl font-semibold" data-i18n="settings.attendance">Attendance</h2>
+                                </header>
+                                <div class="px-4 pb-4">
+                                    <p class="text-gray-400 text-sm mb-4" data-i18n="attendance.autoGradingHint">When enabled, students with low attendance automatically receive a failing grade.</p>
+                                    <div class="space-y-4">
+                                        <label class="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox" id="attendance-auto-grading" class="checkbox">
+                                            <span class="text-sm font-medium" data-i18n="attendance.autoGrading">Automatic Grading</span>
+                                        </label>
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex-1">
+                                                <label class="block text-sm mb-1 font-medium" data-i18n="attendance.minPercent">Minimum Attendance (%)</label>
+                                                <div class="flex items-center gap-2">
+                                                    <input type="number" id="attendance-min-percent" step="1" min="0" max="100" class="input w-32" value="75">
+                                                    <span class="text-sm">%</span>
+                                                </div>
+                                                <p class="text-gray-400 text-sm mt-1" data-i18n="attendance.minPercentHint">Students with less than this percentage automatically receive a grade of 5</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex-1">
+                                                <label class="block text-sm mb-1 font-medium" data-i18n="attendance.warningThreshold">Warning Threshold (%)</label>
+                                                <div class="flex items-center gap-2">
+                                                    <input type="number" id="attendance-warning-threshold" step="1" min="0" max="20" class="input w-32" value="5">
+                                                    <span class="text-sm">%</span>
+                                                </div>
+                                                <p class="text-gray-400 text-sm mt-1" data-i18n="attendance.warningThresholdHint">Students are warned when approaching this value</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button id="save-attendance-settings" class="btn-primary mt-4 w-full" data-i18n="attendance.saveSettings">Save Settings</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Dialogs -->
                 <dialog id="edit-dialog" class="dialog w-full sm:max-w-[425px]" aria-labelledby="edit-dialog-title">
                     <div>
@@ -1047,225 +1204,6 @@
                     </div>
                 </dialog>
 
-                <dialog id="manage-categories-dialog" class="dialog w-full sm:max-w-[525px]"
-                    aria-labelledby="manage-categories-title">
-                    <div>
-                        <header>
-                            <h2 id="manage-categories-title" data-i18n="class.manageCategories">Manage Categories</h2>
-                        </header>
-                        <section class="overflow-y-auto max-h-[60vh]">
-                            <div class="tabs w-full" id="manage-categories-tabs">
-                                <nav role="tablist" aria-orientation="horizontal" class="w-full">
-                                    <button type="button" role="tab" id="tab-categories"
-                                        aria-controls="panel-categories" aria-selected="true" tabindex="0"
-                                        data-i18n="category.categories">Categories</button>
-                                    <button type="button" role="tab" id="tab-percentage"
-                                        aria-controls="panel-percentage" aria-selected="false" tabindex="0"
-                                        data-i18n="category.gradeRanges">Grade
-                                        Ranges</button>
-                                    <button type="button" role="tab" id="tab-plusminus" aria-controls="panel-plusminus"
-                                        aria-selected="false" tabindex="0" data-i18n="category.plusMinusSettings">+/~/-
-                                        Settings</button>
-                                    <button type="button" role="tab" id="tab-attendance" aria-controls="panel-attendance"
-                                        aria-selected="false" tabindex="0" data-i18n="attendance.settings">Attendance
-                                        Settings</button>
-                                </nav>
-
-                                <div role="tabpanel" id="panel-categories" aria-labelledby="tab-categories"
-                                    tabindex="-1" aria-selected="true">
-                                    <div class="py-4">
-                                        <div id="categories-list" class="space-y-2"></div>
-                                    </div>
-                                </div>
-
-                                <div role="tabpanel" id="panel-percentage" aria-labelledby="tab-percentage"
-                                    tabindex="-1" aria-selected="false" hidden>
-                                    <div class="py-4">
-                                        <p class="text-gray-400 text-sm mb-4"
-                                            data-i18n="category.gradeRangesHint">Define the percentage
-                                            ranges for each grade. These are used when entering grades as percentages.
-                                        </p>
-                                        <div class="space-y-3" id="percentage-ranges-list">
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-12 font-semibold">1</span>
-                                                <input type="number" id="grade-1-min" min="0" max="100"
-                                                    class="input w-20" value="85">
-                                                <span>% -</span>
-                                                <input type="number" id="grade-1-max" min="0" max="100"
-                                                    class="input w-20" value="100">
-                                                <span>%</span>
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-12 font-semibold">2</span>
-                                                <input type="number" id="grade-2-min" min="0" max="100"
-                                                    class="input w-20" value="70">
-                                                <span>% -</span>
-                                                <input type="number" id="grade-2-max" min="0" max="100"
-                                                    class="input w-20" value="84">
-                                                <span>%</span>
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-12 font-semibold">3</span>
-                                                <input type="number" id="grade-3-min" min="0" max="100"
-                                                    class="input w-20" value="55">
-                                                <span>% -</span>
-                                                <input type="number" id="grade-3-max" min="0" max="100"
-                                                    class="input w-20" value="69">
-                                                <span>%</span>
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-12 font-semibold">4</span>
-                                                <input type="number" id="grade-4-min" min="0" max="100"
-                                                    class="input w-20" value="40">
-                                                <span>% -</span>
-                                                <input type="number" id="grade-4-max" min="0" max="100"
-                                                    class="input w-20" value="54">
-                                                <span>%</span>
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                <span class="w-12 font-semibold">5</span>
-                                                <input type="number" id="grade-5-min" min="0" max="100"
-                                                    class="input w-20" value="0">
-                                                <span>% -</span>
-                                                <input type="number" id="grade-5-max" min="0" max="100"
-                                                    class="input w-20" value="39">
-                                                <span>%</span>
-                                            </div>
-                                        </div>
-                                        <button id="save-percentage-ranges" class="btn-primary mt-4 w-full"
-                                            data-i18n="category.saveRanges">Save
-                                            Ranges</button>
-                                    </div>
-                                </div>
-
-                                <div role="tabpanel" id="panel-plusminus" aria-labelledby="tab-plusminus" tabindex="-1"
-                                    aria-selected="false" hidden>
-                                    <div class="py-4">
-                                        <p class="text-gray-400 text-sm mb-3"
-                                            data-i18n="category.plusMinusSettingsHint">Configure the percentage values for +/~/- grades. These values are used to calculate the grade average for categories with +/~/- grades.</p>
-                                        <div class="space-y-3">
-                                            <div class="flex items-center gap-3">
-                                                <span class="text-2xl font-bold text-green-600 w-12 text-center">+</span>
-                                                <div class="flex-1">
-                                                    <label class="block text-sm mb-1" data-i18n="category.plusPercent">Plus percentage</label>
-                                                    <div class="flex items-center gap-2">
-                                                        <input type="number" id="plusminus-plus-percent" step="1" min="0"
-                                                            max="100" class="input w-32" value="100">
-                                                        <span class="text-sm">%</span>
-                                                        <span class="text-gray-400 text-sm" data-i18n="category.plusHint">(Excellent performance)</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="flex items-center gap-3">
-                                                <span class="text-2xl font-bold text-yellow-600 w-12 text-center">~</span>
-                                                <div class="flex-1">
-                                                    <label class="block text-sm mb-1" data-i18n="category.neutralPercent">Neutral percentage</label>
-                                                    <div class="flex items-center gap-2">
-                                                        <input type="number" id="plusminus-neutral-percent" step="1" min="0"
-                                                            max="100" class="input w-32" value="50">
-                                                        <span class="text-sm">%</span>
-                                                        <span class="text-gray-400 text-sm" data-i18n="category.neutralHint">(Average performance)</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="flex items-center gap-3">
-                                                <span class="text-2xl font-bold text-red-600 w-12 text-center">-</span>
-                                                <div class="flex-1">
-                                                    <label class="block text-sm mb-1" data-i18n="category.minusPercent">Minus percentage</label>
-                                                    <div class="flex items-center gap-2">
-                                                        <input type="number" id="plusminus-minus-percent" step="1" min="0"
-                                                            max="100" class="input w-32" value="0">
-                                                        <span class="text-sm">%</span>
-                                                        <span class="text-gray-400 text-sm" data-i18n="category.minusHint">(Poor performance)</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button id="save-plusminus-settings" class="btn-primary mt-4 w-full"
-                                            data-i18n="category.saveSettings">Save
-                                            Settings</button>
-                                    </div>
-                                </div>
-
-                                <div role="tabpanel" id="panel-attendance" aria-labelledby="tab-attendance" tabindex="-1"
-                                    aria-selected="false" hidden>
-                                    <div class="py-4">
-                                        <p class="text-gray-400 text-sm mb-4"
-                                            data-i18n="attendance.autoGradingHint">
-                                            When enabled, students with low attendance automatically receive a failing grade.
-                                        </p>
-
-                                        <div class="space-y-4">
-                                            <label class="flex items-center gap-2 cursor-pointer">
-                                                <input type="checkbox" id="attendance-auto-grading" class="checkbox">
-                                                <span class="text-sm font-medium" data-i18n="attendance.autoGrading">Automatic Grading</span>
-                                            </label>
-
-                                            <div class="flex items-center gap-3">
-                                                <div class="flex-1">
-                                                    <label class="block text-sm mb-1 font-medium" data-i18n="attendance.minPercent">
-                                                        Minimum Attendance (%)
-                                                    </label>
-                                                    <div class="flex items-center gap-2">
-                                                        <input type="number" id="attendance-min-percent" step="1" min="0"
-                                                            max="100" class="input w-32" value="75">
-                                                        <span class="text-sm">%</span>
-                                                    </div>
-                                                    <p class="text-gray-400 text-sm mt-1"
-                                                        data-i18n="attendance.minPercentHint">
-                                                        Students with less than this percentage automatically receive a grade of 5
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div class="flex items-center gap-3">
-                                                <div class="flex-1">
-                                                    <label class="block text-sm mb-1 font-medium" data-i18n="attendance.warningThreshold">
-                                                        Warning Threshold (%)
-                                                    </label>
-                                                    <div class="flex items-center gap-2">
-                                                        <input type="number" id="attendance-warning-threshold" step="1" min="0"
-                                                            max="20" class="input w-32" value="5">
-                                                        <span class="text-sm">%</span>
-                                                    </div>
-                                                    <p class="text-gray-400 text-sm mt-1"
-                                                        data-i18n="attendance.warningThresholdHint">
-                                                        Students are warned when approaching this value
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <button id="save-attendance-settings" class="btn-primary mt-4 w-full"
-                                            data-i18n="attendance.saveSettings">Save Settings</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-                        <footer class="flex justify-between items-center gap-2">
-                            <button id="add-category" class="btn-secondary">
-                                <svg class="lucide lucide-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42Z" />
-                                    <circle cx="7.5" cy="15.5" r="1" />
-                                </svg>
-                                <span data-i18n="category.addCategory">Add Category</span>
-                            </button>
-                            <button type="button" class="btn-outline" id="close-manage-categories"
-                                data-i18n="dialog.close">Close</button>
-                        </footer>
-                        <button type="button" aria-label="Close dialog" data-tooltip="Close dialog"
-                            data-i18n-tooltip="dialog.closeDialog" data-side="top"
-                            id="close-manage-categories-x">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" class="lucide lucide-x-icon lucide-x">
-                                <path d="M18 6 6 18" />
-                                <path d="m6 6 12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                </dialog>
 
 
 
@@ -1624,11 +1562,13 @@ Anna,,Schmidt</code></pre>
             const deleteAccountDialog = document.getElementById('delete-account-dialog');
 
             const openProfileDialog = () => {
-                // Load current values
-                document.getElementById('profile-teacher-name').value = appData.teacherName || '';
-                document.getElementById('profile-school').value = appData.school || '';
-                document.getElementById('profile-language').value = I18n.getCurrentLanguage();
-                renderDefaultSubjects('profile-subjects-list');
+                // Load current profile values
+                const teacherNameInput = document.getElementById('profile-teacher-name');
+                const schoolInput = document.getElementById('profile-school');
+                const languageInput = document.getElementById('profile-language');
+                if (teacherNameInput) teacherNameInput.value = appData.teacherName || '';
+                if (schoolInput) schoolInput.value = appData.school || '';
+                if (languageInput) languageInput.value = appData.language || 'en';
                 profileDialog.showModal();
             };
 
@@ -1638,6 +1578,7 @@ Anna,,Schmidt</code></pre>
                 profileDialog.close();
             });
 
+            // Save profile from settings-view
             document.getElementById('save-profile').addEventListener('click', async () => {
                 const btn = document.getElementById('save-profile');
                 const teacherName = document.getElementById('profile-teacher-name').value.trim();
@@ -1668,7 +1609,7 @@ Anna,,Schmidt</code></pre>
                     document.getElementById('teacher-greeting').textContent = window.currentUser.username;
                 }
 
-                // Save to server
+                // Save to server and close dialog
                 saveData(t('toast.profileSaved'), 'success');
                 setButtonLoading(btn, false);
                 profileDialog.close();
@@ -1714,6 +1655,7 @@ Anna,,Schmidt</code></pre>
                         const index = parseInt(btn.dataset.index);
                         appData.defaultSubjects.splice(index, 1);
                         renderDefaultSubjects(containerId);
+                        saveData(t('toast.itemDeleted'), 'success');
                     });
                 });
 
@@ -1774,6 +1716,8 @@ Anna,,Schmidt</code></pre>
                     });
                 });
             };
+            // Expose globally so showSettingsView() in render.js can call it
+            window.renderDefaultSubjects = renderDefaultSubjects;
 
             // Setup dialog - Add subject
             document.getElementById('setup-add-subject-btn').addEventListener('click', () => {
@@ -1814,9 +1758,9 @@ Anna,,Schmidt</code></pre>
                 }
             });
 
-            // Profile dialog - Add subject
-            document.getElementById('profile-add-subject-btn').addEventListener('click', () => {
-                const input = document.getElementById('profile-subject-input');
+            // Settings view - Add subject
+            document.getElementById('settings-add-subject-btn').addEventListener('click', () => {
+                const input = document.getElementById('settings-subject-input');
                 const subjectName = input.value.trim();
 
                 if (!subjectName) {
@@ -1840,16 +1784,17 @@ Anna,,Schmidt</code></pre>
                 }
 
                 appData.defaultSubjects.push({ name: validation.value, minAttendancePercent: null, warningThreshold: null, attendanceAutoGrading: null });
-                renderDefaultSubjects('profile-subjects-list');
+                renderDefaultSubjects('settings-subjects-list');
+                saveData(t('toast.subjectAdded'), 'success');
                 input.value = '';
                 input.focus();
             });
 
-            // Profile dialog - Enter key to add subject
-            document.getElementById('profile-subject-input').addEventListener('keypress', (e) => {
+            // Settings view - Enter key to add subject
+            document.getElementById('settings-subject-input').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    document.getElementById('profile-add-subject-btn').click();
+                    document.getElementById('settings-add-subject-btn').click();
                 }
             });
 

@@ -171,7 +171,7 @@ const renderYearSelector = () => {
     });
 
     // "+" Button zum Hinzufügen
-    html += `<button class="btn-sm-icon-outline" id="add-year-btn" data-tooltip="${t("year.addYear")}" data-side="top">
+    html += `<button class="btn-sm-icon-outline" id="add-year-btn" data-tooltip="${t("tooltip.addYearTo", { class: currentClass.name })}" data-side="top">
         <svg class="lucide lucide-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -423,13 +423,22 @@ const renderSubjectTabs = () => {
     });
 
     // "+" Button zum Hinzufügen
-    html += `<button class="btn-sm-icon-outline" id="add-subject-btn" data-tooltip="${t("subject.addSubject")}" data-side="top">
+    html += `<button class="btn-sm-icon-outline" id="add-subject-btn" data-tooltip="${t("tooltip.addSubjectTo", { year: currentYear.name })}" data-side="top">
         <svg class="lucide lucide-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
     </button>`;
 
     container.innerHTML = html;
+
+    // Update attendance button tooltip for current subject
+    const attendanceBtn = document.getElementById("add-attendance-btn");
+    if (attendanceBtn) {
+        const activeSubject = currentYear.subjects?.find(s => s.id === activeId);
+        if (activeSubject) {
+            attendanceBtn.dataset.tooltip = t("tooltip.addAttendanceFor", { subject: activeSubject.name });
+        }
+    }
 
     // Event-Listener: Tab-Klick (Fach wechseln)
     container.querySelectorAll("[data-subject-id]").forEach(btn => {
@@ -1148,6 +1157,9 @@ const renderStudents = () => {
         return;
     }
 
+    const currentSubject = currentYear.subjects?.find(s => s.id === currentYear.currentSubjectId);
+    const currentSubjectName = currentSubject?.name || '';
+
     // Update class stats when students table changes
     renderClassStats();
 
@@ -1252,13 +1264,13 @@ const renderStudents = () => {
               <td>${weightedAvg ? weightedAvg.toFixed(2) : "—"}</td>
               <td>${finalGradeDisplay}</td>
               <td>
-                <button class="btn-icon btn-secondary mr-1" data-view-student="${safeAttr(student.id)}" data-tooltip="${t("class.viewDetails")}" data-side="top">
+                <button class="btn-icon btn-secondary mr-1" data-view-student="${safeAttr(student.id)}" data-tooltip="${t("tooltip.viewStudentDetails", { student: `${student.firstName} ${student.lastName}`.trim() })}" data-side="top">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
-                <button class="btn-icon btn-primary mr-1" data-add-grade="${safeAttr(student.id)}" data-tooltip="${t("grade.addGrade")}" data-side="top">
+                <button class="btn-icon btn-primary mr-1" data-add-grade="${safeAttr(student.id)}" data-tooltip="${currentSubjectName ? t("tooltip.addGradeToStudent", { student: `${student.firstName} ${student.lastName}`.trim(), subject: currentSubjectName }) : t("grade.addGrade")}" data-side="top">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-icon lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                 </button>
-                <button class="btn-icon btn-secondary mr-1" data-edit-student="${safeAttr(student.id)}" data-tooltip="${t("class.rename")}" data-side="top">
+                <button class="btn-icon btn-secondary mr-1" data-edit-student="${safeAttr(student.id)}" data-tooltip="${t("tooltip.renameStudent", { student: `${student.firstName} ${student.lastName}`.trim() })}" data-side="top">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-pen-icon lucide-user-pen"><path d="M11.5 15H7a4 4 0 0 0-4 4v2"/><path d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/><circle cx="10" cy="7" r="4"/></svg>
                 </button>
                 <button class="btn-icon btn-destructive" data-delete-student="${safeAttr(student.id)}" data-tooltip="${t("dialog.delete")}" data-side="top">
@@ -2251,11 +2263,74 @@ const renderHome = () => {
     });
 };
 
+// Reload all settings form inputs from appData (restores saved values)
+const reloadSettingsFormValues = () => {
+    const pm = appData.plusMinusPercentages || { plus: 100, neutral: 50, minus: 0 };
+    const plusEl = document.getElementById("plusminus-plus-percent");
+    const neutralEl = document.getElementById("plusminus-neutral-percent");
+    const minusEl = document.getElementById("plusminus-minus-percent");
+    if (plusEl) plusEl.value = pm.plus;
+    if (neutralEl) neutralEl.value = pm.neutral;
+    if (minusEl) minusEl.value = pm.minus;
+
+    const att = appData.attendanceSettings || { enabled: false, minAttendancePercent: 75, warningThreshold: 5 };
+    const enabledEl = document.getElementById("attendance-auto-grading");
+    const minPctEl = document.getElementById("attendance-min-percent");
+    const warnEl = document.getElementById("attendance-warning-threshold");
+    if (enabledEl) enabledEl.checked = att.enabled;
+    if (minPctEl) minPctEl.value = att.minAttendancePercent;
+    if (warnEl) warnEl.value = att.warningThreshold;
+
+    const defaultRanges = [
+        { grade: 1, minPercent: 85, maxPercent: 100 },
+        { grade: 2, minPercent: 70, maxPercent: 84 },
+        { grade: 3, minPercent: 55, maxPercent: 69 },
+        { grade: 4, minPercent: 40, maxPercent: 54 },
+        { grade: 5, minPercent: 0, maxPercent: 39 }
+    ];
+    (appData.gradePercentageRanges || defaultRanges).forEach(range => {
+        const minEl = document.getElementById(`grade-${range.grade}-min`);
+        const maxEl = document.getElementById(`grade-${range.grade}-max`);
+        if (minEl) minEl.value = range.minPercent;
+        if (maxEl) maxEl.value = range.maxPercent;
+    });
+};
+
+// Settings dirty-check helper: shows confirm dialog if there are unsaved changes
+const checkSettingsDirtyThenRun = (callback) => {
+    if (window.settingsDirty) {
+        showConfirmDialog(
+            t('dialog.unsavedMessage'),
+            () => {
+                window.settingsDirty = false;
+                reloadSettingsFormValues();
+                callback();
+            },
+            null, null,
+            { confirmText: t('dialog.unsavedDiscard'), cancelText: t('dialog.unsavedBack') }
+        );
+    } else {
+        callback();
+    }
+};
+
 // Show Home View
 const showHomeView = () => {
     const homeView = document.getElementById("home-view");
     const classView = document.getElementById("class-view");
     const studentDetailView = document.getElementById("student-detail-view");
+    const settingsView = document.getElementById("settings-view");
+
+    // Guard: if settings view is visible with unsaved changes, confirm first
+    if (settingsView && !settingsView.classList.contains("hidden") && window.settingsDirty) {
+        showConfirmDialog(
+            t('dialog.unsavedMessage'),
+            () => { window.settingsDirty = false; showHomeView(); },
+            null, null,
+            { confirmText: t('dialog.unsavedDiscard'), cancelText: t('dialog.unsavedBack') }
+        );
+        return;
+    }
 
     // Destroy chart instance if exists
     if (window.studentGradeChartInstance) {
@@ -2269,6 +2344,8 @@ const showHomeView = () => {
         viewToHide = classView;
     } else if (studentDetailView && !studentDetailView.classList.contains("hidden")) {
         viewToHide = studentDetailView;
+    } else if (settingsView && !settingsView.classList.contains("hidden")) {
+        viewToHide = settingsView;
     }
 
     // Animation triggern
@@ -2295,6 +2372,12 @@ const showHomeView = () => {
     document.getElementById("nav-home").classList.add("btn-primary");
     document.getElementById("nav-home").classList.remove("btn-secondary");
 
+    const navSettings = document.getElementById("nav-settings");
+    if (navSettings) {
+        navSettings.classList.remove("btn-primary");
+        navSettings.classList.add("btn-outline");
+    }
+
     // Reset class buttons in sidebar to inactive
     document.querySelectorAll("[data-class-id]").forEach(btn => {
         btn.classList.remove("btn-primary");
@@ -2307,6 +2390,18 @@ const showClassView = () => {
     const homeView = document.getElementById("home-view");
     const classView = document.getElementById("class-view");
     const studentDetailView = document.getElementById("student-detail-view");
+    const settingsView = document.getElementById("settings-view");
+
+    // Guard: if settings view is visible with unsaved changes, confirm first
+    if (settingsView && !settingsView.classList.contains("hidden") && window.settingsDirty) {
+        showConfirmDialog(
+            t('dialog.unsavedMessage'),
+            () => { window.settingsDirty = false; showClassView(); },
+            null, null,
+            { confirmText: t('dialog.unsavedDiscard'), cancelText: t('dialog.unsavedBack') }
+        );
+        return;
+    }
 
     // Destroy chart instance if exists
     if (window.studentGradeChartInstance) {
@@ -2320,6 +2415,8 @@ const showClassView = () => {
         viewToHide = homeView;
     } else if (studentDetailView && !studentDetailView.classList.contains("hidden")) {
         viewToHide = studentDetailView;
+    } else if (settingsView && !settingsView.classList.contains("hidden")) {
+        viewToHide = settingsView;
     }
 
     // Animation triggern
@@ -2382,6 +2479,22 @@ const showClassView = () => {
 
     document.getElementById("nav-home").classList.remove("btn-primary");
     document.getElementById("nav-home").classList.add("btn-secondary");
+
+    const navSettings = document.getElementById("nav-settings");
+    if (navSettings) {
+        navSettings.classList.remove("btn-primary");
+        navSettings.classList.add("btn-outline");
+    }
+
+    // Add contextual tooltip to add-student button
+    const addStudentBtn = document.getElementById("add-student");
+    if (addStudentBtn) {
+        const currentClass = getCurrentClass();
+        const currentYear = getCurrentYear();
+        if (currentClass && currentYear) {
+            addStudentBtn.dataset.tooltip = t("tooltip.addStudentTo", { class: currentClass.name, year: currentYear.name });
+        }
+    }
 };
 
 // ========== STUDENT DETAIL VIEW FUNCTIONS ==========
@@ -2400,9 +2513,17 @@ const showStudentDetailView = (studentId) => {
     const classView = document.getElementById("class-view");
     const homeView = document.getElementById("home-view");
     const studentDetailView = document.getElementById("student-detail-view");
+    const settingsView = document.getElementById("settings-view");
 
     // Hide other views with animation
-    const viewToHide = !classView.classList.contains("hidden") ? classView : homeView;
+    let viewToHide;
+    if (!classView.classList.contains("hidden")) {
+        viewToHide = classView;
+    } else if (settingsView && !settingsView.classList.contains("hidden")) {
+        viewToHide = settingsView;
+    } else {
+        viewToHide = homeView;
+    }
 
     viewToHide.style.animation = 'viewFadeOut 0.15s ease-in forwards';
     setTimeout(() => {
@@ -2448,6 +2569,123 @@ const backToClassView = () => {
         renderSubjectTabs();
         renderStudents();
     }, 150);
+};
+
+// Show Settings View
+const showSettingsView = () => {
+    const homeView = document.getElementById("home-view");
+    const classView = document.getElementById("class-view");
+    const studentDetailView = document.getElementById("student-detail-view");
+    const settingsView = document.getElementById("settings-view");
+
+    if (!settingsView) return;
+
+    // Destroy chart instance if exists
+    if (window.studentGradeChartInstance) {
+        window.studentGradeChartInstance.destroy();
+        window.studentGradeChartInstance = null;
+    }
+
+    // Find which view is currently visible
+    let viewToHide = null;
+    if (!homeView.classList.contains("hidden")) {
+        viewToHide = homeView;
+    } else if (!classView.classList.contains("hidden")) {
+        viewToHide = classView;
+    } else if (studentDetailView && !studentDetailView.classList.contains("hidden")) {
+        viewToHide = studentDetailView;
+    }
+
+    const showSettings = () => {
+        settingsView.classList.remove("hidden");
+        settingsView.style.animation = 'none';
+        settingsView.offsetHeight; // Force reflow
+        settingsView.style.animation = 'viewFadeIn 0.25s ease-out';
+
+        // Load all settings form values from appData
+        reloadSettingsFormValues();
+
+        // Render category management
+        renderCategoryManagement();
+
+        // Render default subjects
+        if (window.renderDefaultSubjects) {
+            window.renderDefaultSubjects('settings-subjects-list');
+        }
+
+        // Tab-switch dirty guard — registered once per settings-tabs container
+        if (!document.getElementById("settings-tabs")?.dataset.dirtyGuardInit) {
+            const tabContainer = document.getElementById("settings-tabs");
+            if (tabContainer) {
+                // Manually switch a tab — used when confirming discard after dirty check
+                const switchToTab = (targetTab) => {
+                    const allTabs = tabContainer.querySelectorAll('[role="tab"]');
+                    const allPanels = tabContainer.querySelectorAll('[role="tabpanel"]');
+                    allTabs.forEach(t => {
+                        t.setAttribute('aria-selected', t === targetTab ? 'true' : 'false');
+                        t.setAttribute('tabindex', t === targetTab ? '0' : '-1');
+                    });
+                    allPanels.forEach(p => {
+                        p.hidden = p.id !== targetTab.getAttribute('aria-controls');
+                    });
+                };
+
+                // Attach directly on each button (target phase) — fires before basecoat's
+                // bubble-phase delegation handler on nav[tablist]. At target phase,
+                // aria-selected still reflects the pre-click state so the check is reliable.
+                tabContainer.querySelectorAll('[role="tab"]').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        // Already active tab — nothing to intercept
+                        if (tab.getAttribute('aria-selected') === 'true') return;
+                        // Not dirty — let basecoat handle the switch normally
+                        if (!window.settingsDirty) return;
+
+                        // Dirty: stop basecoat's delegation handler from running
+                        e.stopPropagation();
+                        e.preventDefault();
+
+                        // Show confirm; on discard, do the switch ourselves
+                        checkSettingsDirtyThenRun(() => switchToTab(tab));
+                    });
+                });
+
+                tabContainer.dataset.dirtyGuardInit = "true";
+            }
+        }
+
+        // Reset dirty state when entering settings (values are freshly loaded)
+        window.settingsDirty = false;
+
+        // Set breadcrumb home handler
+        const breadcrumbHome = document.getElementById("settings-breadcrumb-home");
+        if (breadcrumbHome) {
+            breadcrumbHome.onclick = (e) => {
+                e.preventDefault();
+                showHomeView();
+            };
+        }
+    };
+
+    if (viewToHide) {
+        viewToHide.style.animation = 'viewFadeOut 0.15s ease-in forwards';
+        setTimeout(() => {
+            viewToHide.classList.add("hidden");
+            viewToHide.style.animation = '';
+            showSettings();
+        }, 150);
+    } else {
+        showSettings();
+    }
+
+    // Update nav button states
+    document.getElementById("nav-home").classList.remove("btn-primary");
+    document.getElementById("nav-home").classList.add("btn-secondary");
+
+    const navSettings = document.getElementById("nav-settings");
+    if (navSettings) {
+        navSettings.classList.add("btn-primary");
+        navSettings.classList.remove("btn-outline");
+    }
 };
 
 /**

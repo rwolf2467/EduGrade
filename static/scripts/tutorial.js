@@ -23,13 +23,13 @@ const TUTORIAL_STEPS = [
         manualNext: true // Benutzer muss "Next" klicken
     },
     {
-        id: 'click-manage-categories',
+        id: 'click-nav-settings',
         get title() { return t("tutorial.openCategories.title"); },
         get content() { return t("tutorial.openCategories.content"); },
-        targetSelector: '#manage-categories',
+        targetSelector: '#nav-settings',
         position: 'bottom',
         waitFor: {
-            selector: '#manage-categories',
+            selector: '#nav-settings',
             event: 'click'
         },
         action: () => {
@@ -45,14 +45,6 @@ const TUTORIAL_STEPS = [
         waitFor: {
             selector: '#add-category',
             event: 'click'
-        },
-        action: () => {
-            // Dialog sollte schon offen sein, aber sicherstellen
-            const dialog = document.getElementById("manage-categories-dialog");
-            if (!dialog.open) {
-                renderCategoryManagement();
-                dialog.showModal();
-            }
         }
     },
     {
@@ -67,35 +59,27 @@ const TUTORIAL_STEPS = [
         }
     },
     {
-        id: 'explain-grade-ranges-tab',
+        id: 'explain-grade-ranges',
         get title() { return t("tutorial.gradeRangesTab.title"); },
         get content() { return t("tutorial.gradeRangesTab.content"); },
-        targetSelector: '#tab-percentage',
-        position: 'bottom',
-        waitFor: {
-            selector: '#tab-percentage',
-            event: 'click'
-        },
+        targetSelector: '#save-percentage-ranges',
+        position: 'top',
+        manualNext: true,
         action: () => {
             // Schließe edit-dialog falls noch offen
             const editDialog = document.getElementById('edit-dialog');
             if (editDialog && editDialog.open) editDialog.close();
-            // Stelle sicher dass manage-categories-dialog offen ist
-            const dialog = document.getElementById("manage-categories-dialog");
-            if (!dialog.open) {
-                renderCategoryManagement();
-                dialog.showModal();
-            }
         }
     },
     {
-        id: 'explain-percentage-settings-and-close',
+        id: 'explain-percentage-settings-and-back',
         get title() { return t("tutorial.gradeRanges.title"); },
         get content() { return t("tutorial.gradeRanges.content"); },
-        targetSelector: '#close-manage-categories',
-        position: 'left',
+        targetSelector: '#settings-breadcrumb-home',
+        position: 'bottom',
         waitFor: {
-            dialogCloseEvent: 'manage-categories-dialog'
+            selector: '#settings-breadcrumb-home',
+            event: 'click'
         }
     },
     {
