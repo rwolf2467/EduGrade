@@ -2,6 +2,7 @@
 
 [![Docker Hub](https://img.shields.io/badge/docker-redwolf2467%2Fedugrade-blue?logo=docker)](https://hub.docker.com/r/redwolf2467/edugrade)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Uptime Status](https://status.avocloud.net/api/badge/29/uptime)](https://status.avocloud.net)
 
 A secure web application for teachers to manage student grades, classes, and performance tracking. Built with Python (Quart) and JavaScript.
 
