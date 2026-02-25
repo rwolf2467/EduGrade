@@ -166,7 +166,7 @@
         window.shareToken = '{{ token }}';
         window.shareError = '{{ error or "" }}';
         // Apply translations to static HTML
-        document.addEventListener('DOMContentLoaded', () => I18n.applyI18nToDOM());
+        document.addEventListener('DOMContentLoaded', async () => { await I18n.ready; I18n.applyI18nToDOM(); });
     </script>
     <script src="/static/scripts/studentView.js"></script>
 </body>

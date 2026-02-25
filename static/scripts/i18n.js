@@ -14,24 +14,27 @@ const I18n = (() => {
         return 'en';
     };
 
-    const loadTranslations = (lang) => {
+    const loadTranslations = async (lang) => {
         if (translations[lang]) return;
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', `/static/i18n/${lang}.json`, false);
-        xhr.send();
-        if (xhr.status === 200) {
-            translations[lang] = JSON.parse(xhr.responseText);
-        } else {
-            console.error(`Failed to load translations for ${lang}`);
+        try {
+            const response = await fetch(`/static/i18n/${lang}.json`);
+            if (response.ok) {
+                translations[lang] = await response.json();
+            } else {
+                console.error(`Failed to load translations for ${lang}`);
+                translations[lang] = {};
+            }
+        } catch (err) {
+            console.error(`Error loading translations for ${lang}:`, err);
             translations[lang] = {};
         }
     };
 
-    const init = () => {
+    const init = async () => {
         currentLang = detectLanguage();
-        loadTranslations('en');
+        await loadTranslations('en');
         if (currentLang !== 'en') {
-            loadTranslations(currentLang);
+            await loadTranslations(currentLang);
         }
     };
 
@@ -56,9 +59,9 @@ const I18n = (() => {
         return text;
     };
 
-    const setLanguage = (lang) => {
+    const setLanguage = async (lang) => {
         if (!SUPPORTED_LANGS.includes(lang)) return;
-        loadTranslations(lang);
+        await loadTranslations(lang);
         currentLang = lang;
         localStorage.setItem('edugrade-lang', lang);
         if (typeof appData !== 'undefined') {
@@ -91,7 +94,7 @@ const I18n = (() => {
         document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
             el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria-label')));
         });
-        
+
         // Handle select options with data-i18n-option
         document.querySelectorAll('option[data-i18n-option]').forEach(option => {
             const key = option.getAttribute('data-i18n-option');
@@ -99,9 +102,9 @@ const I18n = (() => {
         });
     };
 
-    init();
+    const ready = init();
 
-    return { t, setLanguage, getCurrentLanguage, applyI18nToDOM, loadTranslations };
+    return { t, setLanguage, getCurrentLanguage, applyI18nToDOM, loadTranslations, ready };
 })();
 
 const t = I18n.t;
