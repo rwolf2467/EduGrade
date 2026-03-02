@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -19,6 +19,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/basecoat.cdn.min.css">
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/avocloud-branding.css">
     <script src="/static/scripts/theme.js"></script>
     <style>
         /* About page specific styles */
@@ -220,19 +221,18 @@
                     </div>
                     <div>
                         <p style="color: oklch(.708 0 0);">
-                            EduGrade is an official project by
-                            <a href="https://avocloud.net" class="text-purple-400 hover:underline font-semibold" target="_blank" rel="noopener">avocloud.net</a>
-                            &mdash; a platform for self-hosted, privacy-focused web applications. avocloud.net provides
-                            the infrastructure, maintenance, and ongoing development that keeps EduGrade running
-                            reliably for teachers.
+                            EduGrade is an official project by avocloud.net &mdash; a platform for self-hosted,
+                            privacy-focused web applications. avocloud.net provides the infrastructure, maintenance,
+                            and ongoing development that keeps EduGrade running reliably for teachers.
                         </p>
-                        <div class="mt-4 flex flex-wrap gap-3">
+                        <div class="mt-4 flex flex-wrap items-center gap-4">
                             <a href="https://avocloud.net" target="_blank" rel="noopener"
-                                class="btn-outline flex items-center gap-2 text-sm">
-                                <svg class="lucide w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
+                                class="inline-flex items-center gap-1.5 text-purple-400 hover:text-purple-300 transition-colors"
+                                style="font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; letter-spacing: 0.04em; text-decoration: none;">
+                                <svg viewBox="0 0 100 75" fill="none" style="height: 1rem; width: auto;" stroke="currentColor" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M 43 65 L 11 65 L 33 10 L 67 65 L 91 12"/>
                                 </svg>
-                                avocloud.net
+                                AVOCLOUD.NET
                             </a>
                             <a href="https://github.com/rwolf2467/EduGrade" target="_blank" rel="noopener"
                                 class="btn-outline flex items-center gap-2 text-sm">
@@ -847,13 +847,24 @@
 
         <!-- Footer -->
         <footer class="text-center py-8" style="color: oklch(.708 0 0);">
-            <p class="mb-2 font-semibold">EduGrade</p>
-            <p class="text-sm">Developed by <strong>Fabian Murauer</strong> &mdash; an <a href="https://avocloud.net" class="hover:underline" target="_blank" rel="noopener">avocloud.net</a> project</p>
+            <p class="mb-3 font-semibold" style="font-family: 'Syne', sans-serif; font-size: 1.1rem;">EduGrade</p>
+            <p class="text-sm mb-1">Developed by <strong>Fabian Murauer</strong></p>
+            <div class="flex justify-center mt-2">
+                <a href="https://avocloud.net" target="_blank" rel="noopener"
+                    class="inline-flex items-center gap-1.5 hover:opacity-75 transition-opacity"
+                    style="font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.04em; text-decoration: none; color: inherit;">
+                    <svg viewBox="0 0 100 75" fill="none" style="height: 0.95rem; width: auto;" stroke="currentColor" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M 43 65 L 11 65 L 33 10 L 67 65 L 91 12"/>
+                    </svg>
+                    AVOCLOUD.NET
+                </a>
+            </div>
             <p class="text-sm mt-4">
                 <a href="/" class="underline hover:no-underline">Back to Application</a>
             </p>
         </footer>
     </div>
+    <script src="/static/scripts/avocloud-logo.js"></script>
     <script>
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/service-worker.js', { scope: '/' });

@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Quicksand:wght@300..700&display=swap');
+
+/* Headings */
+h1, h2, h3, h4 {
+    font-family: 'Syne', sans-serif !important;
+}
+
+
+/* avocloud.net logo */
+.avocloud-logo {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+    color: inherit;
+}
+
+.avocloud-logo__slot {
+    position: relative;
+    display: inline-grid;
+    flex-shrink: 0;
+}
+
+.avocloud-logo__icon,
+.avocloud-logo__av {
+    grid-area: 1/1;
+    display: flex;
+    align-items: center;
+}
+
+.avocloud-logo__icon {
+    transition:
+        opacity   0.32s ease,
+        transform 0.32s cubic-bezier(0.77, 0, 0.18, 1);
+}
+
+.avocloud-logo__icon svg {
+    display: block;
+    height: 1.1rem;
+    width: auto;
+    stroke: currentColor;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.avocloud-logo__av {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(6px);
+    transition:
+        opacity   0.32s ease,
+        transform 0.32s cubic-bezier(0.77, 0, 0.18, 1);
+    pointer-events: none;
+    justify-content: center;
+}
+
+.avocloud-logo__rest-wrap {
+    overflow: hidden;
+    max-width: 0;
+    display: flex;
+    align-items: baseline;
+    transition: max-width 0.4s cubic-bezier(0.77, 0, 0.18, 1);
+}
+
+.avocloud-logo__rest {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    transform: translateX(20px);
+    opacity: 0;
+    transition:
+        transform 0.4s cubic-bezier(0.77, 0, 0.18, 1),
+        opacity   0.3s ease 0.05s;
+}
+
+.avocloud-logo__dot {
+    opacity: 0.55;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+}

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net; connect-src 'self';">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -26,6 +26,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/avocloud-branding.css">
     <script src="/static/scripts/theme.js"></script>
 </head>
 
@@ -414,15 +415,17 @@
                                 <p class="text-gray-400 text-sm" data-i18n="profile.languageHint">Choose your preferred language.</p>
                             </div>
                             <!-- Danger Zone -->
-                            <div class="alert-destructive p-4 rounded-lg border border-red-500/30">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" class="lucide lucide-octagon-alert-icon lucide-octagon-alert">
-                                    <path d="M12 16h.01" />
-                                    <path d="M12 8v4" />
-                                    <path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z" />
-                                </svg>
-                                <h3 class="text-sm font-medium mb-3 text-red-400" data-i18n="settings.dangerZone">Danger Zone</h3>
+                            <div class="p-4 rounded-lg border border-red-500/30 bg-red-500/5">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" class="text-red-400 shrink-0">
+                                        <path d="M12 16h.01" />
+                                        <path d="M12 8v4" />
+                                        <path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z" />
+                                    </svg>
+                                    <h3 class="text-sm font-medium text-red-400" data-i18n="settings.dangerZone">Danger Zone</h3>
+                                </div>
                                 <div class="space-y-3">
                                     <div class="flex items-center justify-between gap-4">
                                         <div>
@@ -1897,13 +1900,20 @@ Anna,,Schmidt</code></pre>
     </script>
 
     <footer class="text-gray-400 fixed bottom-0 left-0 right-0 py-2 text-center text-xs">
-        <p>
-            EduGrade &mdash; Powered by <a href="https://avocloud.net" target="_blank" rel="noopener" class="hover:text-gray-200">avocloud.net</a>
-            <span style="margin-left: 1rem; padding: 2px 8px; background: oklch(.2 0 0); border-radius: 4px; font-weight: 600; color: oklch(.9 0 0);">
+        <p style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: center;">
+            EduGrade &mdash; Powered by
+            <a href="https://avocloud.net" target="_blank" rel="noopener" class="hover:text-gray-200 inline-flex items-center gap-1" style="font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.04em;">
+                <svg viewBox="0 0 100 75" fill="none" style="height: 0.8rem; width: auto;" stroke="currentColor" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M 43 65 L 11 65 L 33 10 L 67 65 L 91 12"/>
+                </svg>
+                AVOCLOUD.NET
+            </a>
+            <span style="margin-left: 0.75rem; padding: 2px 8px; background: oklch(.2 0 0); border-radius: 4px; font-weight: 600; color: oklch(.9 0 0);">
                 {{ version_string }}
             </span>
         </p>
     </footer>
+    <script src="/static/scripts/avocloud-logo.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
