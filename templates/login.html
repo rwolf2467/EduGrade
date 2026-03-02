@@ -327,6 +327,7 @@
                     hideProgress();
                     showToast(t('auth.welcomeBack'), 'success');
                     await delay(300);
+                    sessionStorage.setItem('avoShowIntro', '1');
                     window.location.href = '/';
                 } else if (response.status === 429) {
                     hideProgress();

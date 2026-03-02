@@ -28,9 +28,95 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/css/avocloud-branding.css">
     <script src="/static/scripts/theme.js"></script>
+    <style>
+        #avo-intro-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: oklch(0.09 0.015 280);
+            transition: opacity 0.7s ease;
+            color: #e8e4db;
+        }
+        #avo-intro-overlay.avo-fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .avo-intro {
+            display: inline-flex;
+            align-items: center;
+        }
+        .avo-icon-slot {
+            display: inline-grid;
+            flex-shrink: 0;
+        }
+        .avo-icon-slot > * {
+            grid-area: 1/1;
+            display: flex;
+            align-items: center;
+        }
+        .avo-icon svg {
+            height: 5rem;
+            width: auto;
+        }
+        .avo-path {
+            stroke-dasharray: 200;
+            stroke-dashoffset: 200;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .avo-av,
+        .avo-text {
+            font-family: 'Syne', sans-serif;
+            font-weight: 800;
+            font-size: 5rem;
+            letter-spacing: .04em;
+            white-space: nowrap;
+        }
+        .avo-av {
+            opacity: 0;
+            transform: translateX(6px);
+            transition: opacity .6s ease, transform .6s cubic-bezier(.77,0,.18,1);
+        }
+        .avo-text-wrap {
+            overflow: hidden;
+            max-width: 0;
+            display: flex;
+            align-items: baseline;
+            transition: max-width .7s cubic-bezier(.77,0,.18,1);
+        }
+        .avo-text {
+            opacity: 0;
+            transform: translateX(20px);
+            transition: transform .7s cubic-bezier(.77,0,.18,1), opacity .5s ease .05s;
+        }
+        .avo-dot { opacity: .55; }
+        .avo-icon {
+            transition: opacity .6s ease, transform .6s cubic-bezier(.77,0,.18,1);
+        }
+    </style>
 </head>
 
 <body>
+    <!-- Intro animation overlay (plays once per session after login) -->
+    <div id="avo-intro-overlay">
+        <div class="avo-intro">
+            <span class="avo-icon-slot">
+                <span class="avo-icon">
+                    <svg viewBox="0 0 100 75" fill="none" stroke="currentColor" stroke-width="8.5">
+                        <path class="avo-path" d="M 43 65 L 11 65 L 33 10 L 67 65 L 91 12" pathLength="200"/>
+                    </svg>
+                </span>
+                <span class="avo-av">AV</span>
+            </span>
+            <span class="avo-text-wrap">
+                <span class="avo-text">OCLOUD<span class="avo-dot">.NET</span></span>
+            </span>
+        </div>
+    </div>
+
     <!-- Store current user info and app version -->
     <script>
         window.currentUser = {
@@ -1918,6 +2004,60 @@ Anna,,Schmidt</code></pre>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
         }
+    </script>
+    <script>
+        (function () {
+            var overlay = document.getElementById('avo-intro-overlay');
+            if (!overlay) return;
+
+            // Only play when arriving directly from a login
+            if (!sessionStorage.getItem('avoShowIntro')) {
+                overlay.remove();
+                return;
+            }
+            sessionStorage.removeItem('avoShowIntro');
+
+            document.body.style.overflow = 'hidden';
+
+            function playAvoIntro() {
+                var path = overlay.querySelector('.avo-path');
+                var icon = overlay.querySelector('.avo-icon');
+                var av   = overlay.querySelector('.avo-av');
+                var wrap = overlay.querySelector('.avo-text-wrap');
+                var text = overlay.querySelector('.avo-text');
+
+                // Phase 1: typewriter SVG draw (1000ms)
+                path.style.transition = 'none';
+                path.style.strokeDashoffset = '200';
+                void path.getBoundingClientRect();
+                path.style.transition = 'stroke-dashoffset 1400ms cubic-bezier(.4,0,.2,1)';
+                path.style.strokeDashoffset = '0';
+
+                // Phase 2: icon fades out, AV + OCLOUD.NET slide in
+                setTimeout(function () {
+                    icon.style.opacity   = '0';
+                    icon.style.transform = 'translateX(-10px)';
+                    av.style.opacity     = '1';
+                    av.style.transform   = 'translateX(0)';
+                    setTimeout(function () {
+                        wrap.style.maxWidth  = '100vw';
+                        text.style.opacity   = '1';
+                        text.style.transform = 'translateX(0)';
+                    }, 500);
+                }, 1500);
+
+                // Phase 3: hold, then fade out overlay
+                setTimeout(function () {
+                    overlay.classList.add('avo-fade-out');
+                    setTimeout(function () {
+                        overlay.remove();
+                        document.body.style.overflow = '';
+                    }, 900);
+                }, 3800);
+            }
+
+            document.fonts.ready.then(playAvoIntro);
+        })();
     </script>
 </body>
 
