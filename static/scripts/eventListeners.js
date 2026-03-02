@@ -430,6 +430,9 @@ document.getElementById("filter-attendance").addEventListener("change", renderSt
 
 // Ensure data is loaded when the page loads
 document.addEventListener("DOMContentLoaded", async () => {
+    // Wait for translations to load before rendering UI
+    await I18n.ready;
+
     // Load data from server (async)
     await loadData();
 
