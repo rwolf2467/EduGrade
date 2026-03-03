@@ -42,7 +42,21 @@ const setButtonLoading = (btn, isLoading, loadingText = 'Loading...') => {
  * @param {string} description - Beschreibung (optional)
  * @returns {HTMLDialogElement} Das Dialog-Element zum späteren Schließen
  */
+let _loadingOverlayCancelled = false;
+
 const showLoadingOverlay = (title = t('loading.processing'), description = t('loading.pleaseWait')) => {
+    // Defer until intro animation finishes
+    if (window._avoIntroPlaying) {
+        setTimeout(() => showLoadingOverlay(title, description), 200);
+        return;
+    }
+
+    // Data already finished loading while we were waiting — skip
+    if (_loadingOverlayCancelled) {
+        _loadingOverlayCancelled = false;
+        return;
+    }
+
     // Prüfe ob schon ein Loading-Overlay existiert
     let overlay = document.getElementById('loading-overlay');
     if (overlay) {
@@ -75,6 +89,8 @@ const showLoadingOverlay = (title = t('loading.processing'), description = t('lo
  * LOADING OVERLAY AUSBLENDEN
  */
 const hideLoadingOverlay = () => {
+    // If overlay hasn't shown yet (still pending due to intro), cancel it
+    _loadingOverlayCancelled = true;
     const overlay = document.getElementById('loading-overlay');
     if (overlay) {
         overlay.close();
@@ -164,6 +180,12 @@ const TOAST_DEBOUNCE_MS = 2000;
  * @param {string} type - Typ: "success" (grün), "error" (rot), "info" (blau)
  */
 const showToast = (message, type = "info") => {
+    // Defer toast until intro animation finishes
+    if (window._avoIntroPlaying) {
+        setTimeout(() => showToast(message, type), 200);
+        return;
+    }
+
     // Debounce: Verhindere doppelte Toasts mit gleicher Nachricht
     const toastKey = `${type}:${message}`;
     if (recentToasts.has(toastKey)) {

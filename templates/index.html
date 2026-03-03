@@ -58,7 +58,7 @@
             align-items: center;
         }
         .avo-icon svg {
-            height: 5rem;
+            height: clamp(1.5rem, 7vw, 5rem);
             width: auto;
         }
         .avo-path {
@@ -71,7 +71,7 @@
         .avo-text {
             font-family: 'Syne', sans-serif;
             font-weight: 800;
-            font-size: 5rem;
+            font-size: clamp(1.5rem, 7vw, 5rem);
             letter-spacing: .04em;
             white-space: nowrap;
         }
@@ -2017,6 +2017,9 @@ Anna,,Schmidt</code></pre>
             }
             sessionStorage.removeItem('avoShowIntro');
 
+            // Block toasts and dialogs until animation finishes
+            window._avoIntroPlaying = true;
+
             document.body.style.overflow = 'hidden';
 
             function playAvoIntro() {
@@ -2052,6 +2055,7 @@ Anna,,Schmidt</code></pre>
                     setTimeout(function () {
                         overlay.remove();
                         document.body.style.overflow = '';
+                        window._avoIntroPlaying = false;
                     }, 900);
                 }, 3800);
             }

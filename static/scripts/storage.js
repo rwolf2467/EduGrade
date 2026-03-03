@@ -578,6 +578,12 @@ const VERSION_CHECK_INTERVAL = 60000; // Check every 60 seconds
  * Uses the basecoat-css dialog pattern (same style as session-expired).
  */
 const showVersionUpdateDialog = () => {
+    // Defer until intro animation finishes
+    if (window._avoIntroPlaying) {
+        setTimeout(showVersionUpdateDialog, 300);
+        return;
+    }
+
     // Prevent showing multiple dialogs
     if (document.getElementById('version-update-dialog')) return;
 
