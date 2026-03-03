@@ -34,11 +34,23 @@
             inset: 0;
             z-index: 9999;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 1rem;
             background: oklch(0.09 0.015 280);
             transition: opacity 0.7s ease;
             color: #e8e4db;
+        }
+        .avo-tagline {
+            font-family: 'Syne', sans-serif;
+            font-weight: 700;
+            font-size: clamp(0.65rem, 2vw, 0.85rem);
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 0.6s ease, transform 0.6s cubic-bezier(.77,0,.18,1);
         }
         #avo-intro-overlay.avo-fade-out {
             opacity: 0;
@@ -102,6 +114,7 @@
 <body>
     <!-- Intro animation overlay (plays once per session after login) -->
     <div id="avo-intro-overlay">
+        <span class="avo-tagline">Developed by</span>
         <div class="avo-intro">
             <span class="avo-icon-slot">
                 <span class="avo-icon">
@@ -2023,11 +2036,12 @@ Anna,,Schmidt</code></pre>
             document.body.style.overflow = 'hidden';
 
             function playAvoIntro() {
-                var path = overlay.querySelector('.avo-path');
-                var icon = overlay.querySelector('.avo-icon');
-                var av   = overlay.querySelector('.avo-av');
-                var wrap = overlay.querySelector('.avo-text-wrap');
-                var text = overlay.querySelector('.avo-text');
+                var path    = overlay.querySelector('.avo-path');
+                var icon    = overlay.querySelector('.avo-icon');
+                var av      = overlay.querySelector('.avo-av');
+                var wrap    = overlay.querySelector('.avo-text-wrap');
+                var text    = overlay.querySelector('.avo-text');
+                var tagline = overlay.querySelector('.avo-tagline');
 
                 // Phase 1: typewriter SVG draw (1000ms)
                 path.style.transition = 'none';
@@ -2043,9 +2057,11 @@ Anna,,Schmidt</code></pre>
                     av.style.opacity     = '1';
                     av.style.transform   = 'translateX(0)';
                     setTimeout(function () {
-                        wrap.style.maxWidth  = '100vw';
-                        text.style.opacity   = '1';
-                        text.style.transform = 'translateX(0)';
+                        wrap.style.maxWidth      = '100vw';
+                        text.style.opacity       = '1';
+                        text.style.transform     = 'translateX(0)';
+                        tagline.style.opacity    = '0.35';
+                        tagline.style.transform  = 'translateY(0)';
                     }, 500);
                 }, 1500);
 
