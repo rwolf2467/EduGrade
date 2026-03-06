@@ -108,6 +108,25 @@
         .avo-icon {
             transition: opacity .6s ease, transform .6s cubic-bezier(.77,0,.18,1);
         }
+
+        /* Collapsible sections */
+        .collapsible-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            max-height: 9999px;
+            opacity: 1;
+        }
+        .collapsible-content.collapsed {
+            max-height: 0 !important;
+            opacity: 0;
+            padding-bottom: 0 !important;
+        }
+        .collapsible-chevron.collapsed {
+            transform: rotate(-90deg);
+        }
+        .collapsible-toggle:hover .collapsible-chevron {
+            color: currentColor;
+        }
     </style>
 </head>
 
@@ -987,90 +1006,118 @@
                             </div>
 
                             <!-- Anwesenheitsstatistik -->
-                            <div class="mb-6 p-4 rounded-lg border" id="student-attendance-section">
-                                <h3 class="text-lg font-semibold mb-3" data-i18n="attendance.title">Anwesenheit</h3>
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                    <div class="text-center">
-                                        <p class="text-gray-400 text-sm mb-1" data-i18n="attendance.total">Gesamt</p>
-                                        <p class="text-2xl font-bold" id="student-attendance-total">0</p>
+                            <div class="mb-6 rounded-lg border" id="student-attendance-section">
+                                <button type="button" class="collapsible-toggle w-full flex items-center justify-between p-4 text-left" data-target="attendance-collapsible">
+                                    <h3 class="text-lg font-semibold" data-i18n="attendance.title">Anwesenheit</h3>
+                                    <svg class="collapsible-chevron size-5 text-gray-400 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m6 9 6 6 6-6"/>
+                                    </svg>
+                                </button>
+                                <div id="attendance-collapsible" class="collapsible-content px-4 pb-4">
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                        <div class="text-center">
+                                            <p class="text-gray-400 text-sm mb-1" data-i18n="attendance.total">Gesamt</p>
+                                            <p class="text-2xl font-bold" id="student-attendance-total">0</p>
+                                        </div>
+                                        <div class="text-center">
+                                            <p class="text-sm mb-1" style="color: #10b981;" data-i18n="attendance.present">Anwesend</p>
+                                            <p class="text-2xl font-bold text-green-600" id="student-attendance-present">0</p>
+                                        </div>
+                                        <div class="text-center">
+                                            <p class="text-sm mb-1" style="color: #f59e0b;" data-i18n="attendance.late">Verspätet</p>
+                                            <p class="text-2xl font-bold text-orange-500" id="student-attendance-late">0</p>
+                                        </div>
+                                        <div class="text-center">
+                                            <p class="text-sm mb-1" style="color: #ef4444;" data-i18n="attendance.absent">Abwesend</p>
+                                            <p class="text-2xl font-bold text-red-600" id="student-attendance-absent">0</p>
+                                        </div>
                                     </div>
-                                    <div class="text-center">
-                                        <p class="text-sm mb-1" style="color: #10b981;" data-i18n="attendance.present">Anwesend</p>
-                                        <p class="text-2xl font-bold text-green-600" id="student-attendance-present">0</p>
+                                    <div class="mb-3 text-center">
+                                        <p class="text-gray-400 text-sm"><span data-i18n="attendance.rate">Anwesenheitsrate</span>: <span class="font-semibold" id="student-attendance-rate">0%</span></p>
                                     </div>
-                                    <div class="text-center">
-                                        <p class="text-sm mb-1" style="color: #f59e0b;" data-i18n="attendance.late">Verspätet</p>
-                                        <p class="text-2xl font-bold text-orange-500" id="student-attendance-late">0</p>
-                                    </div>
-                                    <div class="text-center">
-                                        <p class="text-sm mb-1" style="color: #ef4444;" data-i18n="attendance.absent">Abwesend</p>
-                                        <p class="text-2xl font-bold text-red-600" id="student-attendance-absent">0</p>
-                                    </div>
-                                </div>
-                                <div class="mb-3 text-center">
-                                    <p class="text-gray-400 text-sm"><span data-i18n="attendance.rate">Anwesenheitsrate</span>: <span class="font-semibold" id="student-attendance-rate">0%</span></p>
-                                </div>
 
-                                <!-- Anwesenheitsliste -->
-                                <div class="mt-4 border-t pt-4">
-                                    <h4 class="text-gray-400 text-sm font-semibold mb-2" data-i18n="attendance.entries">Einzelne Einträge</h4>
-                                    <div class="overflow-x-auto">
-                                        <table class="table w-full text-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th data-i18n="table.date">Datum</th>
-                                                    <th data-i18n="attendance.subject">Fach</th>
-                                                    <th>Status</th>
-                                                    <th data-i18n="attendance.notes">Notizen</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="student-attendance-list">
-                                                <!-- Wird dynamisch gefüllt -->
-                                            </tbody>
-                                        </table>
+                                    <!-- Anwesenheitsliste -->
+                                    <div class="mt-4 border-t pt-4">
+                                        <h4 class="text-gray-400 text-sm font-semibold mb-2" data-i18n="attendance.entries">Einzelne Einträge</h4>
+                                        <div class="overflow-x-auto">
+                                            <table class="table w-full text-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th data-i18n="table.date">Datum</th>
+                                                        <th data-i18n="attendance.subject">Fach</th>
+                                                        <th>Status</th>
+                                                        <th data-i18n="attendance.notes">Notizen</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="student-attendance-list">
+                                                    <!-- Wird dynamisch gefüllt -->
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Chart Container -->
-                            <div class="chart-container mb-6" style="position: relative; height: 300px;">
-                                <canvas id="student-grade-chart"></canvas>
+                            <div class="mb-6 rounded-lg border">
+                                <button type="button" class="collapsible-toggle w-full flex items-center justify-between p-4 text-left" data-target="chart-collapsible">
+                                    <h3 class="text-lg font-semibold" data-i18n="student.gradeProgression">Notenentwicklung</h3>
+                                    <svg class="collapsible-chevron size-5 text-gray-400 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m6 9 6 6 6-6"/>
+                                    </svg>
+                                </button>
+                                <div id="chart-collapsible" class="collapsible-content px-4 pb-4">
+                                    <div class="chart-container" style="position: relative; height: 300px;">
+                                        <canvas id="student-grade-chart"></canvas>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Kategorie-Aufschlüsselung -->
-                            <div class="mb-6">
-                                <h3 class="text-lg font-semibold mb-3" data-i18n="student.categoryBreakdown">Category
-                                    Breakdown</h3>
-                                <div id="category-breakdown"
-                                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                            <div class="mb-6 rounded-lg border">
+                                <button type="button" class="collapsible-toggle w-full flex items-center justify-between p-4 text-left" data-target="category-collapsible">
+                                    <h3 class="text-lg font-semibold" data-i18n="student.categoryBreakdown">Category Breakdown</h3>
+                                    <svg class="collapsible-chevron size-5 text-gray-400 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m6 9 6 6 6-6"/>
+                                    </svg>
+                                </button>
+                                <div id="category-collapsible" class="collapsible-content px-4 pb-4">
+                                    <div id="category-breakdown"
+                                        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                                </div>
                             </div>
 
                             <!-- Noten-Tabelle -->
-                            <div>
-                                <h3 class="text-lg font-semibold mb-3" data-i18n="student.gradeHistory">Grade History
-                                </h3>
+                            <div class="rounded-lg border">
+                                <button type="button" class="collapsible-toggle w-full flex items-center justify-between p-4 text-left" data-target="grades-collapsible">
+                                    <h3 class="text-lg font-semibold" data-i18n="student.gradeHistory">Grade History</h3>
+                                    <svg class="collapsible-chevron size-5 text-gray-400 transition-transform duration-200" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m6 9 6 6 6-6"/>
+                                    </svg>
+                                </button>
+                                <div id="grades-collapsible" class="collapsible-content px-4 pb-4">
+                                    <!-- Search input for grades -->
+                                    <div class="mb-4">
+                                        <input type="text" id="student-grades-search" class="input w-full"
+                                            data-i18n-placeholder="student.searchGrades"
+                                            placeholder="Noten durchsuchen...">
+                                    </div>
 
-                                <!-- Search input for grades -->
-                                <div class="mb-4">
-                                    <input type="text" id="student-grades-search" class="input w-full"
-                                        data-i18n-placeholder="student.searchGrades"
-                                        placeholder="Noten durchsuchen...">
-                                </div>
-
-                                <div class="overflow-x-auto">
-                                    <table class="table w-full">
-                                        <thead>
-                                            <tr>
-                                                <th data-i18n="table.date">Date</th>
-                                                <th data-i18n="table.category">Category</th>
-                                                <th data-i18n="table.name">Name</th>
-                                                <th data-i18n="table.grade">Grade</th>
-                                                <th data-i18n="table.weight">Weight</th>
-                                                <th data-i18n="table.actions">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="student-grades-table"></tbody>
-                                    </table>
+                                    <div class="overflow-x-auto">
+                                        <table class="table w-full">
+                                            <thead>
+                                                <tr>
+                                                    <th data-i18n="table.date">Date</th>
+                                                    <th data-i18n="table.category">Category</th>
+                                                    <th data-i18n="table.name">Name</th>
+                                                    <th data-i18n="table.grade">Grade</th>
+                                                    <th data-i18n="table.weight">Weight</th>
+                                                    <th data-i18n="table.actions">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="student-grades-table"></tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </section>
@@ -2077,6 +2124,67 @@ Anna,,Schmidt</code></pre>
             }
 
             document.fonts.ready.then(playAvoIntro);
+        })();
+    </script>
+    <script>
+        // Collapsible sections for student detail view
+        (function () {
+            const STORAGE_KEY = 'edugrade_collapsible_state';
+
+            function getSavedState() {
+                try {
+                    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+                } catch { return {}; }
+            }
+
+            function saveState(state) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            }
+
+            function setCollapsible(targetId, collapsed) {
+                const content = document.getElementById(targetId);
+                if (!content) return;
+                const btn = document.querySelector(`[data-target="${targetId}"]`);
+                const chevron = btn ? btn.querySelector('.collapsible-chevron') : null;
+
+                if (collapsed) {
+                    content.classList.add('collapsed');
+                    if (chevron) chevron.classList.add('collapsed');
+                } else {
+                    content.classList.remove('collapsed');
+                    if (chevron) chevron.classList.remove('collapsed');
+                }
+            }
+
+            function initCollapsibles() {
+                const state = getSavedState();
+                document.querySelectorAll('.collapsible-toggle').forEach(btn => {
+                    const targetId = btn.getAttribute('data-target');
+                    if (!targetId) return;
+
+                    // Restore saved state (default: expanded)
+                    const isCollapsed = state[targetId] === true;
+                    setCollapsible(targetId, isCollapsed);
+
+                    btn.addEventListener('click', function () {
+                        const content = document.getElementById(targetId);
+                        if (!content) return;
+                        const nowCollapsed = !content.classList.contains('collapsed');
+                        setCollapsible(targetId, nowCollapsed);
+
+                        const s = getSavedState();
+                        s[targetId] = nowCollapsed;
+                        saveState(s);
+                    });
+                });
+            }
+
+            // Init on DOM ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initCollapsibles);
+            } else {
+                initCollapsibles();
+            }
         })();
     </script>
 </body>
