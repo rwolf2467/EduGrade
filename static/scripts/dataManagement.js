@@ -383,7 +383,6 @@ const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null
             newGrade.isPlusMinus = false;
         } else {
             // NOTENWERT VALIDIEREN
-            // Prüfen ob es eine +/- Note ist
             const isPlusMinus = value === "+" || value === "~" || value === "-";
             const gradeValidation = validateGradeValue(value, isPlusMinus);
             if (!gradeValidation.isValid) {
@@ -391,7 +390,6 @@ const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null
                 return;
             }
 
-            // Je nach Notentyp den Wert setzen
             if (isPlusMinus) {
                 newGrade.value = gradeValidation.value;  // "+" oder "-"
                 newGrade.isPlusMinus = true;

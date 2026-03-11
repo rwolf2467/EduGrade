@@ -269,7 +269,7 @@ const exportStudentDetailPDF = async (studentId) => {
                 }
 
                 const date = grade.createdAt ? new Date(grade.createdAt).toLocaleDateString() : '-';
-                const gradeValue = grade.isPlusMinus ? grade.value : grade.value.toString();
+                const gradeValue = grade.isPlusMinus ? grade.value : formatGradeDisplay(grade.value);
                 const gradeName = grade.name || '-';
 
                 // Set text color to gray if excluded from average
@@ -314,6 +314,97 @@ const exportStudentDetailPDF = async (studentId) => {
 
                 yPosition += 6;
             });
+        }
+
+        // 6. Attendance Section
+        const attendanceStats = calculateAttendanceStats(studentId, currentYear.currentSubjectId || null);
+        if (attendanceStats && attendanceStats.total > 0) {
+            checkNewPage(40);
+
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(t("attendance.title"), margin, yPosition);
+            yPosition += 8;
+
+            // Attendance stats row
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+
+            const attendanceStatItems = [
+                { label: t("attendance.total"), value: attendanceStats.total.toString() },
+                { label: t("attendance.present"), value: attendanceStats.present.toString() },
+                { label: t("attendance.late"), value: attendanceStats.late.toString() },
+                { label: t("attendance.absent"), value: attendanceStats.absent.toString() },
+                { label: t("attendance.rate"), value: `${attendanceStats.presentRate}%` }
+            ];
+
+            attendanceStatItems.forEach((item, idx) => {
+                const col = idx % 2;
+                const row = Math.floor(idx / 2);
+                const xPos = margin + (col * 95);
+                const yPos = yPosition + (row * 8);
+                pdf.setFont('helvetica', 'bold');
+                pdf.text(item.label + ":", xPos, yPos);
+                pdf.setFont('helvetica', 'normal');
+                pdf.text(item.value, xPos + 45, yPos);
+            });
+
+            yPosition += Math.ceil(attendanceStatItems.length / 2) * 8 + 8;
+
+            // Attendance entries table
+            const participation = student.participation || [];
+            if (participation.length > 0) {
+                checkNewPage(30);
+
+                pdf.setFontSize(9);
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFillColor(240, 240, 240);
+                pdf.rect(margin, yPosition - 4, pageWidth - (margin * 2), 6, 'F');
+
+                const attColWidths = [35, 50, 30, 65];
+                const attColPositions = [
+                    margin,
+                    margin + attColWidths[0],
+                    margin + attColWidths[0] + attColWidths[1],
+                    margin + attColWidths[0] + attColWidths[1] + attColWidths[2]
+                ];
+                const attHeaders = [t("attendance.date"), t("attendance.subject"), "Status", t("attendance.notes")];
+                attHeaders.forEach((header, i) => {
+                    pdf.text(header, attColPositions[i] + 2, yPosition);
+                });
+                yPosition += 7;
+
+                const subjects = currentYear.subjects || [];
+                const sortedParticipation = [...participation].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                pdf.setFont('helvetica', 'normal');
+                sortedParticipation.forEach((entry, idx) => {
+                    checkNewPage(8);
+
+                    if (idx % 2 === 0) {
+                        pdf.setFillColor(250, 250, 250);
+                        pdf.rect(margin, yPosition - 4, pageWidth - (margin * 2), 6, 'F');
+                    }
+
+                    const entryDate = new Date(entry.date).toLocaleDateString();
+                    const subjectObj = subjects.find(s => s.id === entry.subjectId);
+                    const subjectLabel = subjectObj ? subjectObj.name : '—';
+                    const statusLabel = entry.status === 'present'
+                        ? t("attendance.present")
+                        : entry.status === 'late'
+                            ? t("attendance.late")
+                            : t("attendance.absent");
+                    const notes = entry.notes || '—';
+                    const truncatedNotes = notes.length > 28 ? notes.substring(0, 25) + '...' : notes;
+
+                    pdf.text(entryDate, attColPositions[0] + 2, yPosition);
+                    pdf.text(subjectLabel.length > 18 ? subjectLabel.substring(0, 15) + '...' : subjectLabel, attColPositions[1] + 2, yPosition);
+                    pdf.text(statusLabel, attColPositions[2] + 2, yPosition);
+                    pdf.text(truncatedNotes, attColPositions[3] + 2, yPosition);
+
+                    yPosition += 6;
+                });
+            }
         }
 
         // Save PDF

@@ -422,7 +422,9 @@ const showDialog = (dialogId, title, content, onConfirm = null) => {
 
             // FormData-Objekt erstellt aus dem Formular
             // Enthält alle Eingabefelder als Key-Value-Paare
-            onConfirm(new FormData(e.target));
+            // Wenn onConfirm false zurückgibt, bleibt der Dialog offen (z.B. bei Validierungsfehlern)
+            const result = onConfirm(new FormData(e.target));
+            if (result === false) return;
 
             // Dialog schließen (kein Warning nötig - wurde gespeichert)
             form.removeEventListener("input", markDirty);

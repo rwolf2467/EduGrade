@@ -350,6 +350,11 @@ const migrateData = () => {
         appData.hiddenSubjectSuggestions = [];
     }
 
+    // MIGRATION: ensure schoolType exists
+    if (!appData.schoolType) {
+        appData.schoolType = "secondary";
+    }
+
     // MIGRATION: defaultSubjects from string[] to object[]
     if (appData.defaultSubjects && appData.defaultSubjects.length > 0) {
         appData.defaultSubjects = appData.defaultSubjects.map(s => {

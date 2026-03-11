@@ -228,8 +228,42 @@ const sanitizeImportData = (data) => {
         classes: [],
         categories: [],
         students: [],
+        defaultSubjects: [],
+        hiddenSubjectSuggestions: [],
+        participationSettings: data.participationSettings
+            ? {
+                plusValue: parseFloat(data.participationSettings.plusValue) || 0.1,
+                minusValue: parseFloat(data.participationSettings.minusValue) || 0.1
+            }
+            : { plusValue: 0.1, minusValue: 0.1 },
+        gradePercentageRanges: Array.isArray(data.gradePercentageRanges)
+            ? data.gradePercentageRanges.map(r => ({
+                grade: parseInt(r.grade, 10),
+                minPercent: parseFloat(r.minPercent),
+                maxPercent: parseFloat(r.maxPercent)
+            }))
+            : null,
+        plusMinusPercentages: data.plusMinusPercentages
+            ? {
+                plus: parseFloat(data.plusMinusPercentages.plus) ?? 100,
+                neutral: parseFloat(data.plusMinusPercentages.neutral) ?? 50,
+                minus: parseFloat(data.plusMinusPercentages.minus) ?? 0
+            }
+            : null,
+        attendanceSettings: data.attendanceSettings
+            ? {
+                enabled: Boolean(data.attendanceSettings.enabled),
+                minAttendancePercent: parseFloat(data.attendanceSettings.minAttendancePercent) || 75,
+                warningThreshold: parseFloat(data.attendanceSettings.warningThreshold) || 5
+            }
+            : null,
+        schoolType: data.schoolType === 'primary' ? 'primary' : 'secondary',
         plusMinusGradeSettings: data.plusMinusGradeSettings || { startGrade: 3, plusValue: 0.5, minusValue: 0.5 }
     };
+    // null-Felder entfernen (damit Defaults aus data.js greifen)
+    if (sanitized.gradePercentageRanges === null) delete sanitized.gradePercentageRanges;
+    if (sanitized.plusMinusPercentages === null) delete sanitized.plusMinusPercentages;
+    if (sanitized.attendanceSettings === null) delete sanitized.attendanceSettings;
 
     // KLASSEN SANITISIEREN
     // Jede Klasse enthält Schüler, die wiederum Noten haben (verschachtelte Struktur)
@@ -297,7 +331,10 @@ const sanitizeImportData = (data) => {
                     // Fächer-System (Subjects) sanitisieren
                     subjects: Array.isArray(year.subjects) ? year.subjects.map(subject => ({
                         id: String(subject.id || ''),
-                        name: unescapeHtml(subject.name || '')
+                        name: unescapeHtml(subject.name || ''),
+                        minAttendancePercent: subject.minAttendancePercent != null ? parseFloat(subject.minAttendancePercent) : null,
+                        warningThreshold: subject.warningThreshold != null ? parseFloat(subject.warningThreshold) : null,
+                        attendanceAutoGrading: subject.attendanceAutoGrading != null ? Boolean(subject.attendanceAutoGrading) : null
                     })) : [],
 
                     // Schüler des Jahrgangs sanitisieren
@@ -348,6 +385,23 @@ const sanitizeImportData = (data) => {
             allowPlusMinus: Boolean(cat.allowPlusMinus),
             onlyPlusMinus: Boolean(cat.onlyPlusMinus)
         }));
+    }
+
+    // DEFAULT SUBJECTS SANITISIEREN
+    if (Array.isArray(data.defaultSubjects)) {
+        sanitized.defaultSubjects = data.defaultSubjects.map(s => ({
+            name: unescapeHtml(s.name || ''),
+            minAttendancePercent: s.minAttendancePercent != null ? parseFloat(s.minAttendancePercent) : null,
+            warningThreshold: s.warningThreshold != null ? parseFloat(s.warningThreshold) : null,
+            attendanceAutoGrading: s.attendanceAutoGrading != null ? Boolean(s.attendanceAutoGrading) : null
+        })).filter(s => s.name.length > 0);
+    }
+
+    // HIDDEN SUBJECT SUGGESTIONS SANITISIEREN
+    if (Array.isArray(data.hiddenSubjectSuggestions)) {
+        sanitized.hiddenSubjectSuggestions = data.hiddenSubjectSuggestions
+            .filter(s => typeof s === 'string')
+            .map(s => unescapeHtml(s));
     }
 
     // GLOBALE SCHÜLER SANITISIEREN

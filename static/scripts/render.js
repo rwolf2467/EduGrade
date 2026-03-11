@@ -832,6 +832,12 @@ const openAddGradeDialog = (studentId, onSuccess) => {
     if (!student) return;
     const studentName = getStudentDisplayName(student);
 
+    // For primary school: require at least one category to exist
+    if (appData.schoolType === 'primary' && appData.categories.length === 0) {
+        showAlertDialog("Bitte zuerst mindestens eine Kategorie in den Einstellungen anlegen.");
+        return;
+    }
+
     // Create category selection with info about +/- support (global categories)
     const categoryOptions = appData.categories.map(cat => {
         const label = cat.onlyPlusMinus ? ' [+/~/- only]' : (cat.allowPlusMinus ? ' [+/~/-]' : '');
@@ -851,6 +857,58 @@ const openAddGradeDialog = (studentId, onSuccess) => {
 
     // Get today's date in YYYY-MM-DD format for the date input
     const today = new Date().toISOString().split('T')[0];
+
+    const isPrimarySchool = (appData.schoolType === 'primary');
+
+    // Primary school: numeric grades 1-5, displayed as "1 – Sehr gut" etc. + mandatory comment
+    const primaryGradeInput = isPrimarySchool ? `
+    <div class="grid gap-2" id="grade-value-container">
+      <label class="block mb-2">Beurteilung</label>
+      <div class="grid grid-cols-2 gap-2" id="primary-grade-buttons">
+        ${[
+            { value: '1', label: 'Sehr gut',            color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
+            { value: '2', label: 'Gut',                  color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
+            { value: '3', label: 'Befriedigend',         color: '#eab308', bg: 'rgba(234,179,8,0.12)' },
+            { value: '4', label: 'Gen\u00fcgend',        color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
+            { value: '5', label: 'Nicht gen\u00fcgend',  color: '#ef4444', bg: 'rgba(239,68,68,0.12)' }
+        ].map(g => `
+          <label class="primary-grade-btn flex items-center gap-2 p-2 rounded-lg border-2 cursor-pointer transition-all"
+              style="border-color: var(--border, #2d2d3d);"
+              data-value="${g.value}" data-color="${g.color}" data-bg="${g.bg}">
+            <input type="radio" name="value" value="${g.value}" class="sr-only" required>
+            <span class="text-sm font-semibold px-2 py-0.5 rounded-full whitespace-nowrap" style="background:${g.bg}; color:${g.color};">${g.value} \u2013 ${g.label}</span>
+          </label>`).join('')}
+      </div>
+    </div>
+    <div class="grid gap-2">
+      <label class="block mb-2">Textbeurteilung <span class="text-red-400">*</span></label>
+      <textarea name="gradeComment" id="grade-comment-input" class="input w-full" rows="3" placeholder="Schriftliche Erläuterung zur Beurteilung..."></textarea>
+      <p class="text-gray-400 text-sm">Pflichtfeld – schriftliche Erläuterung zur Note.</p>
+    </div>` : `
+    <div class="grid gap-2" id="grade-value-container">
+      <div class="tabs w-full" id="grade-input-tabs">
+        <nav role="tablist" aria-orientation="horizontal" class="w-full">
+          <button type="button" role="tab" id="tab-grade-direct" aria-controls="panel-grade-direct" aria-selected="true" tabindex="0">${t("grade.gradeTab")}</button>
+          <button type="button" role="tab" id="tab-grade-percent" aria-controls="panel-grade-percent" aria-selected="false" tabindex="0">${t("grade.percentageTab")}</button>
+        </nav>
+        <div role="tabpanel" id="panel-grade-direct" aria-labelledby="tab-grade-direct" tabindex="-1" aria-selected="true">
+          <div class="pt-3">
+            <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input" placeholder="1-6">
+            <p class="text-gray-400 text-sm mt-2">${t("grade.enterGrade")}</p>
+          </div>
+        </div>
+        <div role="tabpanel" id="panel-grade-percent" aria-labelledby="tab-grade-percent" tabindex="-1" aria-selected="false" hidden>
+          <div class="pt-3">
+            <div class="flex items-center gap-2">
+              <input type="number" id="grade-percent-input" step="0.1" min="0" max="100" class="input flex-1" placeholder="0-100">
+              <span>%</span>
+            </div>
+            <p class="text-gray-400 text-sm mt-2">${t("grade.enterPercentage")}</p>
+            <p class="text-sm mt-1 font-semibold" id="percent-preview"></p>
+          </div>
+        </div>
+      </div>
+    </div>`;
 
     const content = `
     <div class="mb-3 p-3 rounded-lg bg-primary/10">
@@ -876,13 +934,13 @@ const openAddGradeDialog = (studentId, onSuccess) => {
       </div>
       <p class="text-gray-400 text-sm">${t("grade.gradeNameHint")}</p>
     </div>
-    <div class="grid gap-2">
+    ${!isPrimarySchool ? `<div class="grid gap-2">
       <label class="block mb-2">${t("grade.category")}</label>
       <select name="categoryId" id="grade-category-select" class="select w-full" required>
         ${categoryOptions}
       </select>
       <p class="text-gray-400 text-sm">${t("grade.categoryHint")}</p>
-    </div>
+    </div>` : `<input type="hidden" name="categoryId" value="${appData.categories.length > 0 ? safeAttr(appData.categories[0].id) : ''}">` }
     <div class="grid gap-2 mb-3">
       <label class="flex items-center gap-2 cursor-pointer">
         <input type="checkbox" name="isPending" id="grade-is-pending" class="checkbox">
@@ -890,82 +948,76 @@ const openAddGradeDialog = (studentId, onSuccess) => {
       </label>
       <p class="text-gray-400 text-sm">${t("grade.pendingGradeHint")}</p>
     </div>
-    <div class="grid gap-2" id="grade-value-container">
-      <div class="tabs w-full" id="grade-input-tabs">
-        <nav role="tablist" aria-orientation="horizontal" class="w-full">
-          <button type="button" role="tab" id="tab-grade-direct" aria-controls="panel-grade-direct" aria-selected="true" tabindex="0">${t("grade.gradeTab")}</button>
-          <button type="button" role="tab" id="tab-grade-percent" aria-controls="panel-grade-percent" aria-selected="false" tabindex="0">${t("grade.percentageTab")}</button>
-        </nav>
-        <div role="tabpanel" id="panel-grade-direct" aria-labelledby="tab-grade-direct" tabindex="-1" aria-selected="true">
-          <div class="pt-3">
-            <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input" placeholder="1-6">
-            <p class="text-gray-400 text-sm mt-2">${t("grade.enterGrade")}</p>
-          </div>
-        </div>
-        <div role="tabpanel" id="panel-grade-percent" aria-labelledby="tab-grade-percent" tabindex="-1" aria-selected="false" hidden>
-          <div class="pt-3">
-            <div class="flex items-center gap-2">
-              <input type="number" id="grade-percent-input" step="0.1" min="0" max="100" class="input flex-1" placeholder="0-100">
-              <span>%</span>
-            </div>
-            <p class="text-gray-400 text-sm mt-2">${t("grade.enterPercentage")}</p>
-            <p class="text-sm mt-1 font-semibold" id="percent-preview"></p>
-          </div>
-        </div>
-      </div>
-    </div>
+    ${primaryGradeInput}
   `;
 
     showDialog("edit-dialog", t("grade.addGrade"), content, (formData) => {
         // Check if pending grade checkbox is checked
         const isPending = formData.get("isPending") === "on";
 
-        // Check if percentage tab is active
-        const percentPanel = document.getElementById("panel-grade-percent");
-        const percentInput = document.getElementById("grade-percent-input");
-        const directGradeInput = document.getElementById("grade-value-input");
-
         let gradeValue = formData.get("value");
         let enteredAsPercent = false;
         let percentValue = null;
 
-        // If grade is pending, skip value validation
-        if (!isPending) {
-            // If percentage panel is visible and has a value, convert it
-            if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
-                percentValue = parseFloat(percentInput.value);
-                const convertedGrade = percentToGrade(percentValue);
-                if (convertedGrade !== null) {
-                    gradeValue = convertedGrade.toString();
-                    enteredAsPercent = true;
-                } else {
-                    showAlertDialog(t("error.invalidPercentage"));
-                    return;
+        if (isPrimarySchool) {
+            if (!isPending) {
+                if (!gradeValue) {
+                    showAlertDialog("Bitte eine Beurteilung auswählen.");
+                    return false;
                 }
-            } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
-                showAlertDialog(t("error.enterPercentage"));
-                return;
-            } else if ((!percentPanel || percentPanel.hidden) && directGradeInput && !directGradeInput.value && !gradeValue) {
-                showAlertDialog(t("error.enterGrade"));
-                return;
+                const comment = formData.get("gradeComment");
+                if (!comment || !comment.trim()) {
+                    // Highlight the textarea instead of alert so dialog stays open
+                    const ta = document.getElementById("grade-comment-input");
+                    if (ta) {
+                        ta.style.borderColor = 'var(--destructive, #ef4444)';
+                        ta.focus();
+                        ta.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+                    return false;
+                }
+            } else {
+                gradeValue = null;
             }
         } else {
-            // For pending grades, set value to null
-            gradeValue = null;
+            // Secondary school: numeric/percentage handling
+            const percentPanel = document.getElementById("panel-grade-percent");
+            const percentInput = document.getElementById("grade-percent-input");
+            const directGradeInput = document.getElementById("grade-value-input");
+
+            if (!isPending) {
+                if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
+                    percentValue = parseFloat(percentInput.value);
+                    const convertedGrade = percentToGrade(percentValue);
+                    if (convertedGrade !== null) {
+                        gradeValue = convertedGrade.toString();
+                        enteredAsPercent = true;
+                    } else {
+                        showAlertDialog(t("error.invalidPercentage"));
+                        return false;
+                    }
+                } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
+                    showAlertDialog(t("error.enterPercentage"));
+                    return false;
+                } else if ((!percentPanel || percentPanel.hidden) && directGradeInput && !directGradeInput.value && !gradeValue) {
+                    showAlertDialog(t("error.enterGrade"));
+                    return false;
+                }
+            } else {
+                gradeValue = null;
+            }
         }
 
-        // subjectId vom aktiven Fach-Tab übernehmen (activeSubjectId already defined at line 557)
-        // Wenn kein Fach ausgewählt ist (was nicht vorkommen sollte), verhindere das Hinzufügen
+        // subjectId vom aktiven Fach-Tab übernehmen
         if (!activeSubjectId) {
             showAlertDialog(t("grade.mustSelectSubject"));
-            return;
+            return false;
         }
 
         // Get selected date and convert to timestamp
         const selectedDate = formData.get("gradeDate");
         let gradeTimestamp = null;
         if (selectedDate) {
-            // Parse the date string (YYYY-MM-DD) and set time to noon to avoid timezone issues
             const dateParts = selectedDate.split('-');
             const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 12, 0, 0);
             gradeTimestamp = dateObj.getTime();
@@ -974,16 +1026,44 @@ const openAddGradeDialog = (studentId, onSuccess) => {
         const newGrade = addGrade(studentId, formData.get("categoryId"), gradeValue, formData.get("name"), activeSubjectId, gradeTimestamp, isPending);
 
         if (newGrade) {
-            // Store percentage info if entered as percentage
             if (enteredAsPercent) {
                 newGrade.enteredAsPercent = true;
                 newGrade.percentValue = percentValue;
+            }
+            // Save comment for primary school grades (mandatory)
+            if (isPrimarySchool) {
+                newGrade.comment = (formData.get("gradeComment") || '').trim();
             }
 
             saveData(t("toast.gradeAdded"), "success");
             if (onSuccess) onSuccess();
         }
     });
+
+    // For primary school: initialize card-style grade button interactions
+    if (isPrimarySchool) {
+        setTimeout(() => {
+            const buttons = document.querySelectorAll('.primary-grade-btn');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    buttons.forEach(b => {
+                        b.style.borderColor = 'var(--border, #2d2d3d)';
+                        b.style.background = '';
+                    });
+                    btn.style.borderColor = btn.dataset.color;
+                    btn.style.background = btn.dataset.bg;
+                    const radio = btn.querySelector('input[type="radio"]');
+                    if (radio) radio.checked = true;
+                });
+            });
+            // Clear red border on textarea when user starts typing
+            const ta = document.getElementById('grade-comment-input');
+            if (ta) {
+                ta.addEventListener('input', () => { ta.style.borderColor = ''; });
+            }
+        }, 0);
+        return; // No category select needed for primary school
+    }
 
     // Add dynamic input switching based on category selection
     const categorySelect = document.getElementById("grade-category-select");
@@ -1914,6 +1994,19 @@ const renderCategoryManagement = () => {
  * @param {Object} grade - Das Noten-Objekt
  * @returns {string} - CSS-Klassen für die Farbgebung
  */
+/**
+ * Formatiert einen Notenwert für die Anzeige.
+ * Bei Grundschule: "1 – Sehr gut", bei weiterführenden Schulen: "1"
+ */
+const formatGradeDisplay = (value) => {
+    if (appData.schoolType === 'primary') {
+        const labels = { 1: 'Sehr gut', 2: 'Gut', 3: 'Befriedigend', 4: 'Gen\u00fcgend', 5: 'Nicht gen\u00fcgend' };
+        const num = Math.round(parseFloat(value));
+        return labels[num] ? `${num} \u2013 ${labels[num]}` : String(value);
+    }
+    return String(value);
+};
+
 const getGradeColorClass = (grade) => {
     // Plus/Minus Noten
     if (grade.isPlusMinus) {
@@ -1964,7 +2057,7 @@ const getGradeColorClass = (grade) => {
  * @returns {number} - Durchschnitt oder 0 wenn keine Noten vorhanden
  */
 const calculateSimpleAverage = (grades) => {
-    // Nur numerische Noten verwenden (keine +/- Noten) und nur die, die in die Gesamtnote eingerechnet werden sollen
+    // Nur numerische Noten verwenden (keine +/- Noten)
     const numericGrades = grades.filter(g => !g.isPlusMinus && !g.excludeFromAverage);
 
     // Wenn keine Noten vorhanden, 0 zurückgeben
@@ -3241,7 +3334,7 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
             gradeColorClass = "badge-warning";
             weightDisplay = '-';
         } else {
-            displayValue = grade.isPlusMinus ? grade.value : grade.value.toString();
+            displayValue = grade.isPlusMinus ? grade.value : formatGradeDisplay(grade.value);
             gradeColorClass = getGradeColorClass(grade);
             weightDisplay = grade.isPlusMinus ? '-' : `${(grade.weight * 100).toFixed(0)}%`;
         }
@@ -3270,7 +3363,10 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                 <td>${escapeHtml(date)}</td>
                 <td>${escapeHtml(grade.categoryName || '-')}</td>
                 <td>${escapeHtml(grade.name || '-')}${excludedBadge}${pendingBadge}</td>
-                <td><span class="badge ${gradeColorClass}">${escapeHtml(displayValue)}</span></td>
+                <td>
+                    <span class="badge ${gradeColorClass}">${escapeHtml(displayValue)}</span>
+                    ${grade.comment ? `<p class="text-xs text-gray-400 mt-1 max-w-[200px] truncate" title="${safeAttr(grade.comment)}">${escapeHtml(grade.comment)}</p>` : ''}
+                </td>
                 <td>${weightDisplay}</td>
                 <td>
                     <div role="group" class="button-group">
@@ -3301,13 +3397,34 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                 const isPlusMinus = grade.isPlusMinus;
                 const wasEnteredAsPercent = grade.enteredAsPercent === true;
 
+                const isPrimarySchool = (appData.schoolType === 'primary');
+
                 let valueInput;
                 // For pending grades, show empty input
                 if (grade.isPending) {
-                    valueInput = `
-                        <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input-edit" placeholder="1-6">
-                        <p class="text-gray-400 text-sm mt-2">${t("grade.enterGrade")}</p>
-                    `;
+                    if (isPrimarySchool) {
+                        valueInput = `
+                            <div class="grid grid-cols-2 gap-2" id="primary-grade-buttons-edit">
+                              ${[
+                                { value: '1', label: 'Sehr gut',           color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
+                                { value: '2', label: 'Gut',                 color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
+                                { value: '3', label: 'Befriedigend',        color: '#eab308', bg: 'rgba(234,179,8,0.12)' },
+                                { value: '4', label: 'Gen\u00fcgend',       color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
+                                { value: '5', label: 'Nicht gen\u00fcgend', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' }
+                              ].map(g => `
+                                <label class="primary-grade-btn flex items-center gap-2 p-2 rounded-lg border-2 cursor-pointer transition-all"
+                                    style="border-color: var(--border, #2d2d3d);"
+                                    data-value="${g.value}" data-color="${g.color}" data-bg="${g.bg}">
+                                  <input type="radio" name="value" value="${g.value}" class="sr-only">
+                                  <span class="text-sm font-semibold px-2 py-0.5 rounded-full whitespace-nowrap" style="background:${g.bg}; color:${g.color};">${g.value} \u2013 ${g.label}</span>
+                                </label>`).join('')}
+                            </div>`;
+                    } else {
+                        valueInput = `
+                            <input type="number" name="value" step="0.1" min="1" max="6" class="input w-full" id="grade-value-input-edit" placeholder="1-6">
+                            <p class="text-gray-400 text-sm mt-2">${t("grade.enterGrade")}</p>
+                        `;
+                    }
                 } else if (isPlusMinus) {
                     valueInput = `
                         <select name="value" class="select w-full" required>
@@ -3316,11 +3433,30 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                             <option value="-" ${grade.value === '-' ? 'selected' : ''}>${t("grade.minus")}</option>
                         </select>
                     `;
+                } else if (isPrimarySchool) {
+                    // Primary school: card radio buttons with current grade pre-selected
+                    valueInput = `
+                        <div class="grid grid-cols-2 gap-2" id="primary-grade-buttons-edit">
+                          ${[
+                            { value: '1', label: 'Sehr gut',           color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
+                            { value: '2', label: 'Gut',                 color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
+                            { value: '3', label: 'Befriedigend',        color: '#eab308', bg: 'rgba(234,179,8,0.12)' },
+                            { value: '4', label: 'Gen\u00fcgend',       color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
+                            { value: '5', label: 'Nicht gen\u00fcgend', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' }
+                          ].map(g => {
+                            const isSelected = String(Math.round(grade.value)) === g.value;
+                            return `
+                              <label class="primary-grade-btn flex items-center gap-2 p-2 rounded-lg border-2 cursor-pointer transition-all"
+                                  style="border-color: ${isSelected ? g.color : 'var(--border, #2d2d3d)'}; background: ${isSelected ? g.bg : ''};"
+                                  data-value="${g.value}" data-color="${g.color}" data-bg="${g.bg}">
+                                <input type="radio" name="value" value="${g.value}" class="sr-only" ${isSelected ? 'checked' : ''} required>
+                                <span class="text-sm font-semibold px-2 py-0.5 rounded-full whitespace-nowrap" style="background:${g.bg}; color:${g.color};">${g.value} \u2013 ${g.label}</span>
+                              </label>`;
+                          }).join('')}
+                        </div>`;
                 } else {
-                    // Always show tabs with percentage option for numeric grades
-                    // Calculate initial percentage value
+                    // Secondary school: tabs with percentage option
                     const initialPercent = wasEnteredAsPercent ? grade.percentValue : gradeToPercent(grade.value);
-                    // Determine which tab should be selected initially
                     const gradeSelected = !wasEnteredAsPercent;
                     const percentSelected = wasEnteredAsPercent;
 
@@ -3401,6 +3537,15 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                         <label class="block mb-2">${t("grade.gradeValue")}</label>
                         ${valueInput}
                     </div>
+                    <div class="grid gap-2">
+                        <label class="block mb-2">
+                            Textbeurteilung
+                            ${isPrimarySchool ? '<span class="text-red-400">*</span>' : '<span class="text-gray-400 text-sm">(optional)</span>'}
+                        </label>
+                        <textarea name="gradeComment" id="grade-comment-input-edit" class="input w-full" rows="3"
+                            placeholder="Schriftliche Erläuterung zur Beurteilung...">${escapeHtml(grade.comment || '')}</textarea>
+                        ${isPrimarySchool ? '<p class="text-gray-400 text-sm">Pflichtfeld – schriftliche Erläuterung zur Note.</p>' : ''}
+                    </div>
                 `;
 
                 showDialog("edit-dialog", t("grade.editGrade"), content, (formData) => {
@@ -3413,41 +3558,61 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
 
                     // If grade is pending, skip value validation
                     if (!isPendingChecked) {
-                        // Check if percentage tab exists and is active (for numeric grades)
-                        if (!isPlusMinus) {
-                            const percentPanel = document.getElementById("panel-grade-percent-edit");
-                            const percentInput = document.getElementById("grade-percent-input-edit");
-                            const directGradeInput = document.getElementById("grade-value-input-edit");
-
-                            // If percentage panel is visible and has a value, convert it
-                            if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
-                                percentValue = parseFloat(percentInput.value);
-                                const convertedGrade = percentToGrade(percentValue);
-                                if (convertedGrade !== null) {
-                                    newValue = convertedGrade.toString();
-                                    enteredAsPercent = true;
-                                } else {
-                                    showAlertDialog(t("error.invalidPercentage"));
-                                    return;
-                                }
-                            } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
-                                showAlertDialog(t("error.enterPercentage"));
-                                return;
-                            } else if (directGradeInput && directGradeInput.value) {
-                                // User switched to grade tab
-                                newValue = directGradeInput.value;
-                                enteredAsPercent = false;
+                        if (isPrimarySchool) {
+                            if (!newValue) {
+                                showAlertDialog("Bitte eine Beurteilung auswählen.");
+                                return false;
                             }
-                        }
-
-                        if (isPlusMinus) {
-                            grade.value = newValue;
-                        } else {
+                            const comment = formData.get("gradeComment");
+                            if (!comment || !comment.trim()) {
+                                const ta = document.getElementById("grade-comment-input-edit");
+                                if (ta) { ta.style.borderColor = 'var(--destructive, #ef4444)'; ta.focus(); ta.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+                                return false;
+                            }
                             grade.value = parseFloat(newValue);
+                        } else {
+                            // Check if percentage tab exists and is active (for numeric grades)
+                            if (!isPlusMinus) {
+                                const percentPanel = document.getElementById("panel-grade-percent-edit");
+                                const percentInput = document.getElementById("grade-percent-input-edit");
+                                const directGradeInput = document.getElementById("grade-value-input-edit");
+
+                                if (percentPanel && !percentPanel.hidden && percentInput && percentInput.value) {
+                                    percentValue = parseFloat(percentInput.value);
+                                    const convertedGrade = percentToGrade(percentValue);
+                                    if (convertedGrade !== null) {
+                                        newValue = convertedGrade.toString();
+                                        enteredAsPercent = true;
+                                    } else {
+                                        showAlertDialog(t("error.invalidPercentage"));
+                                        return false;
+                                    }
+                                } else if (percentPanel && !percentPanel.hidden && (!percentInput || !percentInput.value)) {
+                                    showAlertDialog(t("error.enterPercentage"));
+                                    return false;
+                                } else if (directGradeInput && directGradeInput.value) {
+                                    newValue = directGradeInput.value;
+                                    enteredAsPercent = false;
+                                }
+                            }
+
+                            if (isPlusMinus) {
+                                grade.value = newValue;
+                            } else {
+                                grade.value = parseFloat(newValue);
+                            }
                         }
                     } else {
                         // For pending grades, set value to null
                         grade.value = null;
+                    }
+
+                    // Save comment (mandatory for primary, optional otherwise)
+                    const newComment = (formData.get("gradeComment") || '').trim();
+                    if (newComment) {
+                        grade.comment = newComment;
+                    } else {
+                        delete grade.comment;
                     }
 
                     grade.name = newName;
@@ -3495,8 +3660,26 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                     renderStudentDetail(student.id);
                 });
 
+                // For primary school: initialize card interactions in edit dialog
+                if (isPrimarySchool) {
+                    setTimeout(() => {
+                        const buttons = document.querySelectorAll('#primary-grade-buttons-edit .primary-grade-btn');
+                        buttons.forEach(btn => {
+                            btn.addEventListener('click', () => {
+                                buttons.forEach(b => { b.style.borderColor = 'var(--border, #2d2d3d)'; b.style.background = ''; });
+                                btn.style.borderColor = btn.dataset.color;
+                                btn.style.background = btn.dataset.bg;
+                                const radio = btn.querySelector('input[type="radio"]');
+                                if (radio) radio.checked = true;
+                            });
+                        });
+                        const ta = document.getElementById('grade-comment-input-edit');
+                        if (ta) ta.addEventListener('input', () => { ta.style.borderColor = ''; });
+                    }, 0);
+                }
+
                 // Add percentage preview listener and tab functionality for edit dialog (for numeric grades)
-                if (!isPlusMinus) {
+                if (!isPlusMinus && !isPrimarySchool) {
                     setTimeout(() => {
                         // Initialize tabs
                         initializeTabs("grade-input-tabs-edit");
