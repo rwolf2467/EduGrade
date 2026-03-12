@@ -284,6 +284,8 @@
   "toast.gradeAdded": "Note erfolgreich hinzugefügt!",
   "toast.gradeUpdated": "Note aktualisiert!",
   "toast.gradeDeleted": "Note gelöscht!",
+  "toast.gradeDeletedNamed": "Note \"{name}\" gelöscht",
+  "toast.undo": "Rückgängig",
   "toast.exportSuccess": "Export erfolgreich!",
   "toast.pdfExported": "PDF erfolgreich exportiert",
   "toast.importSuccess": "Daten erfolgreich importiert!",

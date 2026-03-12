@@ -284,6 +284,8 @@
   "toast.gradeAdded": "Grade successfully added!",
   "toast.gradeUpdated": "Grade updated!",
   "toast.gradeDeleted": "Grade deleted!",
+  "toast.gradeDeletedNamed": "Grade \"{name}\" deleted",
+  "toast.undo": "Undo",
   "toast.exportSuccess": "Export successful!",
   "toast.pdfExported": "PDF exported successfully",
   "toast.importSuccess": "Data imported successfully!",

@@ -3891,21 +3891,22 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                     • ${t('table.date') || 'Datum'}: ${gradeDate}`;
                 const warning = t('confirm.cannotBeUndone') || 'Diese Aktion kann nicht rückgängig gemacht werden.';
 
-                // Delete immediately and offer undo
-                const gradeIndex = student.grades.findIndex(g => g.id === gradeId);
-                if (gradeIndex !== -1) {
-                    const deletedGrade = student.grades.splice(gradeIndex, 1)[0];
-                    saveData(t("toast.gradeDeleted"), "success");
-                    renderStudentDetail(student.id);
-                    showUndoNotification(
-                        `${t('grade.unnamed') ? '' : ''}Note "${gradeName}" gelöscht`,
-                        () => {
-                            student.grades.splice(gradeIndex, 0, deletedGrade);
-                            saveData(t("toast.gradeUpdated"), "success");
-                            renderStudentDetail(student.id);
-                        }
-                    );
-                }
+                showConfirmDialog(message, () => {
+                    const gradeIndex = student.grades.findIndex(g => g.id === gradeId);
+                    if (gradeIndex !== -1) {
+                        const deletedGrade = student.grades.splice(gradeIndex, 1)[0];
+                        saveData(t("toast.gradeDeleted"), "success");
+                        renderStudentDetail(student.id);
+                        showUndoNotification(
+                            (t('toast.gradeDeletedNamed') || 'Grade "{name}" deleted').replace('{name}', gradeName),
+                            () => {
+                                student.grades.splice(gradeIndex, 0, deletedGrade);
+                                saveData(t("toast.gradeUpdated"), "success");
+                                renderStudentDetail(student.id);
+                            }
+                        );
+                    }
+                }, details, warning);
             }
         });
     });

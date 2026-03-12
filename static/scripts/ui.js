@@ -736,6 +736,7 @@ const showUndoNotification = (message, undoCallback, durationMs = 5000) => {
     if (_undoTimer) { clearTimeout(_undoTimer); _undoTimer = null; }
 
     textEl.textContent = message;
+    undoBtn.textContent = (typeof t === 'function' ? t('toast.undo') : null) || 'Undo';
     bar.classList.remove('hidden');
     bar.style.animation = 'none';
     bar.offsetHeight; // force reflow
