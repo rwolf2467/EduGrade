@@ -446,6 +446,26 @@
 
                         <h2 class="text-xl font-semibold" id="greeting">Hello, <span id="teacher-greeting"></span>!</h2>
                     </div>
+                    <div id="offline-indicator" class="hidden items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border" style="background:rgba(234,179,8,0.1);color:#a16207;border-color:rgba(234,179,8,0.3);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+                            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+                            <path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
+                            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+                            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                            <line x1="12" y1="20" x2="12.01" y2="20"/>
+                        </svg>
+                        <span id="offline-indicator-text">Offline</span>
+                    </div>
+                </div>
+                <!-- Undo notification bar -->
+                <div id="undo-notification" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border" style="background:var(--card);min-width:260px;max-width:420px;">
+                    <span id="undo-notification-text" class="text-sm flex-1"></span>
+                    <button id="undo-notification-btn" class="btn-outline btn-small text-xs font-medium shrink-0">Rückgängig</button>
+                    <button id="undo-notification-close" class="btn-ghost btn-icon size-6 shrink-0" style="min-width:1.5rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
                 </div>
                 <dialog id="clear-storage-dialog" class="dialog w-full sm:max-w-[425px]"
                     aria-labelledby="clear-storage-dialog-title">
@@ -835,6 +855,7 @@
                                         <line x1="23" y1="11" x2="17" y2="11" />
                                     </svg>
                                     <span data-i18n="class.addStudent">Add Student</span>
+                                    <kbd class="kbd" style="font-size:0.6rem;padding:0.1rem 0.35rem;opacity:0.6;">S</kbd>
                                 </button>
                                 <button id="add-attendance-btn" class="btn-primary flex items-center gap-2">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -895,7 +916,7 @@
                             </div>
                         </section>
 
-                        <section class="mb-4 flex gap-2">
+                        <section class="mb-4 flex gap-2 items-center">
                             <input type="text" id="search-students" class="input flex-1"
                                 placeholder="Search by name or grade..."
                                 data-i18n-placeholder="class.searchPlaceholder">
@@ -907,6 +928,11 @@
                                 <option value="warning" data-i18n="class.filterAttendanceWarning">Near Limit</option>
                                 <option value="critical" data-i18n="class.filterAttendanceCritical">Over Limit</option>
                             </select>
+                            <button id="compact-view-toggle" class="btn-icon-outline shrink-0" data-tooltip="Kompaktansicht" data-side="top" title="Kompaktansicht umschalten">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="14" x2="21" y2="14"/><line x1="3" y1="18" x2="21" y2="18"/>
+                                </svg>
+                            </button>
                         </section>
                         <!-- Bulk Actions Toolbar (hidden by default) -->
                         <section id="bulk-actions-toolbar" class="hidden mb-4 p-3 border rounded-lg bg-primary/5 flex items-center justify-between gap-4">
@@ -932,13 +958,13 @@
                                         <th style="width: 40px;">
                                             <input type="checkbox" id="select-all-students" class="checkbox" title="Alle auswählen">
                                         </th>
-                                        <th data-i18n="table.lastName">Last Name</th>
-                                        <th data-i18n="table.firstName">First Name</th>
-                                        <th data-i18n="table.middleName">Middle Name</th>
-                                        <th data-i18n="table.gradeCount"># Grades</th>
-                                        <th data-i18n="table.average">Average</th>
-                                        <th data-i18n="table.weighted">Weighted</th>
-                                        <th data-i18n="table.finalGrade">Final Grade</th>
+                                        <th class="sortable-header" data-sort="lastName" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.lastName">Last Name</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
+                                        <th class="sortable-header" data-sort="firstName" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.firstName">First Name</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
+                                        <th class="compact-hide" data-i18n="table.middleName">Middle Name</th>
+                                        <th class="sortable-header" data-sort="gradeCount" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.gradeCount"># Grades</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
+                                        <th class="sortable-header" data-sort="average" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.average">Average</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
+                                        <th class="sortable-header" data-sort="weighted" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.weighted">Weighted</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
+                                        <th class="sortable-header" data-sort="finalGrade" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.finalGrade">Final Grade</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
                                         <th data-i18n="table.actions">Actions</th>
                                     </tr>
                                 </thead>
@@ -989,10 +1015,19 @@
                                         <path d="M19 12H5" />
                                     </svg>
                                     <span data-i18n="student.back">Back</span>
+                                    <kbd class="kbd" style="font-size:0.6rem;padding:0.1rem 0.35rem;opacity:0.5;">Esc</kbd>
                                 </button>
                                 <h2 class="text-xl font-semibold" id="student-detail-name"></h2>
                             </div>
-                            <div class="flex gap-2">
+                            <div class="flex gap-2 items-center">
+                                <div class="flex gap-1">
+                                    <button id="prev-student-btn" class="btn-icon-outline" data-tooltip="Vorheriger Schüler (←)" data-side="bottom" disabled>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                                    </button>
+                                    <button id="next-student-btn" class="btn-icon-outline" data-tooltip="Nächster Schüler (→)" data-side="bottom" disabled>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                                    </button>
+                                </div>
                                 <button id="student-detail-print" class="btn-outline">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
                                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -1011,6 +1046,7 @@
                                         <path d="M12 5v14" />
                                     </svg>
                                     <span data-i18n="grade.addGrade">Add Grade</span>
+                                    <kbd class="kbd" style="font-size:0.6rem;padding:0.1rem 0.35rem;opacity:0.6;">N</kbd>
                                 </button>
                             </div>
                         </header>

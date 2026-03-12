@@ -488,3 +488,63 @@ document.addEventListener('click', (e) => {
   }
 });
 
+
+// ============ Compact View Toggle ============
+document.addEventListener('click', (e) => {
+    if (e.target.closest('#compact-view-toggle')) {
+        const isCompact = localStorage.getItem('edugrade_compact_view') === '1';
+        localStorage.setItem('edugrade_compact_view', isCompact ? '0' : '1');
+        renderStudents();
+    }
+});
+
+// ============ Keyboard Shortcuts ============
+document.addEventListener('keydown', (e) => {
+    // Skip if focused on input, textarea, select or button
+    const tag = document.activeElement?.tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+    // Skip if a modal dialog (not a toast/notification) is open
+    const hasModalDialog = Array.from(document.querySelectorAll('dialog[open]'))
+        .some(d => !d.classList.contains('toast') && d.getBoundingClientRect().height > 80);
+    if (hasModalDialog) return;
+
+    const classView = document.getElementById('class-view');
+    const studentDetailView = document.getElementById('student-detail-view');
+    const isClassView = classView && !classView.classList.contains('hidden');
+    const isStudentDetail = studentDetailView && !studentDetailView.classList.contains('hidden');
+
+    switch (e.key) {
+        case 'Escape':
+            if (isStudentDetail) {
+                e.preventDefault();
+                backToClassView();
+            }
+            break;
+        case 's':
+        case 'S':
+            if (isClassView) {
+                e.preventDefault();
+                document.getElementById('add-student')?.click();
+            }
+            break;
+        case 'n':
+        case 'N':
+            if (isStudentDetail) {
+                e.preventDefault();
+                document.getElementById('student-detail-add-grade')?.click();
+            }
+            break;
+        case 'ArrowLeft':
+            if (isStudentDetail) {
+                const prevBtn = document.getElementById('prev-student-btn');
+                if (prevBtn && !prevBtn.disabled) { e.preventDefault(); prevBtn.click(); }
+            }
+            break;
+        case 'ArrowRight':
+            if (isStudentDetail) {
+                const nextBtn = document.getElementById('next-student-btn');
+                if (nextBtn && !nextBtn.disabled) { e.preventDefault(); nextBtn.click(); }
+            }
+            break;
+    }
+});

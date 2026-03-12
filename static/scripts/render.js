@@ -1229,6 +1229,9 @@ const openAddGradeDialog = (studentId, onSuccess) => {
     }
 };
 
+// Sort state for student table
+window.studentSortState = window.studentSortState || { column: 'lastName', direction: 'asc' };
+
 const renderStudents = () => {
     // Aktuellen Jahrgang finden
     const currentYear = getCurrentYear();
@@ -1267,11 +1270,37 @@ const renderStudents = () => {
                 : true;
             return matchesSearch && matchesCategory && matchesAttendance;
         })
-        // 2. SORTIEREN: Alphabetisch nach Nachname, dann Vorname
+        // 2. SORTIEREN: nach gewählter Spalte
         .sort((a, b) => {
-            const lastNameCmp = (a.lastName || '').localeCompare(b.lastName || '', 'de');
-            if (lastNameCmp !== 0) return lastNameCmp;
-            return (a.firstName || '').localeCompare(b.firstName || '', 'de');
+            const { column, direction } = window.studentSortState;
+            const dir = direction === 'asc' ? 1 : -1;
+
+            const getGradeData = (student) => {
+                const grades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
+                return {
+                    gradeCount: grades.length,
+                    average: calculateSimpleAverage(grades) || 999,
+                    weighted: calculateWeightedAverage(grades) || 999,
+                    finalGrade: parseFloat(calculateFinalGrade(calculateWeightedAverage(grades))) || 999
+                };
+            };
+
+            if (column === 'lastName') {
+                const cmp = (a.lastName || '').localeCompare(b.lastName || '', 'de');
+                if (cmp !== 0) return cmp * dir;
+                return (a.firstName || '').localeCompare(b.firstName || '', 'de') * dir;
+            } else if (column === 'firstName') {
+                return (a.firstName || '').localeCompare(b.firstName || '', 'de') * dir;
+            } else if (column === 'gradeCount') {
+                return (getGradeData(a).gradeCount - getGradeData(b).gradeCount) * dir;
+            } else if (column === 'average') {
+                return (getGradeData(a).average - getGradeData(b).average) * dir;
+            } else if (column === 'weighted') {
+                return (getGradeData(a).weighted - getGradeData(b).weighted) * dir;
+            } else if (column === 'finalGrade') {
+                return (getGradeData(a).finalGrade - getGradeData(b).finalGrade) * dir;
+            }
+            return 0;
         });
 
     // Empty State anzeigen wenn keine Schüler vorhanden
@@ -1332,13 +1361,19 @@ const renderStudents = () => {
               </span>`;
             }
 
+            // Trend badge for declining students
+            const trend = calculateTrend(filteredGrades);
+            const trendBadge = trend.trend === 'declining'
+                ? `<span class="trend-badge declining" title="${t('student.declining') || 'Absteigend'}">▼</span>`
+                : '';
+
             return `
             <tr class="${rowClass}">
               <td>
                 <input type="checkbox" class="checkbox student-checkbox" data-student-id="${safeAttr(student.id)}">
               </td>
               <td>
-                <span class="student-name-link" data-student-id="${safeAttr(student.id)}">${escapeHtml(student.lastName || '')}</span>
+                <span class="student-name-link" data-student-id="${safeAttr(student.id)}">${escapeHtml(student.lastName || '')}</span>${trendBadge}
                 ${attendanceWarningText ? `<div class="text-xs mt-0.5">${attendanceWarningText}</div>` : ''}
               </td>
               <td>${escapeHtml(student.firstName || '')}</td>
@@ -1447,6 +1482,33 @@ const renderStudents = () => {
             }
         });
     });
+
+    // Sort headers: attach click listeners and update active state
+    document.querySelectorAll(".sortable-header").forEach(th => {
+        th.classList.remove('sort-asc', 'sort-desc');
+        if (th.dataset.sort === window.studentSortState.column) {
+            th.classList.add(window.studentSortState.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+            const icon = th.querySelector('.sort-icon');
+            if (icon) icon.style.opacity = '1';
+        }
+        th.onclick = () => {
+            const col = th.dataset.sort;
+            if (window.studentSortState.column === col) {
+                window.studentSortState.direction = window.studentSortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                window.studentSortState.column = col;
+                window.studentSortState.direction = 'asc';
+            }
+            renderStudents();
+        };
+    });
+
+    // Compact view: apply current state
+    const tableEl = document.querySelector("#students-table")?.closest('table');
+    const isCompact = localStorage.getItem('edugrade_compact_view') === '1';
+    if (tableEl) tableEl.classList.toggle('compact-table', isCompact);
+    const compactBtn = document.getElementById('compact-view-toggle');
+    if (compactBtn) compactBtn.classList.toggle('active', isCompact);
 
     // Bulk Actions: Handle checkbox changes
     const updateBulkActionsToolbar = () => {
@@ -2866,6 +2928,38 @@ const renderStudentDetail = (studentId) => {
     const studentName = getStudentDisplayName(student);
     document.getElementById("student-detail-name").textContent = studentName;
 
+    // Prev/next student navigation (same sort order as table)
+    const { column, direction } = window.studentSortState || { column: 'lastName', direction: 'asc' };
+    const sortedStudents = [...currentYear.students].sort((a, b) => {
+        const dir = direction === 'asc' ? 1 : -1;
+        if (column === 'lastName') {
+            const cmp = (a.lastName || '').localeCompare(b.lastName || '', 'de');
+            if (cmp !== 0) return cmp * dir;
+            return (a.firstName || '').localeCompare(b.firstName || '', 'de') * dir;
+        } else if (column === 'firstName') {
+            return (a.firstName || '').localeCompare(b.firstName || '', 'de') * dir;
+        }
+        return (a.lastName || '').localeCompare(b.lastName || '', 'de') * dir;
+    });
+    const currentIdx = sortedStudents.findIndex(s => s.id === studentId);
+    const prevStudent = currentIdx > 0 ? sortedStudents[currentIdx - 1] : null;
+    const nextStudent = currentIdx < sortedStudents.length - 1 ? sortedStudents[currentIdx + 1] : null;
+
+    const prevBtn = document.getElementById('prev-student-btn');
+    const nextBtn = document.getElementById('next-student-btn');
+    if (prevBtn) {
+        prevBtn.disabled = !prevStudent;
+        prevBtn.onclick = prevStudent ? () => renderStudentDetail(prevStudent.id) : null;
+        prevBtn.title = prevStudent ? getStudentDisplayName(prevStudent) : '';
+        prevBtn.setAttribute('data-tooltip', prevStudent ? getStudentDisplayName(prevStudent) : 'Kein vorheriger Schüler');
+    }
+    if (nextBtn) {
+        nextBtn.disabled = !nextStudent;
+        nextBtn.onclick = nextStudent ? () => renderStudentDetail(nextStudent.id) : null;
+        nextBtn.title = nextStudent ? getStudentDisplayName(nextStudent) : '';
+        nextBtn.setAttribute('data-tooltip', nextStudent ? getStudentDisplayName(nextStudent) : 'Kein nächster Schüler');
+    }
+
     // Update breadcrumbs
     const currentClass = getCurrentClass();
     if (currentClass) {
@@ -3797,14 +3891,21 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
                     • ${t('table.date') || 'Datum'}: ${gradeDate}`;
                 const warning = t('confirm.cannotBeUndone') || 'Diese Aktion kann nicht rückgängig gemacht werden.';
 
-                showConfirmDialog(message, () => {
-                    const gradeIndex = student.grades.findIndex(g => g.id === gradeId);
-                    if (gradeIndex !== -1) {
-                        student.grades.splice(gradeIndex, 1);
-                        saveData(t("toast.gradeDeleted"), "success");
-                        renderStudentDetail(student.id);
-                    }
-                }, details, warning);
+                // Delete immediately and offer undo
+                const gradeIndex = student.grades.findIndex(g => g.id === gradeId);
+                if (gradeIndex !== -1) {
+                    const deletedGrade = student.grades.splice(gradeIndex, 1)[0];
+                    saveData(t("toast.gradeDeleted"), "success");
+                    renderStudentDetail(student.id);
+                    showUndoNotification(
+                        `${t('grade.unnamed') ? '' : ''}Note "${gradeName}" gelöscht`,
+                        () => {
+                            student.grades.splice(gradeIndex, 0, deletedGrade);
+                            saveData(t("toast.gradeUpdated"), "success");
+                            renderStudentDetail(student.id);
+                        }
+                    );
+                }
             }
         });
     });

@@ -1060,3 +1060,59 @@ html.dark .attendance-critical-row {
 html.dark .attendance-warning-row {
   background-color: rgba(245, 158, 11, 0.1) !important;
 }
+/* ===== SORTABLE TABLE HEADERS ===== */
+.sortable-header:hover {
+    background-color: oklch(.708 0 0 / 0.05);
+}
+.sortable-header.sort-asc .sort-icon::after { content: '↑'; opacity: 1 !important; }
+.sortable-header.sort-desc .sort-icon::after { content: '↓'; opacity: 1 !important; }
+.sortable-header.sort-asc .sort-icon,
+.sortable-header.sort-desc .sort-icon { opacity: 1 !important; }
+
+/* ===== COMPACT TABLE MODE ===== */
+.compact-table tbody td,
+.compact-table thead th {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+}
+.compact-table .compact-hide {
+    display: none;
+}
+/* Also hide compact-hide cells in tbody when compact mode is on */
+.compact-table tbody tr td:nth-child(4) {
+    display: none;
+}
+
+/* ===== TREND BADGE ===== */
+.trend-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.1rem 0.35rem;
+    border-radius: 9999px;
+    margin-left: 0.25rem;
+    vertical-align: middle;
+}
+.trend-badge.declining {
+    background: rgba(239,68,68,0.12);
+    color: #dc2626;
+    border: 1px solid rgba(239,68,68,0.25);
+}
+html.dark .trend-badge.declining {
+    background: rgba(239,68,68,0.18);
+    color: #f87171;
+}
+
+/* ===== OFFLINE INDICATOR ===== */
+html.dark #offline-indicator {
+    background: rgba(161,107,7,0.15) !important;
+    color: #fbbf24 !important;
+    border-color: rgba(251,191,36,0.25) !important;
+}
+
+/* ===== COMPACT TOGGLE ACTIVE STATE ===== */
+#compact-view-toggle.active {
+    background-color: oklch(.708 0 0 / 0.1);
+}

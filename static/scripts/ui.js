@@ -721,3 +721,36 @@ const createEmptyState = (icon, title, description, buttons = [], learnMoreLink 
 
 // Initialisiere Animationen wenn DOM geladen
 document.addEventListener('DOMContentLoaded', initAnimations);
+
+// ============ UNDO NOTIFICATION ============
+let _undoTimer = null;
+
+const showUndoNotification = (message, undoCallback, durationMs = 5000) => {
+    const bar = document.getElementById('undo-notification');
+    const textEl = document.getElementById('undo-notification-text');
+    const undoBtn = document.getElementById('undo-notification-btn');
+    const closeBtn = document.getElementById('undo-notification-close');
+    if (!bar || !textEl || !undoBtn || !closeBtn) return;
+
+    // Clear any existing timer
+    if (_undoTimer) { clearTimeout(_undoTimer); _undoTimer = null; }
+
+    textEl.textContent = message;
+    bar.classList.remove('hidden');
+    bar.style.animation = 'none';
+    bar.offsetHeight; // force reflow
+    bar.style.animation = 'viewFadeIn 0.2s ease-out';
+
+    const hide = () => {
+        bar.classList.add('hidden');
+        if (_undoTimer) { clearTimeout(_undoTimer); _undoTimer = null; }
+    };
+
+    undoBtn.onclick = () => {
+        hide();
+        if (typeof undoCallback === 'function') undoCallback();
+    };
+    closeBtn.onclick = hide;
+
+    _undoTimer = setTimeout(hide, durationMs);
+};

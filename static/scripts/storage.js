@@ -81,6 +81,24 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
+// ============ OFFLINE INDICATOR ============
+const updateOfflineIndicator = (isOffline, text = null) => {
+    const indicator = document.getElementById('offline-indicator');
+    if (!indicator) return;
+    const textEl = document.getElementById('offline-indicator-text');
+    if (isOffline) {
+        indicator.classList.remove('hidden');
+        indicator.classList.add('flex');
+        if (textEl && text) textEl.textContent = text;
+    } else {
+        indicator.classList.add('hidden');
+        indicator.classList.remove('flex');
+    }
+};
+
+window.addEventListener('online', () => updateOfflineIndicator(false));
+window.addEventListener('offline', () => updateOfflineIndicator(true, 'Offline'));
+
 // Event listener for window close to ensure data is saved
 window.addEventListener('beforeunload', async (e) => {
     // If there are pending save operations, save immediately
@@ -151,6 +169,7 @@ const saveData = (message = "Data saved!", type = "success") => {
                 localStorage.setItem("notenverwaltung", JSON.stringify(appData));
                 // Reset error counter
                 localStorage.removeItem('pendingServerSync');
+                updateOfflineIndicator(false);
             } else if (response.status === 401) {
                 // Session expired or no encryption key - need to re-login
                 const data = await response.json();
@@ -171,6 +190,7 @@ const saveData = (message = "Data saved!", type = "success") => {
                 // On server error, save locally as backup and mark for later sync
                 localStorage.setItem("notenverwaltung", JSON.stringify(appData));
                 localStorage.setItem('pendingServerSync', 'true');
+                updateOfflineIndicator(true, 'Sync-Fehler');
                 showToast(t("toast.localSyncFailed"), "warning");
             }
         } catch (error) {
@@ -178,6 +198,7 @@ const saveData = (message = "Data saved!", type = "success") => {
             // On network error, save locally as backup and mark for later sync
             localStorage.setItem("notenverwaltung", JSON.stringify(appData));
             localStorage.setItem('pendingServerSync', 'true');
+            updateOfflineIndicator(true, 'Offline');
             showToast(t("toast.localNetworkError"), "warning");
         }
     }, SAVE_DEBOUNCE_MS);
