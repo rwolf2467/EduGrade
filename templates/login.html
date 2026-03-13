@@ -25,18 +25,16 @@
     <script src="/static/scripts/i18n.js"></script>
     <style>
         html, body {
-            height: 100%;
+            min-height: 100%;
             margin: 0;
-            overflow: hidden;
         }
         .auth-container {
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 1rem;
             box-sizing: border-box;
-            overflow-y: auto;
         }
         .auth-card {
             width: 100%;
@@ -73,6 +71,16 @@
             </footer>
         </div>
     </dialog>
+
+    <!-- Language Toggle Button -->
+    <button type="button" id="lang-toggle"
+        class="fixed top-4 right-16 btn-outline z-50 h-10 px-3 text-sm font-semibold tracking-wide"
+        aria-label="Switch language">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+            <circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>
+        </svg>
+        <span id="lang-toggle-label">EN</span>
+    </button>
 
     <!-- Theme Toggle Button -->
     <button type="button" id="theme-toggle" aria-label="Toggle dark mode"
@@ -170,7 +178,7 @@
 
                                     <div class="flex items-start gap-2 mt-2">
                                         <input type="checkbox" id="register-terms" name="terms" class="mt-1" required>
-                                        <label for="register-terms" class="text-sm" style="color: oklch(.708 0 0);">
+                                        <label for="register-terms" class="text-sm" style="color: oklch(.708 0 0); overflow-wrap: break-word; word-break: break-word;">
                                             <span data-i18n="auth.termsAgree">I agree to the</span> <a href="/terms" target="_blank" class="text-blue-400 hover:underline" data-i18n="auth.termsOfService">Terms of Service</a> <span data-i18n="auth.and">and</span> <a href="/privacy" target="_blank" class="text-blue-400 hover:underline" data-i18n="auth.privacyPolicy">Privacy Policy</a>
                                         </label>
                                     </div>
@@ -930,6 +938,19 @@
     document.addEventListener('DOMContentLoaded', async () => {
         await I18n.ready;
         I18n.applyI18nToDOM();
+
+        // Language toggle
+        const langBtn = document.getElementById('lang-toggle');
+        const langLabel = document.getElementById('lang-toggle-label');
+        const updateLangLabel = () => {
+            langLabel.textContent = I18n.getCurrentLanguage().toUpperCase();
+        };
+        updateLangLabel();
+        langBtn.addEventListener('click', async () => {
+            const next = I18n.getCurrentLanguage() === 'de' ? 'en' : 'de';
+            await I18n.setLanguage(next);
+            updateLangLabel();
+        });
     });
     </script>
     <script src="/static/scripts/avocloud-logo.js"></script>
