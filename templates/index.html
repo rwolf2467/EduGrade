@@ -735,6 +735,9 @@
                             <div class="rounded-md p-3" style="background: oklch(0.35 0.1 40 / 0.2); border: 1px solid oklch(0.5 0.1 40);">
                                 <p class="text-sm" style="color: oklch(.85 0.1 40);" data-i18n="auth.recoveryKeyWarning">This key is shown only once and cannot be recovered. Store it in a safe place.</p>
                             </div>
+                            <div class="rounded-md p-3" style="background: oklch(0.25 0.08 20 / 0.5); border: 1px solid oklch(0.55 0.15 20);">
+                                <p class="text-sm font-medium" style="color: oklch(.9 0.12 20);" data-i18n="auth.recoveryKeySecurityWarning">⚠ This recovery key is extremely important. Due to the high security standards and strong encryption, your account cannot be restored without this code — not even by support.</p>
+                            </div>
                             <label class="flex items-start gap-2 cursor-pointer">
                                 <input type="checkbox" id="profile-recovery-key-confirm" class="mt-1">
                                 <span class="text-sm" data-i18n="auth.recoveryKeySavedConfirm">I have saved my recovery key in a secure location.</span>
@@ -2250,25 +2253,34 @@ Anna,,Schmidt</code></pre>
 
             // Generate recovery key button
             const profileRecoveryKeyDialog = document.getElementById('profile-recovery-key-dialog');
-            document.getElementById('profile-generate-recovery-key').addEventListener('click', async () => {
-                const btn = document.getElementById('profile-generate-recovery-key');
-                setButtonLoading(btn, true);
-                try {
-                    const response = await fetch('/api/recovery-key/generate', { method: 'POST' });
-                    const data = await response.json();
-                    if (data.success && data.recovery_key) {
-                        profileDialog.close();
-                        document.getElementById('profile-recovery-key-display').textContent = data.recovery_key;
-                        document.getElementById('profile-recovery-key-confirm').checked = false;
-                        document.getElementById('profile-recovery-key-close-btn').disabled = true;
-                        profileRecoveryKeyDialog.showModal();
-                    } else {
-                        showAlertDialog(data.message ? t(data.message) : t('error.somethingWrong'));
-                    }
-                } catch (error) {
-                    showAlertDialog(t('error.somethingWrong'));
-                }
-                setButtonLoading(btn, false);
+            // Prevent closing with ESC — user must confirm they've saved the key first
+            profileRecoveryKeyDialog.addEventListener('cancel', (e) => e.preventDefault());
+            document.getElementById('profile-generate-recovery-key').addEventListener('click', () => {
+                showConfirmDialog(
+                    t('auth.generateRecoveryKeyConfirmMessage'),
+                    async () => {
+                        const btn = document.getElementById('profile-generate-recovery-key');
+                        setButtonLoading(btn, true);
+                        try {
+                            const response = await fetch('/api/recovery-key/generate', { method: 'POST' });
+                            const data = await response.json();
+                            if (data.success && data.recovery_key) {
+                                profileDialog.close();
+                                document.getElementById('profile-recovery-key-display').textContent = data.recovery_key;
+                                document.getElementById('profile-recovery-key-confirm').checked = false;
+                                document.getElementById('profile-recovery-key-close-btn').disabled = true;
+                                profileRecoveryKeyDialog.showModal();
+                            } else {
+                                showAlertDialog(data.message ? t(data.message) : t('error.somethingWrong'));
+                            }
+                        } catch (error) {
+                            showAlertDialog(t('error.somethingWrong'));
+                        }
+                        setButtonLoading(btn, false);
+                    },
+                    null,
+                    t('auth.generateRecoveryKeyConfirmWarning')
+                );
             });
 
             document.getElementById('profile-recovery-key-confirm').addEventListener('change', (e) => {
