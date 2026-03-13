@@ -28,6 +28,12 @@ import functools
 import base64
 import os
 import time
+import smtplib
+import asyncio
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from pathlib import Path
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -46,6 +52,19 @@ except ImportError:
     QR_CODE_AVAILABLE = False
     print("Warning: qrcode library not available. QR code generation will not work.")
 
+# Try to import reportlab for PDF generation
+try:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch, cm
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
+    print("Warning: reportlab library not available. PDF generation will not work.")
+
 # ============ RATE LIMITING ============
 
 # Rate limit storage: {ip: {endpoint: [(timestamp, count)]}}
@@ -53,13 +72,14 @@ rate_limit_storage = defaultdict(lambda: defaultdict(list))
 
 # Rate limit configurations: {endpoint_pattern: (max_requests, time_window_seconds)}
 RATE_LIMITS = {
-    'login': (5, 60),       # 5 attempts per minute
-    'register': (3, 60),    # 3 attempts per minute
-    'data_write': (30, 60), # 30 writes per minute
-    'data_read': (60, 60),  # 60 reads per minute
-    'pin_verify': (5, 60),  # 5 PIN attempts per minute
-    'share_manage': (20, 60), # 20 share management requests per minute
-    'default': (100, 60),   # 100 requests per minute default
+    'login': (5, 60),           # 5 attempts per minute
+    'register': (3, 60),        # 3 attempts per minute
+    'data_write': (30, 60),     # 30 writes per minute
+    'data_read': (60, 60),      # 60 reads per minute
+    'pin_verify': (5, 60),      # 5 PIN attempts per minute
+    'share_manage': (20, 60),   # 20 share management requests per minute
+    'password_reset': (3, 300), # 3 attempts per 5 minutes
+    'default': (100, 60),       # 100 requests per minute default
 }
 
 def get_client_ip():
@@ -282,6 +302,373 @@ def generate_session_token() -> str:
     """Generate a secure session token"""
     return secrets.token_hex(32)
 
+# ============ RECOVERY KEY FUNCTIONS ============
+
+def generate_recovery_key() -> str:
+    """Generate a human-readable recovery key: XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX"""
+    parts = [secrets.token_hex(4).upper() for _ in range(4)]
+    return '-'.join(parts)
+
+def hash_recovery_key(recovery_key: str) -> str:
+    """Hash a recovery key using PBKDF2 for storage"""
+    salt = secrets.token_bytes(32)
+    normalized = recovery_key.upper().replace('-', '')
+    hashed = hashlib.pbkdf2_hmac('sha256', normalized.encode(), salt, 200000)
+    return f"{salt.hex()}:{hashed.hex()}"
+
+def verify_recovery_key(stored_hash: str, recovery_key: str) -> bool:
+    """Verify a recovery key against stored hash (constant-time comparison)"""
+    try:
+        salt_hex, stored = stored_hash.split(':')
+        salt = bytes.fromhex(salt_hex)
+        normalized = recovery_key.upper().replace('-', '')
+        provided = hashlib.pbkdf2_hmac('sha256', normalized.encode(), salt, 200000)
+        return secrets.compare_digest(stored, provided.hex())
+    except Exception:
+        return False
+
+def derive_key_from_recovery(recovery_key: str, salt: bytes) -> bytes:
+    """Derive a 256-bit key from a recovery key using PBKDF2"""
+    normalized = recovery_key.upper().replace('-', '')
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=100000,
+    )
+    return kdf.derive(normalized.encode())
+
+def encrypt_bytes(data: bytes, key: bytes) -> str:
+    """Encrypt raw bytes with AES-256-GCM, return base64 string"""
+    nonce = os.urandom(12)
+    aesgcm = AESGCM(key)
+    ciphertext = aesgcm.encrypt(nonce, data, None)
+    return base64.b64encode(nonce + ciphertext).decode('ascii')
+
+def decrypt_bytes(encrypted: str, key: bytes) -> bytes:
+    """Decrypt base64 AES-256-GCM ciphertext back to raw bytes"""
+    raw = base64.b64decode(encrypted)
+    nonce = raw[:12]
+    ciphertext = raw[12:]
+    aesgcm = AESGCM(key)
+    return aesgcm.decrypt(nonce, ciphertext, None)
+
+def decrypt_recovery_key(encrypted_recovery_key: str, email: str) -> str:
+    """Decrypt the encrypted recovery key using the user's email as the key derivation input"""
+    # The recovery key is stored encrypted with a key derived from the email
+    # We need to derive the same key that was used for encryption
+    email_key = hashlib.sha256(email.lower().strip().encode()).digest()
+    decrypted = decrypt_bytes(encrypted_recovery_key, email_key)
+    return decrypted.decode('utf-8')
+
+def encrypt_recovery_key(recovery_key: str, email: str) -> str:
+    """Encrypt the recovery key using the user's email as the key derivation input"""
+    email_key = hashlib.sha256(email.lower().strip().encode()).digest()
+    return encrypt_bytes(recovery_key.encode('utf-8'), email_key)
+
+# ============ EMAIL / SMTP FUNCTIONS ============
+
+def smtp_is_configured() -> bool:
+    """Return True if SMTP settings are present in config"""
+    cfg = APP_CONFIG
+    return bool(cfg.get('smtp_host') and cfg.get('smtp_user') and cfg.get('smtp_from'))
+
+def _send_email_sync(to_addr: str, subject: str, html_body: str, text_body: str, pdf_attachment: bytes = None, pdf_filename: str = None):
+    """Send an email synchronously (run in executor to avoid blocking)"""
+    cfg = APP_CONFIG
+    
+    # Create message with mixed content for attachment
+    msg = MIMEMultipart('mixed')
+    msg['Subject'] = subject
+    msg['From'] = cfg.get('smtp_from', cfg.get('smtp_user', ''))
+    msg['To'] = to_addr
+    
+    # Create alternative part for text/html
+    msg_alternative = MIMEMultipart('alternative')
+    msg.attach(msg_alternative)
+    msg_alternative.attach(MIMEText(text_body, 'plain', 'utf-8'))
+    msg_alternative.attach(MIMEText(html_body, 'html', 'utf-8'))
+
+    # Attach PDF if provided
+    print(f"[EMAIL] PDF attachment provided: {pdf_attachment is not None}, filename: {pdf_filename}")
+    if pdf_attachment and pdf_filename:
+        print(f"[EMAIL] Attaching PDF: {len(pdf_attachment)} bytes")
+        from email.mime.application import MIMEApplication
+        part = MIMEApplication(pdf_attachment, Name=pdf_filename)
+        part['Content-Disposition'] = f'attachment; filename="{pdf_filename}"'
+        msg.attach(part)
+        print(f"[EMAIL] PDF attached successfully. Message parts: {len(msg.get_payload())}")
+    else:
+        print(f"[EMAIL] No PDF attachment. pdf_attachment={pdf_attachment is not None}, pdf_filename={pdf_filename}")
+
+    host = cfg.get('smtp_host', '')
+    port = int(cfg.get('smtp_port', 587))
+    user = cfg.get('smtp_user', '')
+    password = cfg.get('smtp_password', '')
+    use_tls = cfg.get('smtp_use_tls', True)
+
+    if use_tls:
+        server = smtplib.SMTP(host, port, timeout=10)
+        server.ehlo()
+        server.starttls()
+    else:
+        server = smtplib.SMTP_SSL(host, port, timeout=10)
+    server.login(user, password)
+    server.sendmail(msg['From'], [to_addr], msg.as_string())
+    server.quit()
+    print(f"[EMAIL] Email sent successfully to {to_addr}")
+
+async def send_password_reset_email(to_addr: str, username: str, reset_token: str):
+    """Send a password reset email (fires in background thread)"""
+    app_url = APP_CONFIG.get('app_url', 'http://localhost:5000').rstrip('/')
+    reset_url = f"{app_url}/login?token={reset_token}"
+
+    subject = "EduGrade – Passwort zurücksetzen / Reset your password"
+
+    html_body = f"""
+    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 2rem;">
+        <h2 style="margin-bottom: 0.5rem;">EduGrade – Passwort zurücksetzen</h2>
+        <p>Hallo {username},</p>
+        <p>du hast einen Passwort-Reset angefordert. <strong>Achtung: Da kein Recovery Key vorhanden ist, werden dabei alle deine Daten (Klassen, Schüler, Noten) unwiderruflich gelöscht.</strong></p>
+        <p>
+            <a href="{reset_url}" style="display:inline-block;padding:0.75rem 1.5rem;background:#9333ea;color:#fff;border-radius:6px;text-decoration:none;font-weight:bold;">Passwort jetzt zurücksetzen</a>
+        </p>
+        <p style="color:#888;font-size:0.875rem;">Dieser Link ist 1 Stunde gültig. Falls du keinen Reset angefordert hast, ignoriere diese E-Mail.</p>
+        <hr style="border:none;border-top:1px solid #333;margin:1.5rem 0;">
+        <p style="color:#888;font-size:0.75rem;">EduGrade &mdash; <a href="{app_url}">{app_url}</a></p>
+    </div>
+    """
+
+    text_body = (
+        f"EduGrade – Passwort zurücksetzen\n\n"
+        f"Hallo {username},\n\n"
+        f"du hast einen Passwort-Reset angefordert.\n"
+        f"ACHTUNG: Alle deine Daten werden dabei unwiderruflich gelöscht (kein Recovery Key vorhanden).\n\n"
+        f"Link: {reset_url}\n\n"
+        f"Dieser Link ist 1 Stunde gültig.\n"
+        f"Falls du keinen Reset angefordert hast, ignoriere diese E-Mail."
+    )
+
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _send_email_sync, to_addr, subject, html_body, text_body)
+
+def generate_recovery_key_pdf(username: str, recovery_key: str) -> bytes:
+    """Generate a PDF document with the recovery key"""
+    if not REPORTLAB_AVAILABLE:
+        raise RuntimeError("reportlab library not available")
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+    
+    styles = getSampleStyleSheet()
+    
+    # Custom styles
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#9333EA'),
+        spaceAfter=12,
+        alignment=TA_CENTER
+    )
+    
+    subtitle_style = ParagraphStyle(
+        'CustomSubtitle',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#666666'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    
+    warning_style = ParagraphStyle(
+        'WarningBox',
+        parent=styles['Normal'],
+        fontSize=12,
+        textColor=colors.HexColor('#DC2626'),
+        backColor=colors.HexColor('#FEF2F2'),
+        borderColor=colors.HexColor('#DC2626'),
+        borderWidth=1,
+        leftIndent=20,
+        rightIndent=20,
+        spaceAfter=20,
+        spaceBefore=20
+    )
+    
+    key_style = ParagraphStyle(
+        'RecoveryKey',
+        parent=styles['Heading2'],
+        fontSize=16,
+        textColor=colors.HexColor('#166534'),
+        backColor=colors.HexColor('#F0FDF4'),
+        borderColor=colors.HexColor('#166534'),
+        borderWidth=2,
+        leftIndent=20,
+        rightIndent=20,
+        spaceAfter=20,
+        spaceBefore=20,
+        alignment=TA_CENTER
+    )
+    
+    info_style = ParagraphStyle(
+        'InfoBox',
+        parent=styles['Normal'],
+        fontSize=11,
+        textColor=colors.HexColor('#444444'),
+        backColor=colors.HexColor('#EFF6FF'),
+        borderColor=colors.HexColor('#3B82F6'),
+        borderWidth=1,
+        leftIndent=20,
+        rightIndent=20,
+        spaceAfter=15
+    )
+    
+    story = []
+    
+    try:
+        # Title
+        story.append(Paragraph("EduGrade Recovery Kit", title_style))
+        story.append(Spacer(1, 0.2*inch))
+        
+        # Subtitle
+        story.append(Paragraph(f"Recovery Key for: {username}", subtitle_style))
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Warning
+        warning_text = """
+        <b>⚠ IMPORTANT: Store this document safely!</b><br/>
+        This recovery key is the ONLY way to restore access to your account if you forget your password.
+        Without this key, all your data (classes, students, grades) will be permanently lost.
+        """
+        story.append(Paragraph(warning_text, warning_style))
+        story.append(Spacer(1, 0.2*inch))
+        
+        # Recovery Key - display it in the original format (XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX)
+        story.append(Paragraph(f"<b>Your Recovery Key:</b><br/><span fontSize='18'>{recovery_key}</span>", key_style))
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Instructions
+        info_text = """
+        <b>How to use this Recovery Key:</b><br/>
+        1. Keep this document in a safe place (e.g., with important papers or in a secure digital vault)<br/>
+        2. If you forget your password, go to the login page and click "Forgot Password?"<br/>
+        3. Enter your email address and this recovery key to reset your password<br/>
+        4. Your data will be preserved when using the recovery key
+        """
+        story.append(Paragraph(info_text, info_style))
+        story.append(Spacer(1, 0.2*inch))
+        
+        # Footer info
+        footer_text = f"""
+        <i>Generated on: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</i><br/>
+        <i>EduGrade - Secure Grade Management System</i>
+        """
+        story.append(Paragraph(footer_text, styles['Normal']))
+        
+        doc.build(story)
+        
+        pdf_bytes = buffer.getvalue()
+        buffer.close()
+        print(f"PDF generated successfully: {len(pdf_bytes)} bytes")
+        return pdf_bytes
+    except Exception as e:
+        buffer.close()
+        print(f"PDF generation failed: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
+
+async def send_recovery_key_email(to_addr: str, username: str, recovery_key: str, language: str = 'de'):
+    """Send the recovery key as a PDF attachment via email"""
+    app_url = APP_CONFIG.get('app_url', 'http://localhost:5000').rstrip('/')
+
+    # Language-specific content
+    if language == 'en':
+        subject = "EduGrade – Your Recovery Kit"
+        html_body = f"""
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 2rem;">
+            <h2 style="margin-bottom: 0.5rem;">EduGrade Recovery Kit</h2>
+            <p>Hello {username},</p>
+            <p>You have requested your recovery key. Attached you will find your <strong>"EduGrade Recovery Kit"</strong> as a PDF.</p>
+            <p><strong>Important:</strong></p>
+            <ul>
+                <li>Keep this document in a safe place</li>
+                <li>Without this recovery key, your data (classes, students, grades) cannot be recovered if you forget your password</li>
+                <li>You can use the recovery key at login under "Forgot Password?"</li>
+            </ul>
+            <p style="color:#888;font-size:0.875rem;">If you did not make this request, you should change your password immediately.</p>
+            <hr style="border:none;border-top:1px solid #333;margin:1.5rem 0;">
+            <p style="color:#888;font-size:0.75rem;">EduGrade &mdash; <a href="{app_url}">{app_url}</a></p>
+        </div>
+        """
+        text_body = (
+            f"EduGrade Recovery Kit\n\n"
+            f"Hello {username},\n\n"
+            f"You have requested your recovery key. Attached you will find your Recovery Kit as a PDF.\n\n"
+            f"IMPORTANT:\n"
+            f"- Keep this document in a safe place\n"
+            f"- Without this recovery key, your data cannot be recovered if you forget your password\n\n"
+            f"If you did not make this request, you should change your password immediately."
+        )
+    else:  # German (default)
+        subject = "EduGrade – Dein Recovery Kit"
+        html_body = f"""
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 2rem;">
+            <h2 style="margin-bottom: 0.5rem;">EduGrade Recovery Kit</h2>
+            <p>Hallo {username},</p>
+            <p>du hast deinen Recovery Key angefordert. Im Anhang findest du dein <strong>"EduGrade Recovery Kit"</strong> als PDF.</p>
+            <p><strong>Wichtig:</strong></p>
+            <ul>
+                <li>Bewahre dieses Dokument an einem sicheren Ort auf</li>
+                <li>Ohne diesen Recovery Key können deine Daten (Klassen, Schüler, Noten) bei Passwortverlust nicht wiederhergestellt werden</li>
+                <li>Du kannst den Recovery Key beim Login unter "Passwort vergessen?" verwenden</li>
+            </ul>
+            <p style="color:#888;font-size:0.875rem;">Falls du diese Anfrage nicht gestellt hast, solltest du dein Passwort umgehend ändern.</p>
+            <hr style="border:none;border-top:1px solid #333;margin:1.5rem 0;">
+            <p style="color:#888;font-size:0.75rem;">EduGrade &mdash; <a href="{app_url}">{app_url}</a></p>
+        </div>
+        """
+        text_body = (
+            f"EduGrade Recovery Kit\n\n"
+            f"Hallo {username},\n\n"
+            f"du hast deinen Recovery Key angefordert. Im Anhang findest du dein Recovery Kit als PDF.\n\n"
+            f"WICHTIG:\n"
+            f"- Bewahre dieses Dokument an einem sicheren Ort auf\n"
+            f"- Ohne diesen Recovery Key können deine Daten bei Passwortverlust nicht wiederhergestellt werden\n\n"
+            f"Falls du diese Anfrage nicht gestellt hast, solltest du dein Passwort umgehend ändern."
+        )
+
+    # Generate PDF
+    print(f"[RECOVERY EMAIL] Starting PDF generation for {to_addr}...")
+    pdf_bytes = None
+    pdf_error = None
+    try:
+        pdf_bytes = generate_recovery_key_pdf(username, recovery_key)
+        print(f"[RECOVERY EMAIL] PDF generated: {len(pdf_bytes)} bytes")
+    except Exception as e:
+        pdf_error = str(e)
+        print(f"[RECOVERY EMAIL] PDF generation error: {e}")
+
+    print(f"[RECOVERY EMAIL] Sending email to {to_addr} with PDF={pdf_bytes is not None}...")
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(
+        None,
+        _send_email_sync,
+        to_addr,
+        subject,
+        html_body,
+        text_body,
+        pdf_bytes,
+        "EduGrade_Recovery_Kit.pdf" if pdf_bytes else None
+    )
+
+    if pdf_error:
+        print(f"[RECOVERY EMAIL] Sent without PDF attachment due to: {pdf_error}")
+    elif pdf_bytes:
+        print(f"[RECOVERY EMAIL] Sent with PDF attachment ({len(pdf_bytes)} bytes)")
+    else:
+        print("[RECOVERY EMAIL] Sent without PDF attachment (reportlab not available)")
+
 # ============ STUDENT ACCESS FUNCTIONS ============
 
 def hash_pin(pin: str) -> str:
@@ -401,9 +788,11 @@ def load_db():
     try:
         with open(DB_PATH, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        # Ensure class_shares key exists
+        # Ensure optional keys exist
         if 'class_shares' not in data:
             data['class_shares'] = {}
+        if 'password_reset_tokens' not in data:
+            data['password_reset_tokens'] = {}
         return data
     except (FileNotFoundError, json.JSONDecodeError):
         init_db()
@@ -487,6 +876,15 @@ async def cleanup_expired_sessions():
                         shares_to_delete.append(token)
         for token in shares_to_delete:
             del db['class_shares'][token]
+
+    # Clean up expired password reset tokens
+    if 'password_reset_tokens' in db:
+        expired_tokens = [
+            t for t, v in db['password_reset_tokens'].items()
+            if datetime.fromisoformat(v['expires_at']) < now
+        ]
+        for t in expired_tokens:
+            del db['password_reset_tokens'][t]
 
     save_db(db)
     return None
@@ -640,17 +1038,30 @@ def register_user(username: str, email: str, password: str) -> dict:
     # Generate encryption salt (separate from password hash salt)
     encryption_salt = secrets.token_bytes(32)
 
+    # Derive the data encryption key (DEK) from the password
+    encryption_key = derive_encryption_key(password, encryption_salt)
+
+    # Generate a recovery key and store an encrypted copy of the DEK
+    recovery_key = generate_recovery_key()
+    recovery_salt = secrets.token_bytes(32)
+    recovery_derived_key = derive_key_from_recovery(recovery_key, recovery_salt)
+    encrypted_dek = encrypt_bytes(encryption_key, recovery_derived_key)
+    
+    # Also store the recovery key encrypted (so it can be sent via email later)
+    encrypted_recovery_key = encrypt_recovery_key(recovery_key, email)
+
     db["users"][email] = {
         "id": user_id,
         "username": username,
         "email": email,
         "password_hash": password_hash,
         "encryption_salt": encryption_salt.hex(),
+        "recovery_key_hash": hash_recovery_key(recovery_key),
+        "recovery_salt": recovery_salt.hex(),
+        "encrypted_dek": encrypted_dek,
+        "encrypted_recovery_key": encrypted_recovery_key,
         "created_at": datetime.now().isoformat()
     }
-
-    # Derive encryption key from password
-    encryption_key = derive_encryption_key(password, encryption_salt)
 
     # Initialize user data (will be encrypted)
     initial_data = {
@@ -679,7 +1090,8 @@ def register_user(username: str, email: str, password: str) -> dict:
     return {
         'success': True,
         'message': 'backend.registrationSuccess',
-        'user_id': user_id
+        'user_id': user_id,
+        'recovery_key': recovery_key
     }
 
 def login_user(email: str, password: str) -> dict:
@@ -734,10 +1146,16 @@ def login_user(email: str, password: str) -> dict:
         print(f"Migrating unencrypted data for user {user_id}")
         save_user_data(user_id, stored, encryption_key)
 
+    # Reload user to get any updates (e.g. legacy migration above)
+    db = load_db()
+    user = db["users"].get(email, user)
+    needs_recovery_key = not user.get('recovery_key_hash')
+
     return {
         'success': True,
         'message': 'backend.loginSuccess',
         'token': token,
+        'needs_recovery_key': needs_recovery_key,
         'user': {
             'id': user['id'],
             'username': user['username'],
@@ -1006,6 +1424,341 @@ async def api_logout():
     response = await make_response(jsonify({'success': True, 'message': 'backend.loggedOut'}))
     response.delete_cookie('session_token')
     return response
+
+
+@app.route('/api/password-reset', methods=['POST'])
+@rate_limit('password_reset')
+async def api_password_reset():
+    """Reset password using recovery key — re-encrypts data with new password, no data loss"""
+    data = await request.get_json()
+
+    if not data:
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
+
+    email = data.get('email', '').strip().lower()
+    recovery_key = data.get('recovery_key', '').strip()
+    new_password = data.get('new_password', '')
+
+    if not all([email, recovery_key, new_password]):
+        return jsonify({'success': False, 'message': 'backend.fillAllFields'}), 400
+
+    if len(new_password) < 8:
+        return jsonify({'success': False, 'message': 'backend.passwordLength'}), 400
+
+    db = load_db()
+    user = db["users"].get(email)
+
+    # Always return the same error to prevent user enumeration
+    if not user:
+        return jsonify({'success': False, 'message': 'backend.recoveryKeyInvalid'}), 400
+
+    # Check that recovery key infrastructure exists for this account
+    if not user.get('recovery_key_hash') or not user.get('recovery_salt') or not user.get('encrypted_dek'):
+        return jsonify({'success': False, 'message': 'backend.noRecoveryKey'}), 400
+
+    # Verify the recovery key
+    if not verify_recovery_key(user['recovery_key_hash'], recovery_key):
+        return jsonify({'success': False, 'message': 'backend.recoveryKeyInvalid'}), 400
+
+    try:
+        # Decrypt the stored DEK using the recovery key
+        recovery_salt = bytes.fromhex(user['recovery_salt'])
+        recovery_derived_key = derive_key_from_recovery(recovery_key, recovery_salt)
+        dek = decrypt_bytes(user['encrypted_dek'], recovery_derived_key)
+
+        # Load and decrypt the user's data with the recovered DEK
+        user_id = user['id']
+        user_data_entry = db["user_data"].get(user_id, {})
+        if user_data_entry.get('encrypted'):
+            user_data = decrypt_user_data(user_data_entry['data'], dek)
+        else:
+            user_data = user_data_entry  # legacy plaintext (should not occur)
+
+        # Derive a new DEK from the new password
+        new_encryption_salt = secrets.token_bytes(32)
+        new_dek = derive_encryption_key(new_password, new_encryption_salt)
+
+        # Re-encrypt the user data with the new DEK
+        encrypted_data = encrypt_user_data(user_data, new_dek)
+        db["user_data"][user_id] = {"encrypted": True, "data": encrypted_data}
+
+        # Encrypt the new DEK with the same recovery key (so recovery still works)
+        new_recovery_salt = secrets.token_bytes(32)
+        new_recovery_derived_key = derive_key_from_recovery(recovery_key, new_recovery_salt)
+        new_encrypted_dek = encrypt_bytes(new_dek, new_recovery_derived_key)
+
+        # Update user record
+        user['password_hash'] = hash_password(new_password)
+        user['encryption_salt'] = new_encryption_salt.hex()
+        user['recovery_salt'] = new_recovery_salt.hex()
+        user['encrypted_dek'] = new_encrypted_dek
+        db["users"][email] = user
+
+        # Invalidate all existing sessions for this user
+        sessions_to_delete = [
+            t for t, s in db["sessions"].items() if s["user_id"] == user_id
+        ]
+        for t in sessions_to_delete:
+            del db["sessions"][t]
+            encryption_keys.pop(t, None)
+            user_data_cache.pop(t, None)
+
+        save_db(db)
+        return jsonify({'success': True, 'message': 'backend.passwordResetSuccess'})
+
+    except Exception as e:
+        print(f"Password reset error: {e}")
+        return jsonify({'success': False, 'message': 'backend.error'}), 500
+
+
+@app.route('/api/password-reset/email-request', methods=['POST'])
+@rate_limit('password_reset')
+async def api_password_reset_email_request():
+    """Request a password reset link by email (for accounts without a recovery key).
+    Always returns the same message to prevent user enumeration."""
+    data = await request.get_json()
+    if not data:
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
+
+    email = data.get('email', '').strip().lower()
+    if not email:
+        return jsonify({'success': False, 'message': 'backend.fillAllFields'}), 400
+
+    if not smtp_is_configured():
+        return jsonify({'success': False, 'message': 'backend.smtpNotConfigured'}), 400
+
+    # Always respond the same way regardless of whether email exists
+    generic_ok = jsonify({'success': True, 'message': 'backend.resetEmailSent'})
+
+    db = load_db()
+    user = db["users"].get(email)
+    if not user:
+        return generic_ok
+
+    # Only allow email reset if there is NO recovery key (otherwise use recovery key flow)
+    if user.get('recovery_key_hash'):
+        # Silently succeed so as not to reveal whether recovery key exists
+        return generic_ok
+
+    # Generate a time-limited reset token (1 hour)
+    reset_token = secrets.token_urlsafe(32)
+    expires_at = (datetime.now() + timedelta(hours=1)).isoformat()
+
+    db['password_reset_tokens'][reset_token] = {
+        'user_email': email,
+        'expires_at': expires_at,
+        'used': False
+    }
+    save_db(db)
+
+    try:
+        await send_password_reset_email(email, user.get('username', email), reset_token)
+    except Exception as e:
+        print(f"Failed to send reset email to {email}: {e}")
+        # Don't reveal the error to the client
+
+    return generic_ok
+
+
+@app.route('/api/recovery-key/email-request', methods=['POST'])
+@rate_limit('password_reset')
+async def api_recovery_key_email_request():
+    """Request the recovery key to be sent via email as a PDF attachment."""
+    data = await request.get_json()
+    if not data:
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
+
+    email = data.get('email', '').strip().lower()
+    if not email:
+        return jsonify({'success': False, 'message': 'backend.fillAllFields'}), 400
+
+    if not smtp_is_configured():
+        return jsonify({'success': False, 'message': 'backend.smtpNotConfigured'}), 400
+
+    db = load_db()
+    user = db["users"].get(email)
+
+    if not user:
+        # Return success even if user doesn't exist (prevent enumeration)
+        return jsonify({'success': True, 'message': 'backend.recoveryKeyEmailSent'})
+
+    # Check if user has encrypted recovery key (new format) or only hash (old format)
+    encrypted_recovery_key = user.get('encrypted_recovery_key')
+    if not encrypted_recovery_key:
+        return jsonify({'success': False, 'message': 'backend.noRecoveryKey'}), 404
+
+    # Decrypt and get the recovery key
+    try:
+        recovery_key = decrypt_recovery_key(encrypted_recovery_key, email)
+    except Exception as e:
+        print(f"Failed to decrypt recovery key for {email}: {e}")
+        return jsonify({'success': False, 'message': 'backend.error'}), 500
+
+    # Get user's language preference from encrypted user data
+    language = 'de'  # Default to German
+    try:
+        user_data_entry = db.get('user_data', {}).get(user['id'])
+        if user_data_entry and user_data_entry.get('encrypted'):
+            # Try to get DEK from session (works if user is logged in)
+            dek = encryption_keys.get(get_token_from_request())
+            if dek:
+                user_data = decrypt_user_data(user_data_entry['data'], dek)
+                language = user_data.get('language', 'de')
+            else:
+                # No session - user requested from login page
+                # Try to derive DEK from recovery key (since they're using recovery key flow)
+                # For now, just use German as default
+                print(f"No active session for {email}, using default language 'de'")
+    except Exception as e:
+        print(f"Could not determine user language preference: {e}")
+
+    try:
+        await send_recovery_key_email(email, user.get('username', email), recovery_key, language)
+    except Exception as e:
+        print(f"Failed to send recovery key email to {email}: {e}")
+        return jsonify({'success': False, 'message': 'backend.error'}), 500
+
+    return jsonify({'success': True, 'message': 'backend.recoveryKeyEmailSent'})
+
+
+@app.route('/api/password-reset/confirm-token', methods=['POST'])
+@rate_limit('password_reset')
+async def api_password_reset_confirm_token():
+    """Reset password using an email token. DATA IS WIPED since no recovery key is available."""
+    data = await request.get_json()
+    if not data:
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
+
+    token = data.get('token', '').strip()
+    new_password = data.get('new_password', '')
+
+    if not token or not new_password:
+        return jsonify({'success': False, 'message': 'backend.fillAllFields'}), 400
+
+    if len(new_password) < 8:
+        return jsonify({'success': False, 'message': 'backend.passwordLength'}), 400
+
+    db = load_db()
+    token_entry = db.get('password_reset_tokens', {}).get(token)
+
+    if not token_entry:
+        return jsonify({'success': False, 'message': 'backend.resetTokenInvalid'}), 400
+
+    if token_entry.get('used'):
+        return jsonify({'success': False, 'message': 'backend.resetTokenInvalid'}), 400
+
+    if datetime.fromisoformat(token_entry['expires_at']) < datetime.now():
+        return jsonify({'success': False, 'message': 'backend.resetTokenExpired'}), 400
+
+    email = token_entry['user_email']
+    user = db["users"].get(email)
+    if not user:
+        return jsonify({'success': False, 'message': 'backend.resetTokenInvalid'}), 400
+
+    try:
+        user_id = user['id']
+
+        # Generate new password hash and encryption key (data will be fresh/empty)
+        new_encryption_salt = secrets.token_bytes(32)
+        new_dek = derive_encryption_key(new_password, new_encryption_salt)
+
+        # Reset user data to empty initial state
+        initial_data = {
+            "teacherName": "",
+            "currentClassId": None,
+            "classes": [],
+            "categories": [],
+            "students": [],
+            "participationSettings": {"plusValue": 0.5, "minusValue": 0.5},
+            "plusMinusGradeSettings": {"startGrade": 3, "plusValue": 0.5, "minusValue": 0.5},
+            "tutorial": {"completed": False, "neverShowAgain": False},
+            "gradePercentageRanges": [
+                {"grade": 1, "minPercent": 85, "maxPercent": 100},
+                {"grade": 2, "minPercent": 70, "maxPercent": 84},
+                {"grade": 3, "minPercent": 55, "maxPercent": 69},
+                {"grade": 4, "minPercent": 40, "maxPercent": 54},
+                {"grade": 5, "minPercent": 0, "maxPercent": 39}
+            ]
+        }
+        encrypted_data = encrypt_user_data(initial_data, new_dek)
+        db["user_data"][user_id] = {"encrypted": True, "data": encrypted_data}
+
+        # Generate a new recovery key so the account is protected going forward
+        new_recovery_key = generate_recovery_key()
+        new_recovery_salt = secrets.token_bytes(32)
+        new_recovery_derived_key = derive_key_from_recovery(new_recovery_key, new_recovery_salt)
+        new_encrypted_dek = encrypt_bytes(new_dek, new_recovery_derived_key)
+
+        user['password_hash'] = hash_password(new_password)
+        user['encryption_salt'] = new_encryption_salt.hex()
+        user['recovery_key_hash'] = hash_recovery_key(new_recovery_key)
+        user['recovery_salt'] = new_recovery_salt.hex()
+        user['encrypted_dek'] = new_encrypted_dek
+        db["users"][email] = user
+
+        # Invalidate all existing sessions
+        sessions_to_delete = [t for t, s in db["sessions"].items() if s["user_id"] == user_id]
+        for t in sessions_to_delete:
+            del db["sessions"][t]
+            encryption_keys.pop(t, None)
+            user_data_cache.pop(t, None)
+
+        # Mark token as used
+        db['password_reset_tokens'][token]['used'] = True
+
+        save_db(db)
+        return jsonify({
+            'success': True,
+            'message': 'backend.passwordResetSuccess',
+            'recovery_key': new_recovery_key
+        })
+
+    except Exception as e:
+        print(f"Token password reset error: {e}")
+        return jsonify({'success': False, 'message': 'backend.error'}), 500
+
+
+@app.route('/api/recovery-key/generate', methods=['POST'])
+@login_required
+async def api_generate_recovery_key():
+    """Generate (or regenerate) a recovery key for the current user.
+    Uses the DEK already held in the session — no password required."""
+    token = get_token_from_request()
+    user_id = request.user['id']  # type: ignore
+    user_email = request.user['email']  # type: ignore
+
+    # Get the current DEK from the session cache
+    dek = encryption_keys.get(token)
+    if not dek:
+        return jsonify({'success': False, 'message': 'backend.sessionExpired'}), 401
+
+    try:
+        db = load_db()
+        user = db["users"].get(user_email)
+        if not user:
+            return jsonify({'success': False, 'message': 'backend.error'}), 500
+
+        # Generate a new recovery key and encrypt the DEK with it
+        new_recovery_key = generate_recovery_key()
+        new_recovery_salt = secrets.token_bytes(32)
+        new_recovery_derived_key = derive_key_from_recovery(new_recovery_key, new_recovery_salt)
+        new_encrypted_dek = encrypt_bytes(dek, new_recovery_derived_key)
+        
+        # Also encrypt the recovery key itself for email delivery
+        new_encrypted_recovery_key = encrypt_recovery_key(new_recovery_key, user_email)
+
+        user['recovery_key_hash'] = hash_recovery_key(new_recovery_key)
+        user['recovery_salt'] = new_recovery_salt.hex()
+        user['encrypted_dek'] = new_encrypted_dek
+        user['encrypted_recovery_key'] = new_encrypted_recovery_key
+        db["users"][user_email] = user
+
+        save_db(db)
+        return jsonify({'success': True, 'recovery_key': new_recovery_key})
+
+    except Exception as e:
+        print(f"Recovery key generation error: {e}")
+        return jsonify({'success': False, 'message': 'backend.error'}), 500
 
 
 @app.route('/api/account', methods=['DELETE'])

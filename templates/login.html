@@ -135,6 +135,10 @@
                                         </svg>
                                         <span id="login-btn-text" data-i18n="auth.signIn">Sign In</span>
                                     </button>
+
+                                    <div class="text-center mt-3">
+                                        <button type="button" id="forgot-password-btn" class="text-sm text-blue-400 hover:underline" data-i18n="auth.forgotPassword">Forgot password?</button>
+                                    </div>
                                 </form>
                             </div>
                         </div>
@@ -184,11 +188,184 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Reset Password Panel (hidden by default) -->
+                    <div id="panel-reset" hidden>
+                        <!-- Sub-panel A: Reset with recovery key (default) -->
+                        <div id="reset-subpanel-key" class="py-4">
+                            <p class="text-sm mb-4" style="color: oklch(.708 0 0);" data-i18n="auth.resetPasswordSubtitle">Enter your recovery key and new password to regain access without losing your data.</p>
+                            <form id="reset-form" class="form grid gap-4">
+                                <div class="grid gap-2">
+                                    <label for="reset-email" data-i18n="auth.email">Email</label>
+                                    <input type="email" id="reset-email" name="email" class="input" required autocomplete="email" placeholder="your@email.com" data-i18n-placeholder="auth.emailPlaceholder">
+                                </div>
+
+                                <div class="grid gap-2">
+                                    <label for="reset-recovery-key" data-i18n="auth.recoveryKey">Recovery Key</label>
+                                    <input type="text" id="reset-recovery-key" name="recovery_key" class="input font-mono" required autocomplete="off" placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX" data-i18n-placeholder="auth.recoveryKeyPlaceholder" spellcheck="false">
+                                    <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="auth.resetRecoveryKeyInfo">Enter the recovery key you saved when you registered. Your data will be preserved.</p>
+                                </div>
+
+                                <div class="grid gap-2">
+                                    <label for="reset-new-password" data-i18n="auth.newPassword">New Password</label>
+                                    <input type="password" id="reset-new-password" name="new_password" class="input" required autocomplete="new-password" placeholder="At least 8 characters" data-i18n-placeholder="auth.passwordHint" minlength="8">
+                                </div>
+
+                                <button type="submit" class="btn-primary w-full mt-2" id="reset-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                                    </svg>
+                                    <span id="reset-btn-text" data-i18n="auth.resetPassword">Reset Password</span>
+                                </button>
+                            </form>
+
+                            <div class="text-center mt-3 flex flex-col gap-2">
+                                <button type="button" id="switch-to-email-reset-btn" class="text-sm text-blue-400 hover:underline" data-i18n="auth.noRecoveryKey">No recovery key?</button>
+                                <button type="button" id="back-to-login-btn" class="text-sm text-blue-400 hover:underline" data-i18n="auth.backToLogin">Back to Sign In</button>
+                            </div>
+                        </div>
+
+                        <!-- Sub-panel B: Reset via email (no recovery key) -->
+                        <div id="reset-subpanel-email" hidden class="py-4">
+                            <div class="rounded-md p-3 mb-4" style="background: oklch(0.35 0.1 40 / 0.2); border: 1px solid oklch(0.5 0.1 40);">
+                                <p class="text-sm font-medium mb-1" style="color: oklch(.85 0.1 40);" data-i18n="auth.emailResetWarningTitle">⚠ Data will be permanently deleted</p>
+                                <p class="text-xs" style="color: oklch(.75 0.08 40);" data-i18n="auth.emailResetWarning">Without a recovery key, your encrypted data cannot be decrypted. Resetting via email will permanently delete all your grades, classes and students.</p>
+                            </div>
+                            <form id="email-reset-form" class="form grid gap-4">
+                                <div class="grid gap-2">
+                                    <label for="email-reset-email" data-i18n="auth.email">Email</label>
+                                    <input type="email" id="email-reset-email" name="email" class="input" required autocomplete="email" placeholder="your@email.com" data-i18n-placeholder="auth.emailPlaceholder">
+                                </div>
+
+                                <button type="submit" class="btn-primary w-full mt-2" id="email-reset-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect width="20" height="16" x="2" y="4" rx="2"/>
+                                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                                    </svg>
+                                    <span id="email-reset-btn-text" data-i18n="auth.sendResetLink">Send Reset Link</span>
+                                </button>
+                            </form>
+
+                            <div class="text-center mt-3 flex flex-col gap-2">
+                                <button type="button" id="switch-to-key-reset-btn" class="text-sm text-blue-400 hover:underline" data-i18n="auth.haveRecoveryKey">I have a recovery key</button>
+                                <button type="button" id="send-recovery-key-email-btn" class="text-sm text-blue-400 hover:underline" data-i18n="auth.sendRecoveryKeyEmail">Send Recovery Key via Email</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Token Reset Panel (shown when ?token= in URL) -->
+                    <div id="panel-token-reset" hidden>
+                        <div class="py-4">
+                            <div class="rounded-md p-3 mb-4" style="background: oklch(0.35 0.1 40 / 0.2); border: 1px solid oklch(0.5 0.1 40);">
+                                <p class="text-sm font-medium mb-1" style="color: oklch(.85 0.1 40);" data-i18n="auth.emailResetWarningTitle">⚠ Data will be permanently deleted</p>
+                                <p class="text-xs" style="color: oklch(.75 0.08 40);" data-i18n="auth.emailResetWarning">Without a recovery key, your encrypted data cannot be decrypted. Resetting via email will permanently delete all your grades, classes and students.</p>
+                            </div>
+                            <form id="token-reset-form" class="form grid gap-4">
+                                <div class="grid gap-2">
+                                    <label for="token-reset-new-password" data-i18n="auth.newPassword">New Password</label>
+                                    <input type="password" id="token-reset-new-password" name="new_password" class="input" required autocomplete="new-password" placeholder="At least 8 characters" data-i18n-placeholder="auth.passwordHint" minlength="8">
+                                </div>
+
+                                <div class="flex items-start gap-2">
+                                    <input type="checkbox" id="token-reset-confirm" class="mt-1 cursor-pointer">
+                                    <label for="token-reset-confirm" class="text-sm cursor-pointer" data-i18n="auth.confirmDataLoss">I understand that all my data will be permanently deleted.</label>
+                                </div>
+
+                                <button type="submit" class="btn-primary w-full mt-2" id="token-reset-btn" disabled>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                                    </svg>
+                                    <span id="token-reset-btn-text" data-i18n="auth.resetPassword">Reset Password</span>
+                                </button>
+
+                                <div class="text-center">
+                                    <button type="button" id="token-back-to-login-btn" class="text-sm text-blue-400 hover:underline" data-i18n="auth.backToLogin">Back to Sign In</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </section>
             </div>
         </div>
     </div>
 
+    <!-- Recovery Key Dialog (shown once after registration) -->
+    <dialog id="recovery-key-dialog" class="dialog w-full sm:max-w-[480px]">
+        <div>
+            <header>
+                <div class="flex items-center gap-3">
+                    <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-yellow-500/15">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500">
+                            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold" data-i18n="auth.recoveryKeyTitle">Save Your Recovery Key</h2>
+                        <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="auth.recoveryKeySubtitle">Keep this safe — you'll need it to reset your password.</p>
+                    </div>
+                </div>
+            </header>
+            <section class="py-4 grid gap-4">
+                <div class="rounded-md p-3" style="background: oklch(0.2 0 0 / 0.5); border: 1px solid oklch(0.4 0 0);">
+                    <p class="text-xs mb-2" style="color: oklch(.708 0 0);" data-i18n="auth.yourRecoveryKey">Your recovery key:</p>
+                    <p id="recovery-key-display" class="font-mono text-lg font-bold tracking-widest text-center select-all" style="letter-spacing: 0.1em;"></p>
+                </div>
+                <button type="button" id="copy-recovery-key-btn" class="btn-outline w-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                    </svg>
+                    <span data-i18n="dialog.copy">Copy</span>
+                </button>
+                <div class="rounded-md p-3" style="background: oklch(0.35 0.1 40 / 0.2); border: 1px solid oklch(0.5 0.1 40);">
+                    <p class="text-sm" style="color: oklch(.85 0.1 40);" data-i18n="auth.recoveryKeyWarning">This key is shown only once and cannot be recovered. Store it in a safe place.</p>
+                </div>
+                <label class="flex items-start gap-2 cursor-pointer">
+                    <input type="checkbox" id="recovery-key-confirm-checkbox" class="mt-1">
+                    <span class="text-sm" data-i18n="auth.recoveryKeySavedConfirm">I have saved my recovery key in a secure location.</span>
+                </label>
+            </section>
+            <footer class="flex justify-end">
+                <button type="button" id="recovery-key-continue-btn" class="btn-primary" disabled data-i18n="auth.continueToApp">Continue</button>
+            </footer>
+        </div>
+    </dialog>
+
+    <!-- Recovery Key Email Dialog -->
+    <dialog id="recovery-key-email-dialog" class="dialog w-full sm:max-w-[480px]">
+        <div>
+            <header>
+                <div class="flex items-center gap-3">
+                    <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-500/15">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
+                            <rect width="20" height="16" x="2" y="4" rx="2"/>
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold" data-i18n="auth.sendRecoveryKeyEmail">Send Recovery Key via Email</h2>
+                        <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="auth.recoveryKeyEmailInfo">We'll send your recovery key as a PDF attachment to your registered email address.</p>
+                    </div>
+                </div>
+            </header>
+            <section class="py-4 grid gap-4">
+                <div class="rounded-md p-3" style="background: oklch(0.2 0 0 / 0.5); border: 1px solid oklch(0.4 0 0);">
+                    <p class="text-xs mb-2" style="color: oklch(.708 0 0);" data-i18n="auth.email">Email</p>
+                    <p id="recovery-key-email-display" class="font-mono text-lg font-bold tracking-widest text-center"></p>
+                </div>
+                <button type="button" class="btn-primary w-full" id="recovery-key-email-send-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="20" height="16" x="2" y="4" rx="2"/>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                    </svg>
+                    <span id="recovery-key-email-btn-text" data-i18n="auth.sendRecoveryKeyEmail">Send Recovery Key via Email</span>
+                </button>
+            </section>
+            <footer class="flex justify-end">
+                <button type="button" id="recovery-key-email-cancel-btn" class="btn-outline" data-i18n="dialog.cancel">Cancel</button>
+            </footer>
+        </div>
+    </dialog>
 
     <!-- Progress Dialog -->
     <dialog id="progress-dialog" class="dialog" style="max-width: 425px; width: 100%;">
@@ -217,6 +394,68 @@
         document.getElementById('theme-toggle').addEventListener('click', () => {
             document.dispatchEvent(new CustomEvent('basecoat:theme'));
         });
+
+        // Show/hide panels
+        const authTabsNav = document.querySelector('#auth-tabs nav');
+        const panelReset = document.getElementById('panel-reset');
+        const panelLogin = document.getElementById('panel-login');
+        const panelRegister = document.getElementById('panel-register');
+        const panelTokenReset = document.getElementById('panel-token-reset');
+        const resetSubpanelKey = document.getElementById('reset-subpanel-key');
+        const resetSubpanelEmail = document.getElementById('reset-subpanel-email');
+
+        function hideAllCustomPanels() {
+            panelReset.hidden = true;
+            panelTokenReset.hidden = true;
+        }
+
+        function showResetPanel(showEmail = false) {
+            authTabsNav.style.display = 'none';
+            panelLogin.hidden = true;
+            panelRegister.hidden = true;
+            hideAllCustomPanels();
+            panelReset.hidden = false;
+            resetSubpanelKey.hidden = showEmail;
+            resetSubpanelEmail.hidden = !showEmail;
+        }
+
+        function showTokenResetPanel(token) {
+            authTabsNav.style.display = 'none';
+            panelLogin.hidden = true;
+            panelRegister.hidden = true;
+            hideAllCustomPanels();
+            panelTokenReset.hidden = false;
+            panelTokenReset.dataset.token = token;
+        }
+
+        function showLoginPanel() {
+            authTabsNav.style.display = '';
+            hideAllCustomPanels();
+            document.getElementById('tab-login').click();
+        }
+
+        // Sub-panel switching
+        document.getElementById('switch-to-email-reset-btn').addEventListener('click', () => {
+            resetSubpanelKey.hidden = true;
+            resetSubpanelEmail.hidden = false;
+        });
+        document.getElementById('switch-to-key-reset-btn').addEventListener('click', () => {
+            resetSubpanelEmail.hidden = true;
+            resetSubpanelKey.hidden = false;
+        });
+
+        document.getElementById('forgot-password-btn').addEventListener('click', () => showResetPanel(false));
+        document.getElementById('back-to-login-btn').addEventListener('click', showLoginPanel);
+        document.getElementById('token-back-to-login-btn').addEventListener('click', showLoginPanel);
+
+        // Check for ?token= in URL on page load → show token-reset panel
+        const urlParams = new URLSearchParams(window.location.search);
+        const resetToken = urlParams.get('token');
+        if (resetToken) {
+            document.addEventListener('DOMContentLoaded', () => showTokenResetPanel(resetToken));
+            // Also fire immediately if DOM already ready
+            if (document.readyState !== 'loading') showTokenResetPanel(resetToken);
+        }
 
         // Toast notification function (using Basecoat)
         function showToast(message, type = 'error') {
@@ -325,6 +564,28 @@
                     await delay(300);
 
                     hideProgress();
+
+                    // If user has no recovery key, generate one and show it before proceeding
+                    if (data.needs_recovery_key) {
+                        try {
+                            const rkResp = await fetch('/api/recovery-key/generate', { method: 'POST' });
+                            const rkData = await rkResp.json();
+                            if (rkData.success && rkData.recovery_key) {
+                                document.getElementById('recovery-key-display').textContent = rkData.recovery_key;
+                                document.getElementById('recovery-key-dialog').showModal();
+                                // Redirect happens when user confirms (continue button)
+                                document.getElementById('recovery-key-continue-btn').addEventListener('click', () => {
+                                    document.getElementById('recovery-key-dialog').close();
+                                    sessionStorage.setItem('avoShowIntro', '1');
+                                    window.location.href = '/';
+                                }, { once: true });
+                                return; // Don't redirect yet
+                            }
+                        } catch (e) {
+                            // Non-fatal: proceed to app anyway
+                        }
+                    }
+
                     showToast(t('auth.welcomeBack'), 'success');
                     await delay(300);
                     sessionStorage.setItem('avoShowIntro', '1');
@@ -426,12 +687,18 @@
                     await delay(400);
 
                     hideProgress();
-                    showToast(t('auth.accountCreated'), 'success');
 
-                    // Switch to login tab
-                    document.getElementById('tab-login').click();
-                    // Clear register form
-                    document.getElementById('register-form').reset();
+                    // Show recovery key dialog before switching to login
+                    if (data.recovery_key) {
+                        document.getElementById('recovery-key-display').textContent = data.recovery_key;
+                        document.getElementById('recovery-key-dialog').showModal();
+                    } else {
+                        showToast(t('auth.accountCreated'), 'success');
+                        // Switch to login tab
+                        document.getElementById('tab-login').click();
+                        // Clear register form
+                        document.getElementById('register-form').reset();
+                    }
                 } else if (response.status === 429) {
                     hideProgress();
                     showRateLimitDialog(data.message);
@@ -449,6 +716,215 @@
                 btn.innerHTML = originalHtml;
             }
         });
+
+        // Recovery key dialog handlers
+        document.getElementById('recovery-key-confirm-checkbox').addEventListener('change', (e) => {
+            document.getElementById('recovery-key-continue-btn').disabled = !e.target.checked;
+        });
+
+        document.getElementById('copy-recovery-key-btn').addEventListener('click', () => {
+            const key = document.getElementById('recovery-key-display').textContent;
+            navigator.clipboard.writeText(key).then(() => {
+                showToast(t('toast.linkCopied'), 'success');
+            });
+        });
+
+        document.getElementById('recovery-key-continue-btn').addEventListener('click', () => {
+            document.getElementById('recovery-key-dialog').close();
+            showToast(t('auth.accountCreated'), 'success');
+            document.getElementById('tab-login').click();
+            document.getElementById('register-form').reset();
+            // Reset checkbox for next time
+            document.getElementById('recovery-key-confirm-checkbox').checked = false;
+            document.getElementById('recovery-key-continue-btn').disabled = true;
+        });
+
+        // Reset password form handler
+        document.getElementById('reset-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = document.getElementById('reset-btn');
+            const originalHtml = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = `${SPINNER_SVG}<span>${t('auth.resettingPassword')}</span>`;
+
+            try {
+                const response = await fetch('/api/password-reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: document.getElementById('reset-email').value,
+                        recovery_key: document.getElementById('reset-recovery-key').value,
+                        new_password: document.getElementById('reset-new-password').value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(t('auth.resetSuccess'), 'success');
+                    document.getElementById('reset-form').reset();
+                    await delay(800);
+                    showLoginPanel();
+                } else if (response.status === 429) {
+                    showRateLimitDialog(data.message);
+                } else {
+                    showToast(data.message || t('auth.loginFailed'));
+                }
+            } catch (error) {
+                showToast(t('error.somethingWrong'));
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        });
+
+        // Email reset form handler (no recovery key)
+        document.getElementById('email-reset-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('email-reset-btn');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `${SPINNER_SVG}<span>${t('auth.sending')}</span>`;
+
+            try {
+                const response = await fetch('/api/password-reset/email-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: document.getElementById('email-reset-email').value })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(t('auth.resetEmailSentMsg'), 'success');
+                    document.getElementById('email-reset-form').reset();
+                    await delay(800);
+                    showLoginPanel();
+                } else if (response.status === 429) {
+                    showRateLimitDialog(data.message);
+                } else {
+                    showToast(data.message || t('error.somethingWrong'));
+                }
+            } catch (error) {
+                showToast(t('error.somethingWrong'));
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        });
+
+        // Token reset confirm checkbox
+        document.getElementById('token-reset-confirm').addEventListener('change', (e) => {
+            document.getElementById('token-reset-btn').disabled = !e.target.checked;
+        });
+
+        // Token reset form handler
+        document.getElementById('token-reset-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('token-reset-btn');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `${SPINNER_SVG}<span>${t('auth.resettingPassword')}</span>`;
+
+            const token = panelTokenReset.dataset.token || '';
+
+            try {
+                const response = await fetch('/api/password-reset/confirm-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token,
+                        new_password: document.getElementById('token-reset-new-password').value
+                    })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show recovery key dialog before going to login
+                    if (data.recovery_key) {
+                        document.getElementById('recovery-key-display').textContent = data.recovery_key;
+                        document.getElementById('recovery-key-dialog').showModal();
+                        document.getElementById('recovery-key-continue-btn').addEventListener('click', () => {
+                            document.getElementById('recovery-key-dialog').close();
+                            // Remove token from URL and go to login
+                            window.history.replaceState({}, '', '/login');
+                            showLoginPanel();
+                        }, { once: true });
+                    } else {
+                        showToast(t('auth.resetSuccess'), 'success');
+                        window.history.replaceState({}, '', '/login');
+                        await delay(800);
+                        showLoginPanel();
+                    }
+                } else if (response.status === 429) {
+                    showRateLimitDialog(data.message);
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                } else {
+                    showToast(data.message || t('auth.loginFailed'));
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            } catch (error) {
+                showToast(t('error.somethingWrong'));
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        });
+
+        // Recovery Key Email Dialog
+        const recoveryKeyEmailDialog = document.getElementById('recovery-key-email-dialog');
+        const recoveryKeyEmailDisplay = document.getElementById('recovery-key-email-display');
+        const recoveryKeyEmailSendBtn = document.getElementById('recovery-key-email-send-btn');
+        const recoveryKeyEmailCancelBtn = document.getElementById('recovery-key-email-cancel-btn');
+
+        document.getElementById('send-recovery-key-email-btn').addEventListener('click', () => {
+            // Get email from the reset-email field (already populated)
+            const email = document.getElementById('reset-email')?.value || '';
+            if (email) {
+                recoveryKeyEmailDisplay.textContent = email;
+                recoveryKeyEmailDialog.showModal();
+            } else {
+                showToast(t('backend.fillAllFields'));
+            }
+        });
+
+        recoveryKeyEmailCancelBtn.addEventListener('click', () => {
+            recoveryKeyEmailDialog.close();
+        });
+
+        recoveryKeyEmailSendBtn.addEventListener('click', async () => {
+            const originalHtml = recoveryKeyEmailSendBtn.innerHTML;
+            recoveryKeyEmailSendBtn.disabled = true;
+            recoveryKeyEmailSendBtn.innerHTML = `${SPINNER_SVG}<span>${t('auth.sending')}</span>`;
+
+            const email = recoveryKeyEmailDisplay.textContent;
+
+            try {
+                const response = await fetch('/api/recovery-key/email-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast(t('backend.recoveryKeyEmailSent'), 'success');
+                    recoveryKeyEmailDialog.close();
+                } else {
+                    showToast(data.message || t('error.somethingWrong'));
+                }
+            } catch (error) {
+                showToast(t('error.somethingWrong'));
+            }
+
+            recoveryKeyEmailSendBtn.disabled = false;
+            recoveryKeyEmailSendBtn.innerHTML = originalHtml;
+        });
+
+        // Recovery key continue button re-enable checkbox on open
+        document.getElementById('recovery-key-continue-btn')._defaultDisabled = true;
     </script>
     <script>
     document.addEventListener('DOMContentLoaded', async () => {

@@ -5,3 +5,4 @@ python-dotenv>=1.0.0
 cryptography>=42.0.0
 qrcode>=7.4.2
 Pillow>=9.0.0
+reportlab>=4.0.0

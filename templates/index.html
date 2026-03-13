@@ -594,6 +594,18 @@
                                 </div>
                                 <p class="text-gray-400 text-sm">Bestimmt die Art der Noteneingabe für alle Klassen.</p>
                             </div>
+                            <!-- Recovery Key -->
+                            <div class="p-4 rounded-lg border">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+                                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                                    </svg>
+                                    <h3 class="text-sm font-medium" data-i18n="auth.recoveryKeyTitle">Save Your Recovery Key</h3>
+                                </div>
+                                <p class="text-gray-400 text-sm mb-3" data-i18n="auth.resetRecoveryKeyInfoShort">You will need your recovery key to reset your password. Your data will be preserved.</p>
+                                <button type="button" class="btn-outline w-full" id="profile-generate-recovery-key" data-i18n="profile.generateRecoveryKey">Generate new Recovery Key</button>
+                            </div>
+
                             <!-- Danger Zone -->
                             <div class="p-4 rounded-lg border border-red-500/30 bg-red-500/5">
                                 <div class="flex items-center gap-2 mb-3">
@@ -690,6 +702,90 @@
                                 <path d="m6 6 12 12" />
                             </svg>
                         </button>
+                    </div>
+                </dialog>
+
+                <!-- Recovery Key Display Dialog -->
+                <dialog id="profile-recovery-key-dialog" class="dialog w-full sm:max-w-[480px]">
+                    <div>
+                        <header>
+                            <div class="flex items-center gap-3">
+                                <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-yellow-500/15">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500">
+                                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-semibold" data-i18n="auth.recoveryKeyTitle">Save Your Recovery Key</h2>
+                                    <p class="text-sm text-gray-400" data-i18n="auth.recoveryKeySubtitle">Keep this safe — you'll need it to reset your password.</p>
+                                </div>
+                            </div>
+                        </header>
+                        <section class="py-4 grid gap-4">
+                            <div class="rounded-md p-3" style="background: oklch(0.2 0 0 / 0.5); border: 1px solid oklch(0.4 0 0);">
+                                <p class="text-xs mb-2 text-gray-400" data-i18n="auth.yourRecoveryKey">Your recovery key:</p>
+                                <p id="profile-recovery-key-display" class="font-mono text-lg font-bold tracking-widest text-center select-all"></p>
+                            </div>
+                            <button type="button" id="profile-copy-recovery-key-btn" class="btn-outline w-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                                </svg>
+                                <span data-i18n="share.copyLink">Copy</span>
+                            </button>
+                            <div class="rounded-md p-3" style="background: oklch(0.35 0.1 40 / 0.2); border: 1px solid oklch(0.5 0.1 40);">
+                                <p class="text-sm" style="color: oklch(.85 0.1 40);" data-i18n="auth.recoveryKeyWarning">This key is shown only once and cannot be recovered. Store it in a safe place.</p>
+                            </div>
+                            <label class="flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" id="profile-recovery-key-confirm" class="mt-1">
+                                <span class="text-sm" data-i18n="auth.recoveryKeySavedConfirm">I have saved my recovery key in a secure location.</span>
+                            </label>
+                        </section>
+                        <footer class="flex justify-end gap-2">
+                            <button type="button" id="profile-send-recovery-key-email-btn" class="btn-outline">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="20" height="16" x="2" y="4" rx="2"/>
+                                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                                </svg>
+                                <span data-i18n="auth.sendRecoveryKeyEmail">Send via Email</span>
+                            </button>
+                            <button type="button" id="profile-recovery-key-close-btn" class="btn-primary" disabled data-i18n="dialog.close">Close</button>
+                        </footer>
+                    </div>
+                </dialog>
+
+                <!-- Recovery Key Email Dialog -->
+                <dialog id="profile-recovery-key-email-dialog" class="dialog w-full sm:max-w-[480px]">
+                    <div>
+                        <header>
+                            <div class="flex items-center gap-3">
+                                <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-500/15">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
+                                        <rect width="20" height="16" x="2" y="4" rx="2"/>
+                                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-semibold" data-i18n="auth.sendRecoveryKeyEmail">Send Recovery Key via Email</h2>
+                                    <p class="text-sm text-gray-400" data-i18n="auth.recoveryKeyEmailInfo">We'll send your recovery key as a PDF attachment to your registered email address.</p>
+                                </div>
+                            </div>
+                        </header>
+                        <section class="py-4 grid gap-4">
+                            <div class="rounded-md p-3" style="background: oklch(0.2 0 0 / 0.5); border: 1px solid oklch(0.4 0 0);">
+                                <p class="text-xs mb-2 text-gray-400" data-i18n="auth.email">Email</p>
+                                <p id="profile-recovery-key-email-display" class="font-mono text-lg font-bold tracking-widest text-center"></p>
+                            </div>
+                            <button type="button" class="btn-primary w-full" id="profile-recovery-key-email-send-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="20" height="16" x="2" y="4" rx="2"/>
+                                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                                </svg>
+                                <span id="profile-recovery-key-email-btn-text" data-i18n="auth.sendRecoveryKeyEmail">Send Recovery Key via Email</span>
+                            </button>
+                        </section>
+                        <footer class="flex justify-end">
+                            <button type="button" id="profile-recovery-key-email-cancel-btn" class="btn-outline" data-i18n="dialog.cancel">Cancel</button>
+                        </footer>
                     </div>
                 </dialog>
 
@@ -2150,6 +2246,96 @@ Anna,,Schmidt</code></pre>
                     showAlertDialog(t('error.somethingWrong'));
                     deleteAccountDialog.close();
                 }
+            });
+
+            // Generate recovery key button
+            const profileRecoveryKeyDialog = document.getElementById('profile-recovery-key-dialog');
+            document.getElementById('profile-generate-recovery-key').addEventListener('click', async () => {
+                const btn = document.getElementById('profile-generate-recovery-key');
+                setButtonLoading(btn, true);
+                try {
+                    const response = await fetch('/api/recovery-key/generate', { method: 'POST' });
+                    const data = await response.json();
+                    if (data.success && data.recovery_key) {
+                        profileDialog.close();
+                        document.getElementById('profile-recovery-key-display').textContent = data.recovery_key;
+                        document.getElementById('profile-recovery-key-confirm').checked = false;
+                        document.getElementById('profile-recovery-key-close-btn').disabled = true;
+                        profileRecoveryKeyDialog.showModal();
+                    } else {
+                        showAlertDialog(data.message ? t(data.message) : t('error.somethingWrong'));
+                    }
+                } catch (error) {
+                    showAlertDialog(t('error.somethingWrong'));
+                }
+                setButtonLoading(btn, false);
+            });
+
+            document.getElementById('profile-recovery-key-confirm').addEventListener('change', (e) => {
+                document.getElementById('profile-recovery-key-close-btn').disabled = !e.target.checked;
+            });
+
+            document.getElementById('profile-copy-recovery-key-btn').addEventListener('click', () => {
+                const key = document.getElementById('profile-recovery-key-display').textContent;
+                navigator.clipboard.writeText(key).then(() => {
+                    showToast(t('toast.linkCopied'), 'success');
+                });
+            });
+
+            document.getElementById('profile-recovery-key-close-btn').addEventListener('click', () => {
+                profileRecoveryKeyDialog.close();
+            });
+
+            // Recovery Key Email Dialog
+            const profileRecoveryKeyEmailDialog = document.getElementById('profile-recovery-key-email-dialog');
+            const profileRecoveryKeyEmailDisplay = document.getElementById('profile-recovery-key-email-display');
+            const profileRecoveryKeyEmailSendBtn = document.getElementById('profile-recovery-key-email-send-btn');
+            const profileRecoveryKeyEmailCancelBtn = document.getElementById('profile-recovery-key-email-cancel-btn');
+
+            document.getElementById('profile-send-recovery-key-email-btn').addEventListener('click', () => {
+                profileRecoveryKeyDialog.close();
+                // Get email from user profile
+                const email = window.currentUser?.email || '';
+                if (email) {
+                    profileRecoveryKeyEmailDisplay.textContent = email;
+                    profileRecoveryKeyEmailDialog.showModal();
+                } else {
+                    showToast(t('backend.fillAllFields'));
+                }
+            });
+
+            profileRecoveryKeyEmailCancelBtn.addEventListener('click', () => {
+                profileRecoveryKeyEmailDialog.close();
+            });
+
+            profileRecoveryKeyEmailSendBtn.addEventListener('click', async () => {
+                const originalHtml = profileRecoveryKeyEmailSendBtn.innerHTML;
+                profileRecoveryKeyEmailSendBtn.disabled = true;
+                profileRecoveryKeyEmailSendBtn.innerHTML = `${SPINNER_SVG}<span>${t('auth.sending')}</span>`;
+
+                const email = profileRecoveryKeyEmailDisplay.textContent;
+
+                try {
+                    const response = await fetch('/api/recovery-key/email-request', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showToast(t('backend.recoveryKeyEmailSent'), 'success');
+                        profileRecoveryKeyEmailDialog.close();
+                        profileRecoveryKeyDialog.showModal();
+                    } else {
+                        showToast(data.message || t('error.somethingWrong'));
+                    }
+                } catch (error) {
+                    showToast(t('error.somethingWrong'));
+                }
+
+                profileRecoveryKeyEmailSendBtn.disabled = false;
+                profileRecoveryKeyEmailSendBtn.innerHTML = originalHtml;
             });
         });
     </script>
