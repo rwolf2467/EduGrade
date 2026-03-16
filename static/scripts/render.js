@@ -1258,9 +1258,10 @@ const renderStudents = () => {
         // 1. FILTERN: Nur Schüler behalten die den Kriterien entsprechen
         .filter(student => {
             const fullName = getStudentDisplayName(student).toLowerCase();
-            // Calculate final grade for search
-            const filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
-            const weightedAvg = calculateWeightedAverage(filteredGrades);
+            // Calculate final grade for search (respect category filter)
+            let searchGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
+            if (filterCategory) searchGrades = searchGrades.filter(g => g.categoryId === filterCategory);
+            const weightedAvg = calculateWeightedAverage(searchGrades);
             const finalGrade = calculateFinalGrade(weightedAvg).toLowerCase();
 
             const matchesSearch = fullName.includes(searchTerm) || finalGrade.includes(searchTerm);
@@ -1276,7 +1277,8 @@ const renderStudents = () => {
             const dir = direction === 'asc' ? 1 : -1;
 
             const getGradeData = (student) => {
-                const grades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
+                let grades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
+                if (filterCategory) grades = grades.filter(g => g.categoryId === filterCategory);
                 return {
                     gradeCount: grades.length,
                     average: calculateSimpleAverage(grades) || 999,
@@ -1328,8 +1330,9 @@ const renderStudents = () => {
     }
 
     studentsTable.innerHTML = filteredStudents.map(student => {
-            // Noten nach aktivem Fach filtern
-            const filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
+            // Noten nach aktivem Fach und ggf. Kategorie filtern
+            let filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
+            if (filterCategory) filteredGrades = filteredGrades.filter(g => g.categoryId === filterCategory);
             const simpleAvg = calculateSimpleAverage(filteredGrades);
             const weightedAvg = calculateWeightedAverage(filteredGrades);
             const gradeCount = filteredGrades.length;
@@ -2010,12 +2013,14 @@ const renderCategoryManagement = () => {
 
                     // Update all existing grades that belong to this category (in ALL classes)
                     appData.classes.forEach(cls => {
-                        cls.students.forEach(student => {
-                            student.grades.forEach(grade => {
-                                if (grade.categoryId === category.id) {
-                                    grade.categoryName = newName;
-                                    grade.weight = decimalWeight; // Use the decimal value internally
-                                }
+                        (cls.years || []).forEach(year => {
+                            (year.students || []).forEach(student => {
+                                (student.grades || []).forEach(grade => {
+                                    if (grade.categoryId === category.id) {
+                                        grade.categoryName = newName;
+                                        grade.weight = decimalWeight; // Use the decimal value internally
+                                    }
+                                });
                             });
                         });
                     });
@@ -2951,13 +2956,13 @@ const renderStudentDetail = (studentId) => {
         prevBtn.disabled = !prevStudent;
         prevBtn.onclick = prevStudent ? () => renderStudentDetail(prevStudent.id) : null;
         prevBtn.title = prevStudent ? getStudentDisplayName(prevStudent) : '';
-        prevBtn.setAttribute('data-tooltip', prevStudent ? getStudentDisplayName(prevStudent) : 'Kein vorheriger Schüler');
+        prevBtn.setAttribute('data-tooltip', prevStudent ? getStudentDisplayName(prevStudent) : t('student.noPrevStudent'));
     }
     if (nextBtn) {
         nextBtn.disabled = !nextStudent;
         nextBtn.onclick = nextStudent ? () => renderStudentDetail(nextStudent.id) : null;
         nextBtn.title = nextStudent ? getStudentDisplayName(nextStudent) : '';
-        nextBtn.setAttribute('data-tooltip', nextStudent ? getStudentDisplayName(nextStudent) : 'Kein nächster Schüler');
+        nextBtn.setAttribute('data-tooltip', nextStudent ? getStudentDisplayName(nextStudent) : t('student.noNextStudent'));
     }
 
     // Update breadcrumbs
