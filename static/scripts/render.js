@@ -4,6 +4,25 @@
 // "Rendern" bedeutet: Daten aus appData nehmen und als HTML darstellen.
 
 /**
+ * Updates the main header greeting to show either the default "Hello, Name!"
+ * or a contextual page title (class name, student name, etc.).
+ * @param {string|null} context - If null, restores greeting. Otherwise shows context text.
+ */
+const setGreetingContext = (context) => {
+    const helloSpan = document.getElementById("greeting-hello");
+    const contextSpan = document.getElementById("greeting-context");
+    if (!helloSpan || !contextSpan) return;
+    if (context) {
+        helloSpan.classList.add("hidden");
+        contextSpan.classList.remove("hidden");
+        contextSpan.textContent = context;
+    } else {
+        helloSpan.classList.remove("hidden");
+        contextSpan.classList.add("hidden");
+    }
+};
+
+/**
  * Gibt den vollständigen Anzeigenamen eines Schülers zurück.
  * Format: "Vorname [Zweitname] Nachname"
  */
@@ -2421,9 +2440,12 @@ const renderHome = () => {
                     <h3 class="font-semibold">${escapeHtml(cls.name)}</h3>
                     <p class="text-gray-400 text-sm">${t("home.studentCount", { count: studentCount })}</p>
                 </div>
-                <div class="text-right">
-                    <p class="text-lg font-bold">${escapeHtml(classAverage)}</p>
-                    <p class="text-gray-400 text-sm">${t("home.average")}</p>
+                <div class="flex items-center gap-3">
+                    <div class="text-right">
+                        <p class="text-lg font-bold">${escapeHtml(classAverage)}</p>
+                        <p class="text-gray-400 text-sm">${t("home.average")}</p>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="class-card-chevron"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
             </div>
         `;
@@ -2517,12 +2539,15 @@ const showHomeView = () => {
 
     // Find which view is currently visible
     let viewToHide = null;
+    const attendanceView = document.getElementById("attendance-view");
     if (!classView.classList.contains("hidden")) {
         viewToHide = classView;
     } else if (studentDetailView && !studentDetailView.classList.contains("hidden")) {
         viewToHide = studentDetailView;
     } else if (settingsView && !settingsView.classList.contains("hidden")) {
         viewToHide = settingsView;
+    } else if (attendanceView && !attendanceView.classList.contains("hidden")) {
+        viewToHide = attendanceView;
     }
 
     // Animation triggern
@@ -2560,6 +2585,9 @@ const showHomeView = () => {
         btn.classList.remove("btn-primary");
         btn.classList.add("btn-secondary");
     });
+
+    // Restore greeting to "Hello, Name!"
+    setGreetingContext(null);
 };
 
 // Show Class View
@@ -2594,6 +2622,8 @@ const showClassView = () => {
         viewToHide = studentDetailView;
     } else if (settingsView && !settingsView.classList.contains("hidden")) {
         viewToHide = settingsView;
+    } else if (document.getElementById("attendance-view") && !document.getElementById("attendance-view").classList.contains("hidden")) {
+        viewToHide = document.getElementById("attendance-view");
     }
 
     // Animation triggern
@@ -2663,6 +2693,10 @@ const showClassView = () => {
         navSettings.classList.add("btn-outline");
     }
 
+    // Update header to show current class name
+    const _currentClass = appData.classes.find(c => c.id === appData.currentClassId);
+    setGreetingContext(_currentClass ? _currentClass.name : null);
+
     // Add contextual tooltip to add-student button
     const addStudentBtn = document.getElementById("add-student");
     if (addStudentBtn) {
@@ -2702,6 +2736,11 @@ const showStudentDetailView = (studentId) => {
         viewToHide = homeView;
     }
 
+    // Update header to show student name immediately
+    const _detailYear = getCurrentYear();
+    const _detailStudent = _detailYear?.students?.find(s => s.id === studentId);
+    if (_detailStudent) setGreetingContext(getStudentDisplayName(_detailStudent));
+
     viewToHide.style.animation = 'viewFadeOut 0.15s ease-in forwards';
     setTimeout(() => {
         viewToHide.classList.add("hidden");
@@ -2732,6 +2771,10 @@ const backToClassView = () => {
         window.studentGradeChartInstance.destroy();
         window.studentGradeChartInstance = null;
     }
+
+    // Restore header to class name
+    const _backClass = getCurrentClass();
+    setGreetingContext(_backClass ? _backClass.name : null);
 
     studentDetailView.style.animation = 'viewFadeOut 0.15s ease-in forwards';
     setTimeout(() => {
@@ -2863,6 +2906,9 @@ const showSettingsView = () => {
         navSettings.classList.add("btn-primary");
         navSettings.classList.remove("btn-outline");
     }
+
+    // Update header to show "Settings"
+    setGreetingContext(t("nav.settings") || "Settings");
 };
 
 /**
@@ -3450,6 +3496,22 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
             })
             : '-';
 
+        // Check if student was absent/late on this grade's date
+        const gradeDateStr = grade.createdAt ? new Date(grade.createdAt).toISOString().split('T')[0] : null;
+        const absenceOnGradeDay = gradeDateStr
+            ? (student.participation || []).find(p =>
+                p.date === gradeDateStr &&
+                (!grade.subjectId || p.subjectId === grade.subjectId) &&
+                (p.status === 'absent' || p.status === 'late'))
+            : null;
+        const absenceBadge = absenceOnGradeDay
+            ? `<span class="badge ${absenceOnGradeDay.status === 'absent' ? 'badge-destructive' : 'badge-warning'} text-xs ml-1"
+                data-tooltip="${absenceOnGradeDay.status === 'absent' ? escapeHtml(t('attendance.view.absentOnGradeDay')) : escapeHtml(t('attendance.view.lateOnGradeDay'))}" data-side="top"
+                style="display:inline-flex;align-items:center;gap:2px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              </span>`
+            : '';
+
         // Handle pending grades
         let displayValue, gradeColorClass, weightDisplay;
         if (grade.isPending) {
@@ -3483,7 +3545,7 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
 
         return `
             <tr class="${excludedClass} ${pendingClass}">
-                <td>${escapeHtml(date)}</td>
+                <td>${escapeHtml(date)}${absenceBadge}</td>
                 <td>${escapeHtml(grade.categoryName || '-')}</td>
                 <td>${escapeHtml(grade.name || '-')}${excludedBadge}${pendingBadge}</td>
                 <td>
@@ -4320,3 +4382,330 @@ function renderStudentAttendanceList(student) {
     });
   });
 }
+
+// ============================================================
+// ATTENDANCE VIEW (full-page calendar + student panel)
+// ============================================================
+
+window._attState = {
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(),
+    selectedDate: null,
+    subjectId: null,
+    pending: {}   // studentId -> { status, notes }
+};
+
+const showAttendanceView = () => {
+    const views = ['home-view', 'class-view', 'student-detail-view', 'settings-view'];
+    views.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+    const view = document.getElementById('attendance-view');
+    if (!view) return;
+    view.classList.remove('hidden');
+    view.style.animation = 'none';
+    view.offsetHeight;
+    view.style.animation = 'viewFadeIn 0.25s ease-out';
+
+    const today = new Date().toISOString().split('T')[0];
+    const currentYear = getCurrentYear();
+    const subjects = currentYear?.subjects || [];
+    const subjectId = currentYear?.currentSubjectId || (subjects.length > 0 ? subjects[0].id : null);
+
+    window._attState = {
+        year: new Date().getFullYear(),
+        month: new Date().getMonth(),
+        selectedDate: today,
+        subjectId,
+        pending: {}
+    };
+
+    // Breadcrumbs
+    const currentClass = getCurrentClass();
+    const attClassCrumb = document.getElementById('breadcrumb-att-class');
+    if (attClassCrumb) attClassCrumb.textContent = currentClass?.name || '';
+    document.getElementById('breadcrumb-att-home').onclick = e => { e.preventDefault(); showHomeView(); };
+    document.getElementById('breadcrumb-att-class').onclick = e => { e.preventDefault(); showClassView(); };
+    document.getElementById('attendance-back-btn').onclick = () => showClassView();
+
+    _attLoadPendingForDate(today, subjectId);
+    _renderAttCalendar();
+    _renderAttStudentPanel();
+};
+
+/** Pre-load existing attendance into pending state for date+subject */
+const _attLoadPendingForDate = (date, subjectId) => {
+    const currentYear = getCurrentYear();
+    if (!currentYear) return;
+    const students = currentYear.students || [];
+    const pending = {};
+    students.forEach(s => {
+        const entry = (s.participation || []).find(p => p.date === date && p.subjectId === subjectId);
+        pending[s.id] = { status: entry?.status || 'present', notes: entry?.notes || '' };
+    });
+    window._attState.pending = pending;
+};
+
+/** Render the calendar panel */
+const _renderAttCalendar = () => {
+    const container = document.getElementById('att-calendar-container');
+    if (!container) return;
+
+    const { year, month, selectedDate, subjectId } = window._attState;
+    const today = new Date().toISOString().split('T')[0];
+
+    // Build attendance date map: date -> { present, late, absent } counts
+    const currentYear = getCurrentYear();
+    const students = currentYear?.students || [];
+    const attMap = {};
+    students.forEach(s => {
+        (s.participation || []).filter(p => !subjectId || p.subjectId === subjectId).forEach(p => {
+            if (!attMap[p.date]) attMap[p.date] = { present: 0, late: 0, absent: 0 };
+            attMap[p.date][p.status] = (attMap[p.date][p.status] || 0) + 1;
+        });
+    });
+
+    // Build grade date set: days on which at least one grade was recorded
+    const gradeDates = new Set();
+    students.forEach(s => {
+        (s.grades || []).filter(g => !subjectId || g.subjectId === subjectId).forEach(g => {
+            if (g.createdAt) gradeDates.add(new Date(g.createdAt).toISOString().split('T')[0]);
+        });
+    });
+
+    const locale = I18n.getCurrentLanguage() === 'de' ? 'de-AT' : 'en-US';
+    const monthYearLabel = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(year, month, 1));
+    // Weekday abbreviations Mon–Sun (2024-01-01 = Monday)
+    const weekdays = Array.from({ length: 7 }, (_, i) =>
+        new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(2024, 0, i + 1))
+    );
+
+    // First day of month (adjust: Mon=0)
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    let startDow = (firstDay.getDay() + 6) % 7; // 0=Mon
+
+    // Build day cells
+    const cells = [];
+    // Padding from prev month
+    for (let i = 0; i < startDow; i++) {
+        const d = new Date(year, month, -startDow + i + 1);
+        cells.push({ date: null, label: d.getDate(), other: true });
+    }
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        cells.push({ date: dateStr, label: d, other: false });
+    }
+    // Padding to next month
+    const remaining = 7 - (cells.length % 7);
+    if (remaining < 7) {
+        for (let i = 1; i <= remaining; i++) cells.push({ date: null, label: i, other: true });
+    }
+
+    const dayHtml = cells.map(c => {
+        if (c.other) {
+            return `<div class="att-day att-day-other"><span class="att-day-num">${c.label}</span></div>`;
+        }
+        let cls = 'att-day';
+        if (c.date === today) cls += ' att-day-today';
+        if (c.date === selectedDate) cls += ' att-day-selected';
+
+        // Dots: one attendance dot (worst status wins) + optional grade dot
+        let dots = '';
+        const att = attMap[c.date];
+        if (att) {
+            if (att.absent > 0)       dots += `<span class="att-dot att-dot-absent"></span>`;
+            else if (att.late > 0)    dots += `<span class="att-dot att-dot-late"></span>`;
+            else if (att.present > 0) dots += `<span class="att-dot att-dot-present"></span>`;
+        }
+        if (gradeDates.has(c.date)) dots += `<span class="att-dot att-dot-grade"></span>`;
+
+        return `<button class="${cls}" data-att-date="${escapeHtml(c.date)}">
+            <span class="att-day-num">${c.label}</span>
+            <div class="att-day-dots">${dots}</div>
+        </button>`;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="att-cal-header">
+            <button class="btn-icon-outline" id="att-prev-month" title="${escapeHtml(t('attendance.view.prevMonth'))}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <span class="font-semibold text-sm">${escapeHtml(monthYearLabel)}</span>
+            <button class="btn-icon-outline" id="att-next-month" title="${escapeHtml(t('attendance.view.nextMonth'))}">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+        </div>
+        <div class="att-cal-weekdays">${weekdays.map(d => `<span>${escapeHtml(d)}</span>`).join('')}</div>
+        <div class="att-cal-grid">${dayHtml}</div>
+        <div class="att-legend">
+            <div class="att-legend-item"><span class="att-dot att-dot-present"></span> ${escapeHtml(t('attendance.view.legendAllPresent'))}</div>
+            <div class="att-legend-item"><span class="att-dot att-dot-late"></span> ${escapeHtml(t('attendance.view.legendMixed'))}</div>
+            <div class="att-legend-item"><span class="att-dot att-dot-absent"></span> ${escapeHtml(t('attendance.view.legendAbsent'))}</div>
+            <div class="att-legend-item"><span class="att-dot att-dot-grade"></span> ${escapeHtml(t('attendance.view.legendGrade'))}</div>
+        </div>`;
+
+    // Month nav
+    document.getElementById('att-prev-month').onclick = () => {
+        let { year, month } = window._attState;
+        month--; if (month < 0) { month = 11; year--; }
+        window._attState.year = year; window._attState.month = month;
+        _renderAttCalendar();
+    };
+    document.getElementById('att-next-month').onclick = () => {
+        let { year, month } = window._attState;
+        month++; if (month > 11) { month = 0; year++; }
+        window._attState.year = year; window._attState.month = month;
+        _renderAttCalendar();
+    };
+
+    // Day click
+    container.querySelectorAll('[data-att-date]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const date = btn.dataset.attDate;
+            window._attState.selectedDate = date;
+            _attLoadPendingForDate(date, window._attState.subjectId);
+            _renderAttCalendar();
+            _renderAttStudentPanel();
+        });
+    });
+};
+
+/** Render the right student panel */
+const _renderAttStudentPanel = () => {
+    const container = document.getElementById('att-student-container');
+    if (!container) return;
+
+    const { selectedDate, subjectId, pending } = window._attState;
+    const currentYear = getCurrentYear();
+    if (!currentYear) return;
+
+    const subjects = currentYear.subjects || [];
+
+    if (!selectedDate) {
+        container.innerHTML = `<div class="att-no-date-msg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.3"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <p class="text-sm">${escapeHtml(t('attendance.view.selectDate'))}</p>
+        </div>`;
+        return;
+    }
+
+    const locale = I18n.getCurrentLanguage() === 'de' ? 'de-AT' : 'en-US';
+    const students = [...(currentYear.students || [])].sort((a, b) => {
+        const l = (a.lastName || '').localeCompare(b.lastName || '', locale);
+        return l !== 0 ? l : (a.firstName || '').localeCompare(b.firstName || '', locale);
+    });
+
+    const dateObj = new Date(selectedDate + 'T00:00:00');
+    const dateLabel = dateObj.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+    const subjectOptions = subjects.map(s =>
+        `<option value="${safeAttr(s.id)}" ${s.id === subjectId ? 'selected' : ''}>${escapeHtml(s.name)}</option>`
+    ).join('');
+
+    const subjectSelectHtml = subjects.length > 0
+        ? `<select id="att-subject-sel" class="select" style="font-size:0.8rem;padding:0.25rem 0.5rem;height:auto;">${subjectOptions}</select>`
+        : '';
+
+    const svgCheck = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    const svgClock = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+    const svgX    = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+
+
+    const notePlaceholder = escapeHtml(t('attendance.notesPlaceholder'));
+    const studentRows = students.map(s => {
+        const initials = getStudentInitials(s);
+        const displayName = getStudentDisplayName(s);
+        const st = pending[s.id] || { status: 'present', notes: '' };
+        const pc = st.status === 'present' ? 'sel-present' : '';
+        const lc = st.status === 'late'    ? 'sel-late'    : '';
+        const ac = st.status === 'absent'  ? 'sel-absent'  : '';
+        return `
+        <div class="att-student-row" data-student-id="${safeAttr(s.id)}">
+            <div class="att-initials-circle">${escapeHtml(initials)}</div>
+            <span class="att-student-name">${escapeHtml(displayName)}</span>
+            <input class="att-note-inline" type="text" placeholder="${notePlaceholder}" maxlength="200" value="${safeAttr(st.notes)}" data-note-for="${safeAttr(s.id)}">
+            <div class="att-seg">
+                <button class="att-seg-btn ${pc}" data-status="present" title="${escapeHtml(t('attendance.present'))}">${svgCheck}</button>
+                <button class="att-seg-btn ${lc}" data-status="late"    title="${escapeHtml(t('attendance.late'))}">${svgClock}</button>
+                <button class="att-seg-btn ${ac}" data-status="absent"  title="${escapeHtml(t('attendance.absent'))}">${svgX}</button>
+            </div>
+        </div>`;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="att-student-header">
+            <div>
+                <div class="att-date-label">${escapeHtml(dateLabel)}</div>
+                <div class="att-date-sub">${escapeHtml(t('attendance.view.studentCount', { count: students.length }))}</div>
+            </div>
+            ${subjectSelectHtml}
+        </div>
+        <div class="att-quick-actions">
+            <button class="att-quick-btn all-present" id="att-all-present">${svgCheck} ${escapeHtml(t('attendance.view.allPresent'))}</button>
+            <button class="att-quick-btn all-absent"  id="att-all-absent">${svgX} ${escapeHtml(t('attendance.view.allAbsent'))}</button>
+        </div>
+        <div class="att-students-list" id="att-students-list">${studentRows}</div>
+        <div class="att-save-footer">
+            <button class="btn-primary w-full" id="att-save-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                ${escapeHtml(t('attendance.view.save'))}
+            </button>
+        </div>`;
+
+    // Subject change
+    const subjectSel = document.getElementById('att-subject-sel');
+    if (subjectSel) {
+        subjectSel.addEventListener('change', () => {
+            window._attState.subjectId = subjectSel.value;
+            _attLoadPendingForDate(window._attState.selectedDate, subjectSel.value);
+            _renderAttCalendar();
+            _renderAttStudentPanel();
+        });
+    }
+
+    // Quick actions
+    document.getElementById('att-all-present').onclick = () => {
+        students.forEach(s => { window._attState.pending[s.id] = { ...( window._attState.pending[s.id] || {}), status: 'present' }; });
+        _renderAttStudentPanel();
+    };
+    document.getElementById('att-all-absent').onclick = () => {
+        students.forEach(s => { window._attState.pending[s.id] = { ...(window._attState.pending[s.id] || {}), status: 'absent' }; });
+        _renderAttStudentPanel();
+    };
+
+    // Status buttons
+    container.querySelectorAll('.att-seg-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const row = btn.closest('[data-student-id]');
+            const studentId = row.dataset.studentId;
+            const status = btn.dataset.status;
+            if (!window._attState.pending[studentId]) window._attState.pending[studentId] = { status: 'present', notes: '' };
+            window._attState.pending[studentId].status = status;
+            // Update visual only (no full re-render)
+            row.querySelectorAll('.att-seg-btn').forEach(b => b.className = b.className.replace(/sel-\w+/g, '').trim());
+            btn.classList.add(`sel-${status}`);
+        });
+    });
+
+    // Inline note inputs
+    container.querySelectorAll('.att-note-inline').forEach(input => {
+        const studentId = input.dataset.noteFor;
+        input.addEventListener('input', () => {
+            if (!window._attState.pending[studentId]) window._attState.pending[studentId] = { status: 'present', notes: '' };
+            window._attState.pending[studentId].notes = input.value;
+        });
+    });
+
+    // Save
+    document.getElementById('att-save-btn').onclick = () => {
+        const { selectedDate, subjectId, pending } = window._attState;
+        if (!selectedDate || !subjectId) {
+            showToast(t('attendance.view.selectDateSubject'), 'warning');
+            return;
+        }
+        bulkAddAttendance(pending, selectedDate, subjectId);
+        _renderAttCalendar(); // refresh dots
+    };
+};

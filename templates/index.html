@@ -444,7 +444,10 @@
                             </svg>
                         </button>
 
-                        <h2 class="text-xl font-semibold" id="greeting">Hello, <span id="teacher-greeting"></span>!</h2>
+                        <h2 class="text-xl font-semibold" id="greeting">
+                            <span id="greeting-hello">Hello, <span id="teacher-greeting"></span>!</span>
+                            <span id="greeting-context" class="hidden"></span>
+                        </h2>
                     </div>
                     <div id="offline-indicator" class="hidden items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border" style="background:rgba(234,179,8,0.1);color:#a16207;border-color:rgba(234,179,8,0.3);">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1298,6 +1301,54 @@
                                 </div>
                             </div>
                         </section>
+                    </div>
+                </section>
+
+                <!-- Attendance View -->
+                <section id="attendance-view" class="hidden mt-10">
+                    <nav aria-label="Breadcrumb" class="mb-6">
+                        <ol id="attendance-breadcrumb" class="text-gray-400 flex flex-wrap items-center gap-1.5 text-sm break-words sm:gap-2.5">
+                            <li class="inline-flex items-center gap-1.5">
+                                <a href="#" id="breadcrumb-att-home" class="hover:text-foreground transition-colors" data-i18n="nav.home">Home</a>
+                            </li>
+                            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5"><path d="m9 18 6-6-6-6"/></svg></li>
+                            <li class="inline-flex items-center gap-1.5">
+                                <a href="#" id="breadcrumb-att-class" class="hover:text-foreground transition-colors"></a>
+                            </li>
+                            <li><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5"><path d="m9 18 6-6-6-6"/></svg></li>
+                            <li class="inline-flex items-center gap-1.5">
+                                <span class="text-foreground font-medium" data-i18n="attendance.title">Anwesenheit</span>
+                            </li>
+                        </ol>
+                    </nav>
+
+                    <div class="card mb-5">
+                        <header class="flex justify-between items-center p-4">
+                            <div class="flex items-center gap-3">
+                                <button id="attendance-back-btn" class="btn-outline">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                                    <span data-i18n="student.back">Zurück</span>
+                                    <kbd class="kbd" style="font-size:0.6rem;padding:0.1rem 0.35rem;opacity:0.5;">Esc</kbd>
+                                </button>
+                                <h2 class="text-xl font-semibold" data-i18n="attendance.title">Anwesenheit</h2>
+                            </div>
+                        </header>
+                    </div>
+
+                    <!-- Two-panel layout -->
+                    <div class="att-layout">
+                        <!-- Left: Calendar -->
+                        <div class="att-calendar-panel">
+                            <div class="card p-4" id="att-calendar-container">
+                                <!-- rendered by JS -->
+                            </div>
+                        </div>
+                        <!-- Right: Student panel -->
+                        <div class="att-students-panel">
+                            <div class="card p-4 flex flex-col" id="att-student-container" style="min-height:480px;">
+                                <!-- rendered by JS -->
+                            </div>
+                        </div>
                     </div>
                 </section>
 

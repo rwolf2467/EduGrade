@@ -484,7 +484,7 @@ document.getElementById("close-student-access").addEventListener("click", () => 
 
 document.addEventListener('click', (e) => {
   if (e.target.closest('#add-attendance-btn')) {
-    renderAttendanceDialog();
+    showAttendanceView();
   }
 });
 

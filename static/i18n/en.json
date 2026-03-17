@@ -772,5 +772,21 @@
   "toast.attendanceAdded": "Attendance recorded for {count} students",
   "toast.attendanceDeleted": "Attendance entry deleted",
   "toast.attendanceEdited": "Attendance entry updated",
-  "toast.attendanceSettingsSaved": "Attendance settings saved"
+  "toast.attendanceSettingsSaved": "Attendance settings saved",
+
+  "attendance.view.prevMonth": "Previous month",
+  "attendance.view.nextMonth": "Next month",
+  "attendance.view.legendAllPresent": "All present",
+  "attendance.view.legendMixed": "Late / mixed",
+  "attendance.view.legendAbsent": "Absence(s)",
+  "attendance.view.legendGrade": "Grade entry",
+  "attendance.view.selectDate": "Select a date in the calendar",
+  "attendance.view.allPresent": "All present",
+  "attendance.view.allAbsent": "All absent",
+  "attendance.view.save": "Save",
+  "attendance.view.studentCount": "1 student | {count} students",
+  "attendance.view.selectDateSubject": "Please select a date and subject",
+  "attendance.view.absentOnGradeDay": "Student was absent on this day",
+  "attendance.view.lateOnGradeDay": "Student was late on this day",
+  "attendance.view.noteTooltip": "Add note"
 }

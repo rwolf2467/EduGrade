@@ -772,5 +772,21 @@
   "toast.attendanceAdded": "Anwesenheit für {count} Schüler erfasst",
   "toast.attendanceDeleted": "Anwesenheitseintrag gelöscht",
   "toast.attendanceEdited": "Anwesenheitseintrag aktualisiert",
-  "toast.attendanceSettingsSaved": "Anwesenheitseinstellungen gespeichert"
+  "toast.attendanceSettingsSaved": "Anwesenheitseinstellungen gespeichert",
+
+  "attendance.view.prevMonth": "Vorheriger Monat",
+  "attendance.view.nextMonth": "Nächster Monat",
+  "attendance.view.legendAllPresent": "Alle anwesend",
+  "attendance.view.legendMixed": "Verspätet / gemischt",
+  "attendance.view.legendAbsent": "Fehlstunde(n)",
+  "attendance.view.legendGrade": "Noteneintragung",
+  "attendance.view.selectDate": "Datum im Kalender wählen",
+  "attendance.view.allPresent": "Alle anwesend",
+  "attendance.view.allAbsent": "Alle abwesend",
+  "attendance.view.save": "Speichern",
+  "attendance.view.studentCount": "1 Schüler/in | {count} Schüler/innen",
+  "attendance.view.selectDateSubject": "Bitte Datum und Fach wählen",
+  "attendance.view.absentOnGradeDay": "Schüler/in war an diesem Tag abwesend",
+  "attendance.view.lateOnGradeDay": "Schüler/in war an diesem Tag verspätet",
+  "attendance.view.noteTooltip": "Notiz hinzufügen"
 }
