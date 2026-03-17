@@ -15,18 +15,16 @@ body {
     max-width: 100%;
     overflow-x: hidden;
     box-sizing: border-box;
-    background: radial-gradient(circle, rgba(0,0,0,0.02) 20%, transparent 20%, transparent 80%, rgba(0,0,0,0.02) 80%, rgba(0,0,0,0.02)) 0% 0% / 64px 64px, 
-                radial-gradient(circle, rgba(0,0,0,0.02) 20%, transparent 20%, transparent 80%, rgba(0,0,0,0.02) 80%, rgba(0,0,0,0.02)) 32px 32px / 64px 64px, 
-                linear-gradient(#e2e8f0 1px, transparent 1px) 0px -1px / 32px 32px, 
-                linear-gradient(90deg, #e2e8f0 1px, #f8fafc 1px) -1px 0px / 32px 32px #f8fafc;
-    background-size: 64px 64px, 64px 64px, 32px 32px, 32px 32px;
+    background-color: #f8fafc;
+    background-image: radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
 }
 
 /* Dark mode background */
 html.dark body {
-    background: radial-gradient(circle, transparent 20%, #0a0a0a 20%, #0a0a0a 80%, transparent 80%, transparent) 0% 0% / 64px 64px, radial-gradient(circle, transparent 20%, #0a0a0a 20%, #0a0a0a 80%, transparent 80%, transparent) 32px 32px / 64px 64px, linear-gradient(#171717 2px, transparent 2px) 0px -1px / 32px 32px, linear-gradient(90deg, #171717 2px, #0a0a0a 2px) -1px 0px / 32px 32px #0a0a0a;
-    background-size: 64px 64px, 64px 64px, 32px 32px, 32px 32px;
     background-color: #0a0a0a;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
 }
 
 /* Globales Box-Sizing */
@@ -1295,9 +1293,15 @@ table.single-category td:nth-child(2) {
 .att-quick-btn.all-present:hover { background-color: #10b98120; border-color: #10b981; color: #10b981; }
 .att-quick-btn.all-absent:hover  { background-color: #ef444420; border-color: #ef4444; color: #ef4444; }
 
+.att-students-panel > .card {
+    max-height: calc(100vh - 220px);
+    display: flex;
+    flex-direction: column;
+}
 .att-students-list {
     flex: 1;
     overflow-y: auto;
+    min-height: 0; /* critical: allows flex child to scroll instead of expanding */
 }
 .att-student-row {
     display: flex;
@@ -1388,9 +1392,14 @@ table.single-category td:nth-child(2) {
     text-align: center;
 }
 .att-save-footer {
+    flex-shrink: 0;
     margin-top: 0.75rem;
     padding-top: 0.75rem;
     border-top: 1px solid oklch(.708 0 0 / 0.15);
+    background: var(--card);
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
 }
 
 /* ===== TREND BADGE ===== */
