@@ -1384,7 +1384,7 @@ const renderStudents = () => {
               <td>${gradeCount}</td>
               <td>${simpleAvg ? simpleAvg.toFixed(2) : "—"}</td>
               <td>${weightedAvg ? weightedAvg.toFixed(2) : "—"}</td>
-              <td>${finalGradeDisplay}</td>
+              <td>${filterCategory ? (weightedAvg ? weightedAvg.toFixed(2) : "—") : finalGradeDisplay}</td>
               <td>
                 <button class="btn-icon btn-secondary mr-1" data-view-student="${safeAttr(student.id)}" data-tooltip="${t("tooltip.viewStudentDetails", { student: `${student.firstName} ${student.lastName}`.trim() })}" data-side="top">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
@@ -1510,6 +1510,19 @@ const renderStudents = () => {
     const tableEl = document.querySelector("#students-table")?.closest('table');
     const isCompact = localStorage.getItem('edugrade_compact_view') === '1';
     if (tableEl) tableEl.classList.toggle('compact-table', isCompact);
+    if (tableEl) tableEl.classList.toggle('category-filtered', !!filterCategory);
+
+    // Update final grade column header based on active category filter
+    const headerLabel = document.getElementById('students-finalgrade-header-label');
+    if (headerLabel) {
+        if (filterCategory) {
+            const catName = appData.categories.find(c => c.id === filterCategory)?.name || '';
+            headerLabel.textContent = `${t("table.finalGrade")} ${catName}`;
+        } else {
+            headerLabel.textContent = t("table.finalGrade");
+        }
+    }
+
     const compactBtn = document.getElementById('compact-view-toggle');
     if (compactBtn) compactBtn.classList.toggle('active', isCompact);
 
@@ -3127,6 +3140,10 @@ const renderStudentDetail = (studentId) => {
     if (printBtn) {
         printBtn.onclick = () => exportStudentDetailPDF(studentId);
     }
+
+    // Apply compact mode to detail view
+    const detailView = document.getElementById('student-detail-view');
+    if (detailView) detailView.classList.toggle('compact-detail', localStorage.getItem('edugrade_compact_view') === '1');
 };
 
 /**
@@ -3416,6 +3433,13 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
         tbody.innerHTML = `<tr><td colspan="6">${createEmptyState(icon, title, description, buttons)}</td></tr>`;
         return;
     }
+
+    // Hide category column when all shown grades share the same category
+    const detailTable = tbody.closest('table');
+    const allSameCategory = sortedGrades.length > 0 &&
+        sortedGrades.every(g => g.categoryName === sortedGrades[0].categoryName);
+    if (detailTable) detailTable.classList.toggle('single-category', allSameCategory);
+    if (detailTable) detailTable.classList.toggle('compact-table', localStorage.getItem('edugrade_compact_view') === '1');
 
     tbody.innerHTML = sortedGrades.map(grade => {
         const date = grade.createdAt

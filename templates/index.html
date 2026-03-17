@@ -25,9 +25,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="/static/css/avocloud-branding.css">
-    <script src="/static/scripts/theme.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/avocloud-branding.css?v={{ app_version }}">
+    <script src="/static/scripts/theme.js?v={{ app_version }}"></script>
     <style>
         #avo-intro-overlay {
             position: fixed;
@@ -1063,7 +1063,7 @@
                                         <th class="sortable-header" data-sort="gradeCount" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.gradeCount"># Grades</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
                                         <th class="sortable-header" data-sort="average" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.average">Average</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
                                         <th class="sortable-header" data-sort="weighted" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.weighted">Weighted</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
-                                        <th class="sortable-header" data-sort="finalGrade" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.finalGrade">Final Grade</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
+                                        <th class="sortable-header" data-sort="finalGrade" style="cursor:pointer;user-select:none;white-space:nowrap;"><span id="students-finalgrade-header-label" data-i18n="table.finalGrade">Final Grade</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
                                         <th data-i18n="table.actions">Actions</th>
                                     </tr>
                                 </thead>
@@ -1793,18 +1793,18 @@ Anna,,Schmidt</code></pre>
         </div>
     </div>
 
-    <script src="/static/scripts/security.js"></script>
-    <script src="/static/scripts/data.js"></script>
-    <script src="/static/scripts/i18n.js"></script>
-    <script src="/static/scripts/utils.js"></script>
-    <script src="/static/scripts/storage.js"></script>
-    <script src="/static/scripts/ui.js"></script>
-    <script src="/static/scripts/dataManagement.js"></script>
-    <script src="/static/scripts/render.js"></script>
-    <script src="/static/scripts/pdfExport.js"></script>
-    <script src="/static/scripts/exportImport.js"></script>
-    <script src="/static/scripts/tutorial.js"></script>
-    <script src="/static/scripts/eventListeners.js"></script>
+    <script src="/static/scripts/security.js?v={{ app_version }}"></script>
+    <script src="/static/scripts/data.js?v={{ app_version }}"></script>
+    <script src="/static/scripts/i18n.js?v={{ app_version }}"></script>
+    <script src="/static/scripts/utils.js?v={{ app_version }}"></script>
+    <script src="/static/scripts/storage.js?v={{ app_version }}"></script>
+    <script src="/static/scripts/ui.js?v={{ app_version }}"></script>
+    <script src="/static/scripts/dataManagement.js?v={{ app_version }}"></script>
+    <script src="/static/scripts/render.js?v={{ app_version }}"></script>
+    <script src="/static/scripts/pdfExport.js?v={{ app_version }}"></script>
+    <script src="/static/scripts/exportImport.js?v={{ app_version }}"></script>
+    <script src="/static/scripts/tutorial.js?v={{ app_version }}"></script>
+    <script src="/static/scripts/eventListeners.js?v={{ app_version }}"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {

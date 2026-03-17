@@ -493,8 +493,16 @@ document.addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
     if (e.target.closest('#compact-view-toggle')) {
         const isCompact = localStorage.getItem('edugrade_compact_view') === '1';
-        localStorage.setItem('edugrade_compact_view', isCompact ? '0' : '1');
+        const newCompact = !isCompact;
+        localStorage.setItem('edugrade_compact_view', newCompact ? '1' : '0');
         renderStudents();
+        // Also update detail view if currently visible
+        const detailView = document.getElementById('student-detail-view');
+        if (detailView && !detailView.classList.contains('hidden')) {
+            detailView.classList.toggle('compact-detail', newCompact);
+            const detailGradesTable = document.querySelector('table:has(#student-grades-table)');
+            if (detailGradesTable) detailGradesTable.classList.toggle('compact-table', newCompact);
+        }
     }
 });
 
