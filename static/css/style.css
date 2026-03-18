@@ -3,6 +3,46 @@
     height: 1.2rem;
 }
 
+/* Welcome ticker banner */
+.welcome-ticker {
+    overflow: hidden;
+    white-space: nowrap;
+    background: transparent;
+    color: var(--color-foreground, currentColor);
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    user-select: none;
+    width: 100%;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 38%, black 62%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, black 38%, black 62%, transparent 100%);
+}
+
+.welcome-ticker-track {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    animation: ticker-scroll 30s linear infinite !important;
+    animation-play-state: running !important;
+    will-change: transform;
+}
+
+.welcome-ticker-track span {
+    padding: 0 0.6rem;
+}
+
+.welcome-ticker-track span.separator {
+    display: none;
+}
+
+@keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+}
+
 /* Kritischer Reset für Mobile */
 html {
     width: 100%;

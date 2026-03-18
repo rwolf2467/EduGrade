@@ -27,6 +27,7 @@
         html, body {
             min-height: 100%;
             margin: 0;
+            padding: 0;
         }
         .auth-container {
             min-height: 100vh;
@@ -107,7 +108,14 @@
 
     <div class="auth-container">
         <div class="auth-card">
-            <div class="card">
+            <div class="card" style="overflow: hidden;">
+                <!-- Welcome ticker -->
+                <div class="welcome-ticker">
+                    <div class="welcome-ticker-track">
+                        <span>Willkommen!</span><span>Welcome!</span><span>Bienvenue!</span><span>Bienvenido!</span><span>Benvenuto!</span><span>Bem-vindo!</span><span>Welkom!</span><span>Добро пожаловать!</span><span>欢迎!</span><span>ようこそ!</span><span>Hoş geldiniz!</span>
+                        <span>Willkommen!</span><span>Welcome!</span><span>Bienvenue!</span><span>Bienvenido!</span><span>Benvenuto!</span><span>Bem-vindo!</span><span>Welkom!</span><span>Добро пожаловать!</span><span>欢迎!</span><span>ようこそ!</span><span>Hoş geldiniz!</span>
+                    </div>
+                </div>
                 <header class="text-center mb-6 pt-6 px-6">
                     <img src="/static/logo.svg" alt="EduGrade Logo" class="mx-auto mb-4" style="height: 64px; width: auto;">
                     <h1 class="text-2xl font-bold">EduGrade</h1>
