@@ -10,6 +10,8 @@
   "nav.actions": "Aktionen",
   "nav.toggleSidebar": "Seitenleiste umschalten",
   "nav.toggleDarkMode": "Dunkelmodus umschalten",
+  "nav.lightMode": "Hellmodus",
+  "nav.darkMode": "Dunkelmodus",
   "nav.gradeSettings": "Noteneinstellungen",
   "nav.settings": "Einstellungen",
 

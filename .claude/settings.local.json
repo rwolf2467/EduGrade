@@ -22,7 +22,13 @@
       "Bash(docker info:*)",
       "Bash(chmod:*)",
       "Bash(python3:*)",
-      "Bash(head -30 grep -n \"tab-percentage\\\\|tab-plusminus\\\\|tab-attendance\\\\|tab-categories\\\\|tablist\\\\|aria-selected\" /home/murauer/Nextcloud/avocloud/Code/EduGrade/templates/index.html)"
+      "Bash(head -30 grep -n \"tab-percentage\\\\|tab-plusminus\\\\|tab-attendance\\\\|tab-categories\\\\|tablist\\\\|aria-selected\" /home/murauer/Nextcloud/avocloud/Code/EduGrade/templates/index.html)",
+      "Bash(find /home/murauer/Nextcloud/avocloud/Code/EduGrade -name tailwind.config.* -o -name *tailwind*)",
+      "WebFetch(domain:docusaurus.io)",
+      "Bash(mkdir -p i18n/en/docusaurus-plugin-content-docs/current)",
+      "Bash(cp -r en/* i18n/en/docusaurus-plugin-content-docs/current/)",
+      "Bash(cp -r de/* .)",
+      "Bash(rm -rf de en)"
     ]
   }
 }

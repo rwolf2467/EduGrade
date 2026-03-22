@@ -467,6 +467,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("setup-page").classList.remove("hidden");
         document.getElementById("dashboard").classList.add("hidden");
     }
+
+    // Signal that data is loaded so the profile avatar can render with correct saved gradient
+    document.dispatchEvent(new CustomEvent('app:dataLoaded'));
 });
 
 // Home navigation

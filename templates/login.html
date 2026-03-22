@@ -333,6 +333,13 @@
                     </svg>
                     <span data-i18n="dialog.copy">Copy</span>
                 </button>
+                <button type="button" id="send-recovery-key-email-from-dialog-btn" class="btn-outline w-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="20" height="16" x="2" y="4" rx="2"/>
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                    </svg>
+                    <span data-i18n="auth.sendRecoveryKeyEmail">Send Recovery Key via Email</span>
+                </button>
                 <div class="rounded-md p-3" style="background: oklch(0.35 0.1 40 / 0.2); border: 1px solid oklch(0.5 0.1 40);">
                     <p class="text-sm" style="color: oklch(.85 0.1 40);" data-i18n="auth.recoveryKeyWarning">This key is shown only once and cannot be recovered. Store it in a safe place.</p>
                 </div>
@@ -707,7 +714,9 @@
                     // Show recovery key dialog before switching to login
                     if (data.recovery_key) {
                         document.getElementById('recovery-key-display').textContent = data.recovery_key;
-                        document.getElementById('recovery-key-dialog').showModal();
+                        const rkDialog = document.getElementById('recovery-key-dialog');
+                        rkDialog.dataset.email = document.getElementById('register-email')?.value || '';
+                        rkDialog.showModal();
                     } else {
                         showToast(t('auth.accountCreated'), 'success');
                         // Switch to login tab
@@ -743,6 +752,16 @@
             navigator.clipboard.writeText(key).then(() => {
                 showToast(t('toast.linkCopied'), 'success');
             });
+        });
+
+        document.getElementById('send-recovery-key-email-from-dialog-btn').addEventListener('click', () => {
+            const email = document.getElementById('recovery-key-dialog').dataset.email || '';
+            if (email) {
+                recoveryKeyEmailDisplay.textContent = email;
+                recoveryKeyEmailDialog.showModal();
+            } else {
+                showToast(t('backend.fillAllFields'));
+            }
         });
 
         document.getElementById('recovery-key-continue-btn').addEventListener('click', () => {

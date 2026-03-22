@@ -10,6 +10,8 @@
   "nav.actions": "Actions",
   "nav.toggleSidebar": "Toggle sidebar",
   "nav.toggleDarkMode": "Toggle dark mode",
+  "nav.lightMode": "Light Mode",
+  "nav.darkMode": "Dark Mode",
   "nav.gradeSettings": "Grade Settings",
   "nav.settings": "Settings",
 

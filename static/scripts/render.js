@@ -2577,7 +2577,7 @@ const showHomeView = () => {
     const navSettings = document.getElementById("nav-settings");
     if (navSettings) {
         navSettings.classList.remove("btn-primary");
-        navSettings.classList.add("btn-outline");
+        navSettings.classList.remove("btn-outline");
     }
 
     // Reset class buttons in sidebar to inactive
@@ -2690,7 +2690,7 @@ const showClassView = () => {
     const navSettings = document.getElementById("nav-settings");
     if (navSettings) {
         navSettings.classList.remove("btn-primary");
-        navSettings.classList.add("btn-outline");
+        navSettings.classList.remove("btn-outline");
     }
 
     // Update header to show current class name
@@ -2903,7 +2903,7 @@ const showSettingsView = () => {
 
     const navSettings = document.getElementById("nav-settings");
     if (navSettings) {
-        navSettings.classList.add("btn-primary");
+        navSettings.classList.remove("btn-primary");
         navSettings.classList.remove("btn-outline");
     }
 

@@ -349,80 +349,67 @@
                     <section class="mt-auto pt-4 flex justify-end">
                         <div role="group" aria-labelledby="group-label-content-2" class="w-full">
                             <h3 id="group-label-content-2" class="sr-only" data-i18n="nav.actions">Actions</h3>
-                            <div role="group" class="button-group w-full" data-orientation="vertical">
-                                <button id="export-data" class="btn-outline w-full">
-                                    <svg class="lucide lucide-download" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M7 10l5 5 5-5" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 15V3" />
+                            <div class="popover w-full">
+                                <button id="profile-popover-trigger" type="button"
+                                    aria-expanded="false"
+                                    aria-controls="profile-popover-content"
+                                    class="btn-outline w-full" style="justify-content: flex-start; gap: 0.75rem; padding: 0.5rem 0.75rem; height: auto;">
+                                    <div id="profile-avatar" style="min-width: 2.25rem; width: 2.25rem; height: 2.25rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; color: white; letter-spacing: 0.04em; flex-shrink: 0; font-family: 'Syne', sans-serif; overflow: hidden;"></div>
+                                    <span id="profile-display-name" class="truncate" style="flex: 1; text-align: left; font-size: 0.9375rem;"></span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-left: auto; opacity: 0.5;">
+                                        <path d="m18 15-6-6-6 6"/>
                                     </svg>
-                                    <span data-i18n="nav.export">Export</span>
                                 </button>
-                                <button id="nav-settings" class="btn-outline w-full">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                                        <circle cx="12" cy="12" r="3" />
-                                    </svg>
-                                    <span data-i18n="nav.settings">Settings</span>
-                                </button>
-                                <button id="profile-btn" class="btn-outline w-full">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                                        <circle cx="12" cy="7" r="4" />
-                                    </svg>
-                                    <span data-i18n="nav.profile">Profile</span>
-                                </button>
-                                <button id="logout-btn" class="btn-outline w-full">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                                        <polyline points="16 17 21 12 16 7" />
-                                        <line x1="21" y1="12" x2="9" y2="12" />
-                                    </svg>
-                                    <span data-i18n="nav.logout">Logout</span>
-                                </button>
-                            </div>
-                            <div class="flex gap-2 mt-4 w-full">
-                                <a href="/about.html" class="btn-outline flex-1">
-                                    <svg class="lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                        <circle cx="12" cy="12" r="10" stroke-width="2" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 16v-4M12 8h.01" />
-                                    </svg>
-                                    <span data-i18n="nav.about">About</span>
-                                </a>
-                                <button type="button" aria-label="Toggle dark mode" data-tooltip="Toggle dark mode"
-                                    data-i18n-tooltip="nav.toggleDarkMode" data-side="left"
-                                    onclick="document.dispatchEvent(new CustomEvent('basecoat:theme'))"
-                                    class="btn-icon-outline size-8">
-                                    <span class="hidden dark:block"><svg xmlns="http://www.w3.org/2000/svg" width="24"
-                                            height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <circle cx="12" cy="12" r="4" />
-                                            <path d="M12 2v2" />
-                                            <path d="M12 20v2" />
-                                            <path d="m4.93 4.93 1.41 1.41" />
-                                            <path d="m17.66 17.66 1.41 1.41" />
-                                            <path d="M2 12h2" />
-                                            <path d="M20 12h2" />
-                                            <path d="m6.34 17.66-1.41 1.41" />
-                                            <path d="m19.07 4.93-1.41 1.41" />
-                                        </svg></span>
-                                    <span class="block dark:hidden"><svg xmlns="http://www.w3.org/2000/svg" width="24"
-                                            height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-                                        </svg></span>
-                                </button>
+                                <div id="profile-popover-content" data-popover data-side="top" aria-hidden="true" style="min-width: 100%;">
+                                    <div class="grid gap-1 p-1">
+                                        <button id="export-data" class="btn-ghost w-full" style="justify-content: flex-start;">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 10l5 5 5-5" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15V3" />
+                                            </svg>
+                                            <span data-i18n="nav.export">Export</span>
+                                        </button>
+                                        <button id="nav-settings" class="btn-ghost w-full" style="justify-content: flex-start;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                            <span data-i18n="nav.settings">Settings</span>
+                                        </button>
+                                        <button id="profile-btn" class="btn-ghost w-full" style="justify-content: flex-start;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                                                <circle cx="12" cy="7" r="4" />
+                                            </svg>
+                                            <span data-i18n="nav.profile">Profile</span>
+                                        </button>
+                                        <hr style="border-color: var(--border); margin: 0.125rem 0;" />
+                                        <a href="/about.html" class="btn-ghost w-full" style="justify-content: flex-start;">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16">
+                                                <circle cx="12" cy="12" r="10" stroke-width="2" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16v-4M12 8h.01" />
+                                            </svg>
+                                            <span data-i18n="nav.about">About</span>
+                                        </a>
+                                        <button type="button" class="btn-ghost w-full" style="justify-content: flex-start;"
+                                            onclick="document.dispatchEvent(new CustomEvent('basecoat:theme'))">
+                                            <svg class="hidden dark:block" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                                            <svg class="block dark:hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                                            <span class="hidden dark:inline" data-i18n="nav.lightMode">Light Mode</span>
+                                            <span class="inline dark:hidden" data-i18n="nav.darkMode">Dark Mode</span>
+                                        </button>
+                                        <hr style="border-color: var(--border); margin: 0.125rem 0;" />
+                                        <button id="logout-btn" class="btn-ghost w-full" style="justify-content: flex-start; color: var(--destructive);">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                                                <polyline points="16 17 21 12 16 7" />
+                                                <line x1="21" y1="12" x2="9" y2="12" />
+                                            </svg>
+                                            <span data-i18n="nav.logout">Logout</span>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -526,6 +513,29 @@
                             <h2 id="profile-dialog-title" data-i18n="profile.title">Profile</h2>
                         </header>
                         <section class="space-y-4 overflow-y-auto max-h-[70vh]">
+                            <!-- Avatar -->
+                            <div class="grid gap-3">
+                                <label class="text-sm font-medium">Profilbild</label>
+                                <div class="flex items-center gap-4">
+                                    <div id="profile-avatar-preview" style="width: 4rem; height: 4rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 1.375rem; font-weight: 800; color: white; letter-spacing: 0.04em; flex-shrink: 0; overflow: hidden;"></div>
+                                    <div class="grid gap-2 flex-1">
+                                        <button type="button" id="profile-regenerate-gradient" class="btn-outline w-full">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/><path d="M21 22v-6h-6"/><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/>
+                                            </svg>
+                                            <span>Gradient neu generieren</span>
+                                        </button>
+                                        <label class="btn-outline w-full cursor-pointer" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;" for="profile-avatar-upload">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                                            </svg>
+                                            <span>Foto hochladen</span>
+                                        </label>
+                                        <input type="file" id="profile-avatar-upload" accept="image/*" class="sr-only">
+                                        <button type="button" id="profile-remove-avatar-img" class="btn-ghost w-full text-sm" style="color: var(--destructive); display: none;">Foto entfernen</button>
+                                    </div>
+                                </div>
+                            </div>
                             <!-- Account Info -->
                             <div class="p-4 rounded-lg border">
                                 <h3 class="text-sm font-medium mb-2" data-i18n="profile.accountInfo">Account Information</h3>
@@ -1944,6 +1954,11 @@ Anna,,Schmidt</code></pre>
             const deleteAccountDialog = document.getElementById('delete-account-dialog');
 
             const openProfileDialog = () => {
+                // Reset pending avatar state
+                _pendingGradient = null;
+                _pendingImage = undefined;
+                renderDialogAvatarPreview();
+
                 // Load current profile values
                 const teacherNameInput = document.getElementById('profile-teacher-name');
                 const schoolInput = document.getElementById('profile-school');
@@ -1983,6 +1998,85 @@ Anna,,Schmidt</code></pre>
 
             document.getElementById('profile-btn').addEventListener('click', openProfileDialog);
 
+            // Avatar helpers
+            const generateRandomGradient = () => {
+                const hue1 = Math.floor(Math.random() * 360);
+                const hue2 = (hue1 + 50 + Math.floor(Math.random() * 100)) % 360;
+                const angle = [135, 120, 150, 45][Math.floor(Math.random() * 4)];
+                return `linear-gradient(${angle}deg, hsl(${hue1},65%,55%), hsl(${hue2},65%,55%))`;
+            };
+
+            const getAvatarInitials = () => {
+                const name = appData.teacherName || window.currentUser?.username || '';
+                const words = name.trim().split(/\s+/).filter(Boolean);
+                return words.length >= 2
+                    ? (words[0][0] + words[words.length - 1][0]).toUpperCase()
+                    : name.slice(0, 2).toUpperCase();
+            };
+
+            const renderAvatar = (el, { gradient, image, initials }) => {
+                if (!el) return;
+                if (image) {
+                    el.style.background = 'none';
+                    el.innerHTML = `<img src="${image}" style="width:100%;height:100%;object-fit:cover;" alt="">`;
+                } else {
+                    if (!gradient) gradient = generateRandomGradient();
+                    el.style.background = gradient;
+                    el.textContent = initials || getAvatarInitials();
+                }
+            };
+
+            // Profile popover: update avatar initials and display name
+            const updateProfileDisplay = () => {
+                if (!appData.avatarGradient && !appData.avatarImage) {
+                    appData.avatarGradient = generateRandomGradient();
+                }
+                const name = appData.teacherName || window.currentUser?.username || '';
+                const avatarEl = document.getElementById('profile-avatar');
+                const nameEl = document.getElementById('profile-display-name');
+                renderAvatar(avatarEl, { gradient: appData.avatarGradient, image: appData.avatarImage });
+                if (nameEl) nameEl.textContent = name;
+            };
+            // Call after data is loaded from server so saved gradient is used
+            document.addEventListener('app:dataLoaded', updateProfileDisplay);
+
+            // Profile dialog avatar state
+            let _pendingGradient = null;
+            let _pendingImage = null;
+
+            const renderDialogAvatarPreview = () => {
+                const previewEl = document.getElementById('profile-avatar-preview');
+                const removeBtn = document.getElementById('profile-remove-avatar-img');
+                const gradient = _pendingGradient || appData.avatarGradient;
+                const image = _pendingImage !== undefined ? _pendingImage : appData.avatarImage;
+                renderAvatar(previewEl, { gradient, image, initials: getAvatarInitials() });
+                if (removeBtn) removeBtn.style.display = image ? '' : 'none';
+            };
+
+            document.getElementById('profile-regenerate-gradient').addEventListener('click', () => {
+                _pendingImage = null;
+                _pendingGradient = generateRandomGradient();
+                renderDialogAvatarPreview();
+            });
+
+            document.getElementById('profile-avatar-upload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    _pendingImage = ev.target.result;
+                    _pendingGradient = null;
+                    renderDialogAvatarPreview();
+                };
+                reader.readAsDataURL(file);
+                e.target.value = '';
+            });
+
+            document.getElementById('profile-remove-avatar-img').addEventListener('click', () => {
+                _pendingImage = null;
+                renderDialogAvatarPreview();
+            });
+
             document.getElementById('cancel-profile').addEventListener('click', () => {
                 profileDialog.close();
             });
@@ -2007,6 +2101,15 @@ Anna,,Schmidt</code></pre>
                 appData.school = school;
                 appData.language = language;
 
+                // Apply pending avatar changes
+                if (_pendingGradient !== null) {
+                    appData.avatarGradient = _pendingGradient;
+                    appData.avatarImage = null;
+                } else if (_pendingImage !== undefined) {
+                    appData.avatarImage = _pendingImage || null;
+                    if (!_pendingImage) appData.avatarGradient = appData.avatarGradient || generateRandomGradient();
+                }
+
                 // Save school type
                 const selectedSchoolType = document.querySelector('input[name="schoolType"]:checked');
                 if (selectedSchoolType) appData.schoolType = selectedSchoolType.value;
@@ -2021,6 +2124,7 @@ Anna,,Schmidt</code></pre>
                 } else {
                     document.getElementById('teacher-greeting').textContent = window.currentUser.username;
                 }
+                updateProfileDisplay();
 
                 // Save to server and close dialog
                 saveData(t('toast.profileSaved'), 'success');
