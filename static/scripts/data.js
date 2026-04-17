@@ -14,6 +14,7 @@
  * │   └── [Klasse]
  * │       ├── id: String - Eindeutige ID
  * │       ├── name: String - Name der Klasse (z.B. "1A")
+ * │       ├── attendanceEnabled: Boolean - Anwesenheitsfunktion aktiv (Default true; fehlend = aktiv)
  * │       ├── years: Array - Jahrgänge dieser Klasse (z.B. "2024/2025")
  * │       │   └── [Jahrgang]
  * │       │       ├── id: String - Eindeutige ID

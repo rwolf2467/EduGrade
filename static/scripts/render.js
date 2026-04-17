@@ -104,15 +104,21 @@ const renderClassList = () => {
             const classId = btn.dataset.editClass;
             const cls = appData.classes.find(c => c.id === classId);
             if (cls) {
+                const attendanceOn = cls.attendanceEnabled !== false;
                 const content = `
                     <div class="grid gap-2">
                         <label class="block mb-2">${t("class.newClassName")}</label>
                         <input type="text" name="name" class="input w-full" value="${escapeHtml(cls.name)}" required maxlength="100">
-                        <p class="text-gray-400 text-sm">${t("class.renameHint")}<p>
+                        <p class="text-gray-400 text-sm">${t("class.renameHint")}</p>
+                        <label class="flex items-center gap-2 mt-3 cursor-pointer">
+                            <input type="checkbox" name="attendanceEnabled" class="checkbox" ${attendanceOn ? 'checked' : ''}>
+                            <span>${t("class.attendanceEnabledLabel")}</span>
+                        </label>
+                        <p class="text-gray-400 text-sm">${t("class.attendanceEnabledHint")}</p>
                     </div>
                 `;
                 showDialog("edit-dialog", t("class.editClass"), content, (formData) => {
-                    editClass(classId, formData.get("name"));
+                    editClass(classId, formData.get("name"), formData.has("attendanceEnabled"));
                 });
             }
         });
@@ -2591,6 +2597,30 @@ const showHomeView = () => {
 };
 
 // Show Class View
+/**
+ * Blendet alle Anwesenheits-bezogenen UI-Elemente aus, wenn die aktuelle Klasse
+ * die Anwesenheitsfunktion deaktiviert hat. Wird bei Klassenwechsel/Edit aufgerufen.
+ */
+const applyAttendanceVisibility = () => {
+    const cls = appData.classes.find(c => c.id === appData.currentClassId);
+    const enabled = !cls || cls.attendanceEnabled !== false;
+
+    const addBtn = document.getElementById("add-attendance-btn");
+    if (addBtn) addBtn.classList.toggle("hidden", !enabled);
+
+    const filter = document.getElementById("filter-attendance");
+    if (filter) {
+        filter.classList.toggle("hidden", !enabled);
+        if (!enabled) filter.value = "";
+    }
+
+    // Wenn gerade die Attendance-View sichtbar ist aber Funktion deaktiviert: zur Klassen-Ansicht zurück
+    const attView = document.getElementById("attendance-view");
+    if (!enabled && attView && !attView.classList.contains("hidden")) {
+        showClassView();
+    }
+};
+
 const showClassView = () => {
     const homeView = document.getElementById("home-view");
     const classView = document.getElementById("class-view");
@@ -2659,6 +2689,7 @@ const showClassView = () => {
             renderClassStats();
             renderStudents();
             renderCategoryFilter();
+            applyAttendanceVisibility();
         }, 150);
     } else {
         classView.classList.remove("hidden");
@@ -3498,7 +3529,7 @@ const renderStudentGradesTable = (student, filteredGrades = null) => {
 
         // Check if student was absent/late on this grade's date
         const gradeDateStr = grade.createdAt ? new Date(grade.createdAt).toISOString().split('T')[0] : null;
-        const absenceOnGradeDay = gradeDateStr
+        const absenceOnGradeDay = (gradeDateStr && isAttendanceEnabledForCurrentClass())
             ? (student.participation || []).find(p =>
                 p.date === gradeDateStr &&
                 (!grade.subjectId || p.subjectId === grade.subjectId) &&

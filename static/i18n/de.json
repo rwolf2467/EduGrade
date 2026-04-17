@@ -648,6 +648,8 @@
   "class.deleteClass": "Klasse löschen",
   "class.newClassName": "Neuer Klassenname",
   "class.renameHint": "Wie möchtest du diese Klasse umbenennen?",
+  "class.attendanceEnabledLabel": "Anwesenheit für diese Klasse aktivieren",
+  "class.attendanceEnabledHint": "Wenn deaktiviert, werden Anwesenheitsdaten weder in der Schülertabelle noch in der Detailansicht angezeigt. Vorhandene Einträge bleiben gespeichert.",
   "class.editStudent": "Schüler bearbeiten",
   "class.editStudentNameHint": "Wie möchtest du diesen Schüler umbenennen?",
   "class.viewDetails": "Details anzeigen",

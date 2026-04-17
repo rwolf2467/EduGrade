@@ -74,6 +74,7 @@ const addClass = (name) => {
     const newClass = {
         id: Date.now().toString() + '-' + Math.floor(Math.random() * 1000),
         name: validation.value,          // Validierter/bereinigter Name
+        attendanceEnabled: true,         // Anwesenheitsfunktion standardmäßig aktiv
         years: [defaultYear],            // Array mit Standard-Jahr
         currentYearId: yearId            // Standard-Jahr aktiv setzen
         // Kategorien werden global in appData.categories gespeichert
@@ -471,7 +472,7 @@ const deleteItem = (type, id) => {
  * @param {string} classId - ID der Klasse
  * @param {string} newName - Neuer Name
  */
-const editClass = (classId, newName) => {
+const editClass = (classId, newName, attendanceEnabled = undefined) => {
     // Neuen Namen validieren
     const validation = validateStringInput(newName, 50);
     if (!validation.isValid) {
@@ -483,9 +484,13 @@ const editClass = (classId, newName) => {
     const cls = appData.classes.find(c => c.id === classId);
     if (cls) {
         cls.name = validation.value;
+        if (typeof attendanceEnabled === 'boolean') {
+            cls.attendanceEnabled = attendanceEnabled;
+        }
         saveData(t("toast.classEdited"), "success");
         renderClassList();
         renderStudents();
+        applyAttendanceVisibility();
 
         // Wenn es die aktuelle Klasse ist, auch die Überschrift aktualisieren
         if (classId === appData.currentClassId) {
@@ -1719,7 +1724,22 @@ function openEditAttendanceDialog(studentId, attendanceId) {
   });
 }
 
+/**
+ * Prüft ob Anwesenheitsfunktion für eine Klasse aktiv ist.
+ * Default true (fehlendes Flag = aktiv für Rückwärtskompatibilität).
+ */
+function isAttendanceEnabledForClass(cls) {
+  if (!cls) return true;
+  return cls.attendanceEnabled !== false;
+}
+
+/** Shortcut: aktuelle Klasse. */
+function isAttendanceEnabledForCurrentClass() {
+  return isAttendanceEnabledForClass(getCurrentClass());
+}
+
 function getAttendanceForDate(studentId, date, subjectId = null) {
+  if (!isAttendanceEnabledForCurrentClass()) return null;
   const currentYear = getCurrentYear();
   const student = currentYear.students.find(s => s.id === studentId);
   if (!student) return null;
@@ -1728,6 +1748,9 @@ function getAttendanceForDate(studentId, date, subjectId = null) {
 }
 
 function calculateAttendanceStats(studentId, subjectId = null) {
+  if (!isAttendanceEnabledForCurrentClass()) {
+    return { total: 0, present: 0, absent: 0, late: 0, presentRate: 0, absentRate: 0 };
+  }
   const currentYear = getCurrentYear();
   const student = currentYear.students.find(s => s.id === studentId);
   if (!student) return null;
@@ -1759,6 +1782,7 @@ function calculateAttendanceStats(studentId, subjectId = null) {
  * Gibt zurück: 'critical' (unter Minimum), 'warning' (knapp darüber), 'ok'
  */
 function getAttendanceStatus(studentId, subjectId = null) {
+  if (!isAttendanceEnabledForCurrentClass()) return { status: 'ok', rate: null, hasData: false };
   const globalSettings = appData.attendanceSettings || { enabled: false, minAttendancePercent: 75, warningThreshold: 5 };
 
   // Merge subject-specific settings with global fallback

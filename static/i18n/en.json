@@ -648,6 +648,8 @@
   "class.deleteClass": "Delete class",
   "class.newClassName": "New class name",
   "class.renameHint": "Hey there, what would you like to rename this class to?",
+  "class.attendanceEnabledLabel": "Enable attendance for this class",
+  "class.attendanceEnabledHint": "When disabled, attendance data is hidden from the students table and detail view. Existing entries stay stored.",
   "class.editStudent": "Edit Student",
   "class.editStudentNameHint": "What would you like to rename this student to?",
   "class.viewDetails": "View details",
