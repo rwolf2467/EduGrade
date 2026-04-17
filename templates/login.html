@@ -73,9 +73,21 @@
         </div>
     </dialog>
 
+    <!-- Top-right Controls -->
+    <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
+    <!-- Docs Link Button -->
+    <a href="https://edugrade.avocloud.net/docs/" target="_blank" rel="noopener noreferrer"
+        class="btn-outline h-10 px-3 text-sm font-semibold tracking-wide inline-flex items-center gap-1.5"
+        aria-label="Documentation" data-i18n-aria-label="nav.docs">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        <span data-i18n="nav.docs">Docs</span>
+    </a>
+
     <!-- Language Toggle Button -->
     <button type="button" id="lang-toggle"
-        class="fixed top-4 right-16 btn-outline z-50 h-10 px-3 text-sm font-semibold tracking-wide"
+        class="btn-outline h-10 px-3 text-sm font-semibold tracking-wide inline-flex items-center gap-1.5"
         aria-label="Switch language">
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0">
             <circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>
@@ -85,7 +97,7 @@
 
     <!-- Theme Toggle Button -->
     <button type="button" id="theme-toggle" aria-label="Toggle dark mode"
-        class="fixed top-4 right-4 btn-icon-outline size-10 z-50" data-i18n-aria-label="nav.toggleDarkMode">
+        class="btn-icon-outline size-10" data-i18n-aria-label="nav.toggleDarkMode">
         <span class="hidden dark:block">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="4" />
@@ -105,6 +117,7 @@
             </svg>
         </span>
     </button>
+    </div>
 
     <div class="auth-container">
         <div class="auth-card">
