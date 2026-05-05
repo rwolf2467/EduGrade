@@ -96,6 +96,14 @@
   "year.copyFromPrevious": "Kopiere Schüler und Fächer von {name}",
   "year.copyHint": "Schüler und Fächer werden kopiert, aber keine Noten",
   "year.confirmDelete": "Jahr {name} wirklich löschen? Alle Daten gehen verloren!",
+  "year.startDate": "Schuljahresbeginn",
+  "year.semesterSwitchDate": "Semesterwechsel",
+  "year.endDate": "Schuljahresende",
+  "year.datesHint": "Daten werden für automatische Semesterauswahl verwendet",
+  "year.noDatesWarning": "Keine Daten festgelegt – Semesterauswahl manuell",
+  "year.setDates": "Daten festlegen",
+  "year.setDatesTitle": "Schuljahr-Daten festlegen",
+  "year.setDatesHint": "Daten werden für die automatische Semesterauswahl benötigt.",
 
   "table.name": "Name",
   "table.lastName": "Nachname",
@@ -104,6 +112,10 @@
   "table.gradeCount": "# Noten",
   "table.average": "Durchschnitt",
   "table.weighted": "Gewichtet",
+  "table.semWeighted": "Sem. Schnitt",
+  "table.semFinalGrade": "Sem. Note",
+  "table.yearOverview": "Jahresübersicht",
+  "table.yearFinal": "Gesamt",
   "table.finalGrade": "Endnote",
   "table.actions": "Aktionen",
   "table.date": "Datum",
@@ -112,6 +124,7 @@
   "table.weight": "Gewicht",
 
   "student.back": "Zurück",
+  "student.fullView": "Vollansicht",
   "student.prevStudent": "Vorheriger Schüler",
   "student.nextStudent": "Nächster Schüler",
   "student.noPrevStudent": "Kein vorheriger Schüler",
@@ -574,6 +587,7 @@
 
   "chart.date": "Datum",
   "chart.grade": "Note",
+  "chart.grades": "Notenverlauf",
   "chart.unknown": "Unbekannt",
 
   "version.updateTitle": "Neue Version verfügbar",
@@ -793,5 +807,11 @@
   "attendance.view.selectDateSubject": "Bitte Datum und Fach wählen",
   "attendance.view.absentOnGradeDay": "Schüler/in war an diesem Tag abwesend",
   "attendance.view.lateOnGradeDay": "Schüler/in war an diesem Tag verspätet",
-  "attendance.view.noteTooltip": "Notiz hinzufügen"
+  "attendance.view.noteTooltip": "Notiz hinzufügen",
+
+  "semester.WS": "WS",
+  "semester.SS": "SS",
+  "semester.all": "Gesamt",
+  "semester.winter": "Wintersemester",
+  "semester.summer": "Sommersemester"
 }

@@ -317,6 +317,11 @@ document.getElementById("nav-settings").addEventListener("click", () => {
     showSettingsView();
 });
 
+// Mobile settings button (top header, visible only on mobile)
+document.getElementById("mobile-settings-btn")?.addEventListener("click", () => {
+    showSettingsView();
+});
+
 document.getElementById("save-plusminus-settings").addEventListener("click", () => {
     const plusPercent = document.getElementById("plusminus-plus-percent").value;
     const neutralPercent = document.getElementById("plusminus-neutral-percent").value;

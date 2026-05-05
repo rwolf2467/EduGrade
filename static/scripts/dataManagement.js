@@ -67,8 +67,12 @@ const addClass = (name) => {
         id: yearId,
         name: defaultYearName,
         subjects: subjects,
-        currentSubjectId: firstSubjectId, // First subject active by default
-        students: []                     // Leeres Array für Schüler
+        currentSubjectId: firstSubjectId,
+        currentSemester: "WS",
+        startDate: `${currentYear}-09-01`,
+        semesterSwitchDate: `${currentYear + 1}-02-01`,
+        endDate: `${currentYear + 1}-06-30`,
+        students: []
     };
 
     const newClass = {
@@ -105,7 +109,7 @@ const addClass = (name) => {
  * @param {string} name - Name des Jahrgangs (z.B. "2024/2025")
  * @param {string|null} copyFromYearId - Optional: ID des Jahrgangs von dem kopiert werden soll
  */
-const addYear = (classId, name, copyFromYearId = null) => {
+const addYear = (classId, name, copyFromYearId = null, dates = null) => {
     const validation = validateStringInput(name, 50);
     if (!validation.isValid) {
         showAlertDialog(validation.error);
@@ -125,6 +129,10 @@ const addYear = (classId, name, copyFromYearId = null) => {
         name: validation.value,
         subjects: [],
         currentSubjectId: null,
+        currentSemester: "WS",
+        startDate: dates?.startDate || null,
+        semesterSwitchDate: dates?.semesterSwitchDate || null,
+        endDate: dates?.endDate || null,
         students: []
     };
 
@@ -163,6 +171,7 @@ const addYear = (classId, name, copyFromYearId = null) => {
 
     saveData(t("toast.yearAdded"), "success");
     renderYearSelector();
+    renderSemesterSelector();
     renderSubjectTabs();
     renderStudents();
 
@@ -178,7 +187,7 @@ const addYear = (classId, name, copyFromYearId = null) => {
  * @param {string} yearId - ID des Jahrgangs
  * @param {string} newName - Neuer Name
  */
-const editYear = (classId, yearId, newName) => {
+const editYear = (classId, yearId, newName, dates = null) => {
     const validation = validateStringInput(newName, 50);
     if (!validation.isValid) {
         showAlertDialog(validation.error);
@@ -191,8 +200,14 @@ const editYear = (classId, yearId, newName) => {
     const year = cls.years.find(y => y.id === yearId);
     if (year) {
         year.name = validation.value;
+        if (dates) {
+            year.startDate = dates.startDate || null;
+            year.semesterSwitchDate = dates.semesterSwitchDate || null;
+            year.endDate = dates.endDate || null;
+        }
         saveData(t("toast.yearEdited"), "success");
         renderYearSelector();
+        renderSemesterSelector();
     }
 };
 
@@ -224,6 +239,7 @@ const deleteYear = (classId, yearId) => {
 
     saveData(t("toast.yearDeleted"), "success");
     renderYearSelector();
+    renderSemesterSelector();
     renderSubjectTabs();
     renderStudents();
 };
@@ -375,7 +391,8 @@ const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null
             name: validatedGradeName,
             createdAt: timestamp,           // Zeitstempel für zeitlichen Graph (vom Benutzer wählbar)
             subjectId: subjectId,           // Zugehöriges Fach (null = kein Fach)
-            isPending: isPending            // Marker für ausstehende Noten
+            isPending: isPending,           // Marker für ausstehende Noten
+            semester: getCurrentYear()?.currentSemester || "WS"
         };
 
         // If grade is pending, skip validation and set placeholder value

@@ -80,6 +80,11 @@ html.dark body {
     overflow-x: hidden;
 }
 
+/* Profile popover must escape sidebar section's overflow-y:auto clip */
+.sidebar nav > section:last-of-type {
+    overflow: visible;
+}
+
 /* Sidebar auf Mobile ausblenden */
 @media (max-width: 768px) {
     aside.sidebar {
@@ -88,6 +93,7 @@ html.dark body {
         top: 0;
         left: 0;
         height: 100vh;
+        height: 100dvh;
         z-index: 40;
         box-shadow: none !important;
     }
@@ -163,6 +169,33 @@ html.dark body {
         .card>header.flex.justify-between.items-center.mb-4>div.flex.gap-2 button svg {
             margin: 0 auto !important;
         }
+    }
+
+    /* Class view: action buttons in 2x2 grid on mobile */
+    #class-view .card > header .flex.flex-wrap.gap-2 {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem !important;
+    }
+
+    /* Year selector: horizontally scrollable */
+    #year-selector {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        padding-bottom: 0.25rem;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    #year-selector::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Truncate long year names */
+    #year-selector [data-year-id] {
+        max-width: 7rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 }
 
@@ -1511,4 +1544,152 @@ html:not(.dark) #students-table .btn-icon.btn-destructive:focus-visible {
     opacity: 0.4;
     transition: transform 0.2s ease, opacity 0.2s ease;
     flex-shrink: 0;
+}
+
+/* ===== QUICK STUDENT SIDEBAR ===== */
+:root {
+    --qsb-width: 28rem;
+}
+
+.qsb-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: var(--qsb-width);
+    background: var(--card);
+    border-left: 1px solid var(--border);
+    box-shadow: -6px 0 32px rgba(0,0,0,0.10);
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+}
+
+.qsb-panel.open {
+    transform: translateX(0);
+}
+
+.qsb-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.qsb-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+main {
+    transition: margin-right 0.3s ease;
+}
+
+main.qsb-open {
+    margin-right: var(--qsb-width);
+}
+
+.qsb-stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.qsb-stat-card {
+    background: var(--muted);
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.75rem;
+}
+
+.qsb-stat-label {
+    font-size: 0.72rem;
+    opacity: 0.55;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.2rem;
+}
+
+.qsb-stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.qsb-section-title {
+    font-size: 0.72rem;
+    opacity: 0.5;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 1rem 0 0.4rem;
+}
+
+@media (max-width: 768px) {
+    .qsb-panel {
+        width: 100%;
+    }
+    main.qsb-open {
+        margin-right: 0;
+    }
+}
+
+/* ===== MOBILE FIXES ===== */
+@media (max-width: 768px) {
+
+    /* 1. Class-view action buttons: prevent overflow, hide kbd shortcuts */
+    #class-view .card > header .flex.flex-wrap.gap-2 button {
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    #class-view .card > header kbd,
+    #back-to-class kbd {
+        display: none;
+    }
+
+    /* 2. Filter bar: search on own row, selects share second row */
+    section:has(#search-students) {
+        flex-wrap: wrap;
+    }
+    #search-students {
+        flex: 1 1 100% !important;
+        width: 100% !important;
+    }
+    #filter-category,
+    #filter-attendance {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+    }
+
+    /* 3. Hide "Powered by" footer on mobile */
+    footer.fixed.bottom-0 {
+        display: none !important;
+    }
+
+    /* 4. Student detail header: wrap action row, hide Print label + kbd */
+    #student-detail-view header > .flex.gap-2.items-center {
+        flex-wrap: wrap;
+    }
+    #student-detail-print span,
+    #student-detail-view header kbd {
+        display: none;
+    }
+    #student-detail-view section.p-7 {
+        padding: 1rem !important;
+    }
+
+    /* 5. Grade history table: ensure scroll container works inside collapsible */
+    #student-detail-view .overflow-x-auto {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    #student-grades-table,
+    #student-detail-view .overflow-x-auto table {
+        min-width: 480px;
+    }
 }

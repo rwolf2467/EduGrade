@@ -536,6 +536,34 @@ const migrateData = () => {
         });
     }
 
+    // MIGRATION: Add semester field to years and grades
+    appData.classes?.forEach(cls => {
+        cls.years?.forEach(year => {
+            if (!year.currentSemester) year.currentSemester = "WS";
+            year.students?.forEach(student => {
+                student.grades?.forEach(grade => {
+                    if (!grade.semester) grade.semester = "WS";
+                });
+            });
+        });
+    });
+
+    // MIGRATION: Add school year dates from year name (e.g. "2024/2025")
+    appData.classes?.forEach(cls => {
+        cls.years?.forEach(year => {
+            if (!year.startDate && !year.semesterSwitchDate && !year.endDate) {
+                const match = year.name.match(/^(\d{4})\/(\d{4})$/);
+                if (match) {
+                    const y1 = parseInt(match[1]);
+                    const y2 = parseInt(match[2]);
+                    year.startDate = `${y1}-09-01`;
+                    year.semesterSwitchDate = `${y2}-02-01`;
+                    year.endDate = `${y2}-06-30`;
+                }
+            }
+        });
+    });
+
     // Data after migration
     // No automatic saving - data will be saved when user makes next change
     console.log("Data migration completed - changes will be saved on next user action");
@@ -573,11 +601,17 @@ const migrateToYearStructure = () => {
         const currentYear = getCurrentSchoolYear();
         const defaultYearName = `${currentYear}/${currentYear + 1}`;
 
+        const y1 = currentYear;
+        const y2 = currentYear + 1;
         const defaultYear = {
             id: Date.now().toString() + '-year-' + Math.floor(Math.random() * 1000),
             name: defaultYearName,
             subjects: cls.subjects || [],
             currentSubjectId: cls.currentSubjectId || null,
+            currentSemester: "WS",
+            startDate: `${y1}-09-01`,
+            semesterSwitchDate: `${y2}-02-01`,
+            endDate: `${y2}-06-30`,
             students: cls.students || []
         };
 

@@ -96,6 +96,14 @@
   "year.copyFromPrevious": "Copy students and subjects from {name}",
   "year.copyHint": "Students and subjects will be copied, but no grades",
   "year.confirmDelete": "Really delete year {name}? All data will be lost!",
+  "year.startDate": "School year start",
+  "year.semesterSwitchDate": "Semester switch",
+  "year.endDate": "School year end",
+  "year.datesHint": "Dates are used for automatic semester selection",
+  "year.noDatesWarning": "No dates set – semester selection is manual",
+  "year.setDates": "Set dates",
+  "year.setDatesTitle": "Set school year dates",
+  "year.setDatesHint": "Dates are required for automatic semester selection.",
 
   "table.name": "Name",
   "table.lastName": "Last Name",
@@ -104,6 +112,10 @@
   "table.gradeCount": "# Grades",
   "table.average": "Average",
   "table.weighted": "Weighted",
+  "table.semWeighted": "Sem. Avg.",
+  "table.semFinalGrade": "Sem. Grade",
+  "table.yearOverview": "Year Overview",
+  "table.yearFinal": "Overall",
   "table.finalGrade": "Final Grade",
   "table.actions": "Actions",
   "table.date": "Date",
@@ -112,6 +124,7 @@
   "table.weight": "Weight",
 
   "student.back": "Back",
+  "student.fullView": "Full View",
   "student.prevStudent": "Previous Student",
   "student.nextStudent": "Next Student",
   "student.noPrevStudent": "No previous student",
@@ -574,6 +587,7 @@
 
   "chart.date": "Date",
   "chart.grade": "Grade",
+  "chart.grades": "Grade History",
   "chart.unknown": "Unknown",
 
   "version.updateTitle": "New Version Available",
@@ -793,5 +807,11 @@
   "attendance.view.selectDateSubject": "Please select a date and subject",
   "attendance.view.absentOnGradeDay": "Student was absent on this day",
   "attendance.view.lateOnGradeDay": "Student was late on this day",
-  "attendance.view.noteTooltip": "Add note"
+  "attendance.view.noteTooltip": "Add note",
+
+  "semester.WS": "WS",
+  "semester.SS": "SS",
+  "semester.all": "All Year",
+  "semester.winter": "Winter semester",
+  "semester.summer": "Summer semester"
 }

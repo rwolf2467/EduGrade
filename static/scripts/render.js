@@ -211,6 +211,7 @@ const renderYearSelector = () => {
             currentClass.currentYearId = yearId;
             saveData();
             renderYearSelector();
+            renderSemesterSelector();
             renderSubjectTabs();
             renderStudents();
             renderClassStats();
@@ -237,9 +238,30 @@ const renderYearSelector = () => {
                         <label class="block mb-2">${t("year.newYearName")}</label>
                         <input type="text" name="name" class="input w-full" value="${escapeHtml(year.name)}" required maxlength="50">
                     </div>
+                    <hr style="border-color:var(--border);margin:0.75rem 0;">
+                    <p class="text-gray-400 text-sm mb-2">${t("year.datesHint")}</p>
+                    <div class="grid grid-cols-1 gap-3">
+                        <div>
+                            <label class="block text-sm mb-1">${t("year.startDate")}</label>
+                            <input type="date" name="startDate" class="input w-full" value="${escapeHtml(year.startDate || '')}">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">${t("year.semesterSwitchDate")}</label>
+                            <input type="date" name="semesterSwitchDate" class="input w-full" value="${escapeHtml(year.semesterSwitchDate || '')}">
+                        </div>
+                        <div>
+                            <label class="block text-sm mb-1">${t("year.endDate")}</label>
+                            <input type="date" name="endDate" class="input w-full" value="${escapeHtml(year.endDate || '')}">
+                        </div>
+                    </div>
                 `;
                 showDialog("edit-dialog", t("year.editYear"), content, (formData) => {
-                    editYear(currentClass.id, yearId, formData.get("name"));
+                    const dates = {
+                        startDate: formData.get("startDate") || null,
+                        semesterSwitchDate: formData.get("semesterSwitchDate") || null,
+                        endDate: formData.get("endDate") || null
+                    };
+                    editYear(currentClass.id, yearId, formData.get("name"), dates);
                 });
             }
         });
@@ -260,6 +282,135 @@ const renderYearSelector = () => {
     });
 };
 
+const autoSelectSemester = (year) => {
+    if (!year || !year.semesterSwitchDate) return;
+    const today = new Date().toISOString().slice(0, 10);
+    year.currentSemester = today < year.semesterSwitchDate ? "WS" : "SS";
+};
+
+// Track which year IDs have already been prompted this session (no-dates dialog)
+const _promptedYearIds = new Set();
+
+const showSetYearDatesDialog = (classId, year) => {
+    const y = new Date().getFullYear();
+    const match = year.name.match(/^(\d{4})\/(\d{4})$/);
+    const y1 = match ? parseInt(match[1]) : y;
+    const y2 = match ? parseInt(match[2]) : y + 1;
+
+    const content = `
+        <p class="font-semibold mb-1">${escapeHtml(year.name)}</p>
+        <p class="text-sm mb-3" style="color:var(--muted-foreground)">${t("year.setDatesHint")}</p>
+        <div class="grid grid-cols-1 gap-3">
+            <div>
+                <label class="block text-sm mb-1">${t("year.startDate")}</label>
+                <input type="date" name="startDate" class="input w-full" value="${y1}-09-01" id="sdlg-start">
+            </div>
+            <div>
+                <label class="block text-sm mb-1">${t("year.semesterSwitchDate")}</label>
+                <input type="date" name="semesterSwitchDate" class="input w-full" value="${y2}-02-01" id="sdlg-switch">
+            </div>
+            <div>
+                <label class="block text-sm mb-1">${t("year.endDate")}</label>
+                <input type="date" name="endDate" class="input w-full" value="${y2}-06-30" id="sdlg-end">
+            </div>
+        </div>
+    `;
+
+    showDialog("edit-dialog", t("year.setDatesTitle"), content, (formData) => {
+        const dates = {
+            startDate: formData.get("startDate") || null,
+            semesterSwitchDate: formData.get("semesterSwitchDate") || null,
+            endDate: formData.get("endDate") || null
+        };
+        editYear(classId, year.id, year.name, dates);
+        autoSelectSemester(getCurrentYear());
+        renderSemesterSelector();
+    });
+};
+
+const renderSemesterSelector = () => {
+    const container = document.getElementById("semester-selector");
+    if (!container) return;
+
+    const currentYear = getCurrentYear();
+    if (!currentYear) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const activeSemester = currentYear.currentSemester || "WS";
+    const noDates = !currentYear.semesterSwitchDate;
+    const currentClass = getCurrentClass();
+    const currentYearId = currentYear.id;
+
+    container.innerHTML = `
+        <div role="group" class="button-group">
+            <button class="${activeSemester === 'WS' ? 'btn-sm-primary' : 'btn-sm-outline'}" id="semester-ws-btn">${t("semester.WS")}</button>
+            <button class="${activeSemester === 'SS' ? 'btn-sm-primary' : 'btn-sm-outline'}" id="semester-ss-btn">${t("semester.SS")}</button>
+        </div>
+        ${noDates ? `<button class="btn-sm-outline" id="semester-set-dates-btn" style="font-size:0.75rem;opacity:0.7;">⚠ ${t("year.setDates")}</button>` : ''}
+    `;
+
+    document.getElementById("semester-ws-btn")?.addEventListener("click", () => {
+        const year = getCurrentYear();
+        if (!year) return;
+        year.currentSemester = "WS";
+        saveData();
+        renderSemesterSelector();
+        renderStudents();
+        renderClassStats();
+    });
+
+    document.getElementById("semester-ss-btn")?.addEventListener("click", () => {
+        const year = getCurrentYear();
+        if (!year) return;
+        year.currentSemester = "SS";
+        saveData();
+        renderSemesterSelector();
+        renderStudents();
+        renderClassStats();
+    });
+
+    document.getElementById("semester-set-dates-btn")?.addEventListener("click", () => {
+        const cls = getCurrentClass();
+        const year = getCurrentYear();
+        if (!cls || !year) return;
+        const content = `
+            <div class="grid gap-2">
+                <label class="block mb-2">${t("year.newYearName")}</label>
+                <input type="text" name="name" class="input w-full" value="${escapeHtml(year.name)}" required maxlength="50">
+            </div>
+            <hr style="border-color:var(--border);margin:0.75rem 0;">
+            <p class="text-gray-400 text-sm mb-2">${t("year.datesHint")}</p>
+            <div class="grid grid-cols-1 gap-3">
+                <div>
+                    <label class="block text-sm mb-1">${t("year.startDate")}</label>
+                    <input type="date" name="startDate" class="input w-full" value="${escapeHtml(year.startDate || '')}">
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">${t("year.semesterSwitchDate")}</label>
+                    <input type="date" name="semesterSwitchDate" class="input w-full" value="${escapeHtml(year.semesterSwitchDate || '')}">
+                </div>
+                <div>
+                    <label class="block text-sm mb-1">${t("year.endDate")}</label>
+                    <input type="date" name="endDate" class="input w-full" value="${escapeHtml(year.endDate || '')}">
+                </div>
+            </div>
+        `;
+        showDialog("edit-dialog", t("year.editYear"), content, (formData) => {
+            const dates = {
+                startDate: formData.get("startDate") || null,
+                semesterSwitchDate: formData.get("semesterSwitchDate") || null,
+                endDate: formData.get("endDate") || null
+            };
+            editYear(cls.id, year.id, formData.get("name"), dates);
+            autoSelectSemester(getCurrentYear());
+            renderStudents();
+            renderClassStats();
+        });
+    });
+};
+
 /**
  * JAHR HINZUFÜGEN DIALOG
  *
@@ -271,26 +422,25 @@ const showAddYearDialog = (classId) => {
 
     const currentYear = getCurrentSchoolYear();
 
-    // Generate year options (from 5 years ago to 10 years in the future)
-    const yearOptions = [];
-    for (let year = currentYear - 5; year <= currentYear + 10; year++) {
-        yearOptions.push(year);
-    }
-
     // Get previous year for copy option
     const sortedYears = [...cls.years].sort((a, b) =>
         b.name.localeCompare(a.name)
     );
     const previousYear = sortedYears.length > 0 ? sortedYears[0] : null;
 
+    const defaultStart = `${currentYear}-09-01`;
+    const defaultSwitch = `${currentYear + 1}-02-01`;
+    const defaultEnd = `${currentYear + 1}-06-30`;
+
     const content = `
-        <div class="grid gap-2">
-            <label class="block mb-2">${t("year.selectStartYear")}</label>
-            <select name="startYear" id="year-start-select" class="select w-full" required>
-                ${yearOptions.map(year => `
-                    <option value="${year}" ${year === currentYear ? 'selected' : ''}>${year}</option>
-                `).join('')}
-            </select>
+        <div class="flex items-center justify-center gap-4 my-2">
+            <button type="button" id="year-dec-btn" class="btn-outline" style="padding:0.25rem 0.75rem;font-size:1.25rem;line-height:1" tabindex="-1">−</button>
+            <div class="text-center" style="min-width:9rem">
+                <div id="year-display" class="font-bold" style="font-size:1.75rem;line-height:1.2">${currentYear}</div>
+                <div id="year-name-preview" class="text-sm" style="color:var(--muted-foreground)">${currentYear}/${currentYear + 1}</div>
+            </div>
+            <button type="button" id="year-inc-btn" class="btn-outline" style="padding:0.25rem 0.75rem;font-size:1.25rem;line-height:1" tabindex="-1">+</button>
+            <input type="hidden" name="startYear" id="year-start-input" value="${currentYear}">
         </div>
         <div class="grid gap-2 mt-3">
             <label class="flex items-center gap-2 cursor-pointer">
@@ -298,6 +448,22 @@ const showAddYearDialog = (classId) => {
                 <span>${t("year.useSchoolYearFormat")}</span>
             </label>
             <p class="text-gray-400 text-sm">${t("year.schoolYearFormatHint")}</p>
+        </div>
+        <hr style="border-color:var(--border);margin:0.75rem 0;">
+        <p class="text-gray-400 text-sm mb-2">${t("year.datesHint")}</p>
+        <div class="grid grid-cols-1 gap-3">
+            <div>
+                <label class="block text-sm mb-1">${t("year.startDate")}</label>
+                <input type="date" name="startDate" class="input w-full" value="${defaultStart}" id="year-add-start-date">
+            </div>
+            <div>
+                <label class="block text-sm mb-1">${t("year.semesterSwitchDate")}</label>
+                <input type="date" name="semesterSwitchDate" class="input w-full" value="${defaultSwitch}" id="year-add-switch-date">
+            </div>
+            <div>
+                <label class="block text-sm mb-1">${t("year.endDate")}</label>
+                <input type="date" name="endDate" class="input w-full" value="${defaultEnd}" id="year-add-end-date">
+            </div>
         </div>
         ${previousYear ? `
             <div class="grid gap-2 mt-3">
@@ -318,8 +484,37 @@ const showAddYearDialog = (classId) => {
         const copyFromPreviousId = formData.get("copyFromPrevious") === "on" && previousYear
             ? previousYear.id
             : null;
-        addYear(classId, yearName, copyFromPreviousId);
+
+        const dates = {
+            startDate: formData.get("startDate") || null,
+            semesterSwitchDate: formData.get("semesterSwitchDate") || null,
+            endDate: formData.get("endDate") || null
+        };
+
+        addYear(classId, yearName, copyFromPreviousId, dates);
     });
+
+    // Wire stepper + live date update after dialog is in DOM
+    const updateYearUI = () => {
+        const y = parseInt(document.getElementById("year-start-input").value);
+        const useFmt = document.getElementById("use-school-year-format").checked;
+        document.getElementById("year-display").textContent = y;
+        document.getElementById("year-name-preview").textContent = useFmt ? `${y}/${y + 1}` : `${y}`;
+        document.getElementById("year-add-start-date").value  = `${y}-09-01`;
+        document.getElementById("year-add-switch-date").value = `${y + 1}-02-01`;
+        document.getElementById("year-add-end-date").value    = `${y + 1}-06-30`;
+    };
+    document.getElementById("year-dec-btn")?.addEventListener("click", () => {
+        const inp = document.getElementById("year-start-input");
+        inp.value = parseInt(inp.value) - 1;
+        updateYearUI();
+    });
+    document.getElementById("year-inc-btn")?.addEventListener("click", () => {
+        const inp = document.getElementById("year-start-input");
+        inp.value = parseInt(inp.value) + 1;
+        updateYearUI();
+    });
+    document.getElementById("use-school-year-format")?.addEventListener("change", updateYearUI);
 };
 
 /**
@@ -406,7 +601,12 @@ const showManageYearsDialog = (classId) => {
  */
 const filterGradesBySubject = (grades, currentSubjectId) => {
     if (!currentSubjectId) return [];
-    return grades.filter(g => g.subjectId === currentSubjectId);
+    const semester = getCurrentYear()?.currentSemester;
+    return grades.filter(g => {
+        if (g.subjectId !== currentSubjectId) return false;
+        if (semester && g.semester && g.semester !== semester) return false;
+        return true;
+    });
 };
 
 /**
@@ -1306,7 +1506,6 @@ const renderStudents = () => {
                 if (filterCategory) grades = grades.filter(g => g.categoryId === filterCategory);
                 return {
                     gradeCount: grades.length,
-                    average: calculateSimpleAverage(grades) || 999,
                     weighted: calculateWeightedAverage(grades) || 999,
                     finalGrade: parseFloat(calculateFinalGrade(calculateWeightedAverage(grades))) || 999
                 };
@@ -1320,8 +1519,6 @@ const renderStudents = () => {
                 return (a.firstName || '').localeCompare(b.firstName || '', 'de') * dir;
             } else if (column === 'gradeCount') {
                 return (getGradeData(a).gradeCount - getGradeData(b).gradeCount) * dir;
-            } else if (column === 'average') {
-                return (getGradeData(a).average - getGradeData(b).average) * dir;
             } else if (column === 'weighted') {
                 return (getGradeData(a).weighted - getGradeData(b).weighted) * dir;
             } else if (column === 'finalGrade') {
@@ -1358,9 +1555,21 @@ const renderStudents = () => {
             // Noten nach aktivem Fach und ggf. Kategorie filtern
             let filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
             if (filterCategory) filteredGrades = filteredGrades.filter(g => g.categoryId === filterCategory);
-            const simpleAvg = calculateSimpleAverage(filteredGrades);
             const weightedAvg = calculateWeightedAverage(filteredGrades);
             const gradeCount = filteredGrades.length;
+
+            // Jahresübersicht: WS + SS + Gesamt (immer über beide Semester, unabhängig vom aktiven Semester-Filter)
+            const sid = currentYear.currentSubjectId;
+            const _wsGrades = sid ? student.grades.filter(g => g.subjectId === sid && g.semester === "WS") : [];
+            const _ssGrades = sid ? student.grades.filter(g => g.subjectId === sid && g.semester === "SS") : [];
+            const _allGrades = sid ? student.grades.filter(g => g.subjectId === sid) : [];
+            const _wsAvg = calculateWeightedAverage(filterCategory ? _wsGrades.filter(g => g.categoryId === filterCategory) : _wsGrades);
+            const _ssAvg = calculateWeightedAverage(filterCategory ? _ssGrades.filter(g => g.categoryId === filterCategory) : _ssGrades);
+            const _allAvg = calculateWeightedAverage(filterCategory ? _allGrades.filter(g => g.categoryId === filterCategory) : _allGrades);
+            const _wsFinal = _wsAvg ? calculateFinalGrade(_wsAvg) : "—";
+            const _ssFinal = _ssAvg ? calculateFinalGrade(_ssAvg) : "—";
+            const _yearFinal = _allAvg ? calculateFinalGrade(_allAvg) : "—";
+            const _gradeClass = (g) => (g && g !== "—" && g !== "-") ? `grade-badge grade-${g}` : '';
 
             // Anwesenheits-Check für aktuelles Fach
             const attendanceStatus = getAttendanceStatus(student.id, currentYear.currentSubjectId);
@@ -1396,9 +1605,9 @@ const renderStudents = () => {
                 : '';
 
             return `
-            <tr class="${rowClass}">
+            <tr class="${rowClass} student-row" data-open-qsb="${safeAttr(student.id)}" style="cursor:pointer">
               <td>
-                <input type="checkbox" class="checkbox student-checkbox" data-student-id="${safeAttr(student.id)}">
+                <input type="checkbox" class="checkbox student-checkbox no-row-click" data-student-id="${safeAttr(student.id)}">
               </td>
               <td>
                 <span class="student-name-link" data-student-id="${safeAttr(student.id)}">${escapeHtml(student.lastName || '')}</span>${trendBadge}
@@ -1407,10 +1616,21 @@ const renderStudents = () => {
               <td>${escapeHtml(student.firstName || '')}</td>
               <td>${escapeHtml(student.middleName || '')}</td>
               <td>${gradeCount}</td>
-              <td>${simpleAvg ? simpleAvg.toFixed(2) : "—"}</td>
               <td>${weightedAvg ? weightedAvg.toFixed(2) : "—"}</td>
               <td>${filterCategory ? (weightedAvg ? weightedAvg.toFixed(2) : "—") : finalGradeDisplay}</td>
-              <td>
+              <td style="white-space:nowrap">
+                <div style="display:flex;align-items:center;gap:0.35rem;font-size:0.8em">
+                  <span style="opacity:0.5;font-size:0.9em">WS</span>
+                  <span class="${_gradeClass(_wsFinal)}" style="padding:0.1rem 0.4rem;border-radius:4px;font-weight:600;min-width:1.4em;text-align:center">${_wsFinal}</span>
+                  <span style="opacity:0.25">·</span>
+                  <span style="opacity:0.5;font-size:0.9em">SS</span>
+                  <span class="${_gradeClass(_ssFinal)}" style="padding:0.1rem 0.4rem;border-radius:4px;font-weight:600;min-width:1.4em;text-align:center">${_ssFinal}</span>
+                  <span style="opacity:0.25">·</span>
+                  <span style="opacity:0.5;font-size:0.9em">∑</span>
+                  <span class="${_gradeClass(_yearFinal)}" style="padding:0.1rem 0.4rem;border-radius:4px;font-weight:600;min-width:1.4em;text-align:center">${_yearFinal}</span>
+                </div>
+              </td>
+              <td class="no-row-click">
                 <button class="btn-icon btn-secondary mr-1" data-view-student="${safeAttr(student.id)}" data-tooltip="${t("tooltip.viewStudentDetails", { student: `${student.firstName} ${student.lastName}`.trim() })}" data-side="top">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
@@ -1429,11 +1649,11 @@ const renderStudents = () => {
         }).join("");
     //<button class="btn-icon btn-secondary mr-1" data-print-student="${safeAttr(student.id)}" data-tooltip="${t("student.print")}" data-side="top"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button>
                 
-    // Add event listeners for student name links (to open detail view)
-    document.querySelectorAll(".student-name-link").forEach(link => {
-        link.addEventListener("click", () => {
-            const studentId = link.dataset.studentId;
-            showStudentDetailView(studentId);
+    // Entire row → quick sidebar; skip clicks on checkbox/action cells
+    document.querySelectorAll(".student-row").forEach(row => {
+        row.addEventListener("click", (e) => {
+            if (e.target.closest(".no-row-click")) return;
+            openStudentQuickSidebar(row.dataset.openQsb);
         });
     });
 
@@ -1542,9 +1762,9 @@ const renderStudents = () => {
     if (headerLabel) {
         if (filterCategory) {
             const catName = appData.categories.find(c => c.id === filterCategory)?.name || '';
-            headerLabel.textContent = `${t("table.finalGrade")} ${catName}`;
+            headerLabel.textContent = `${t("table.semFinalGrade")} ${catName}`;
         } else {
-            headerLabel.textContent = t("table.finalGrade");
+            headerLabel.textContent = t("table.semFinalGrade");
         }
     }
 
@@ -2683,13 +2903,20 @@ const showClassView = () => {
                 showHomeView();
             };
 
+            autoSelectSemester(getCurrentYear());
             renderClassList();
             renderYearSelector();
+            renderSemesterSelector();
             renderSubjectTabs();
             renderClassStats();
             renderStudents();
             renderCategoryFilter();
             applyAttendanceVisibility();
+            const _cy1 = getCurrentYear();
+            if (_cy1 && !_cy1.startDate && !_promptedYearIds.has(_cy1.id)) {
+                _promptedYearIds.add(_cy1.id);
+                showSetYearDatesDialog(appData.currentClassId, _cy1);
+            }
         }, 150);
     } else {
         classView.classList.remove("hidden");
@@ -2707,12 +2934,19 @@ const showClassView = () => {
             showHomeView();
         };
 
+        autoSelectSemester(getCurrentYear());
         renderClassList();
         renderYearSelector();
+        renderSemesterSelector();
         renderSubjectTabs();
         renderClassStats();
         renderStudents();
         renderCategoryFilter();
+        const _cy2 = getCurrentYear();
+        if (_cy2 && !_cy2.startDate && !_promptedYearIds.has(_cy2.id)) {
+            _promptedYearIds.add(_cy2.id);
+            showSetYearDatesDialog(appData.currentClassId, _cy2);
+        }
     }
 
     document.getElementById("nav-home").classList.remove("btn-primary");
@@ -2743,6 +2977,312 @@ const showClassView = () => {
 
 // Store the Chart.js instance for cleanup (global so PDF export can access it)
 window.window.studentGradeChartInstance = null;
+window.detailSemesterFilter = null; // null = all year, "WS" or "SS" = specific semester
+
+// ========== QUICK STUDENT SIDEBAR ==========
+
+window.qsbChartInstance = null;
+let _qsbCurrentStudentId = null;
+let _qsbSemesterFilter = null; // null = all year, "WS" or "SS"
+
+const _closeStudentQuickSidebar = () => {
+    const sidebar = document.getElementById("student-quick-sidebar");
+    if (!sidebar) return;
+    sidebar.classList.remove("open");
+    document.querySelector("main")?.classList.remove("qsb-open");
+    if (window.qsbChartInstance) { window.qsbChartInstance.destroy(); window.qsbChartInstance = null; }
+    setTimeout(() => { sidebar.style.display = "none"; }, 300);
+    _qsbCurrentStudentId = null;
+};
+
+const _renderStudentQuickContent = (studentId) => {
+    const currentYear = getCurrentYear();
+    if (!currentYear) return;
+    const student = currentYear.students.find(s => s.id === studentId);
+    if (!student) return;
+
+    const sid = currentYear.currentSubjectId;
+    const currentSubjectName = currentYear.subjects?.find(s => s.id === sid)?.name || "";
+
+    // All-year by default; _qsbSemesterFilter optionally limits to WS or SS
+    const filteredGrades = sid
+        ? student.grades.filter(g => {
+            if (g.subjectId !== sid) return false;
+            if (_qsbSemesterFilter && g.semester !== _qsbSemesterFilter) return false;
+            return true;
+        })
+        : [];
+
+    // Year overview
+    const wsGrades = sid ? student.grades.filter(g => g.subjectId === sid && g.semester === "WS") : [];
+    const ssGrades = sid ? student.grades.filter(g => g.subjectId === sid && g.semester === "SS") : [];
+    const allGrades = sid ? student.grades.filter(g => g.subjectId === sid) : [];
+    const wsAvg = calculateWeightedAverage(wsGrades);
+    const ssAvg = calculateWeightedAverage(ssGrades);
+    const allAvg = calculateWeightedAverage(allGrades);
+    const wsFinal = wsAvg ? calculateFinalGrade(wsAvg) : "—";
+    const ssFinal = ssAvg ? calculateFinalGrade(ssAvg) : "—";
+    const yearFinal = allAvg ? calculateFinalGrade(allAvg) : "—";
+    const gcls = (g) => (g && g !== "—" && g !== "-") ? `grade-badge grade-${g}` : '';
+
+    // Stats
+    const weightedAvg = calculateWeightedAverage(filteredGrades);
+    const finalGrade = calculateFinalGrade(weightedAvg);
+    const trend = calculateTrend(filteredGrades);
+    const classAvg = calculateClassAverage(_qsbSemesterFilter);
+
+    const trendHtml = trend.trend === 'improving'
+        ? `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-green-500" style="color:#22c55e"><path d="m18 15-6-6-6 6"/></svg>`
+        : trend.trend === 'declining'
+        ? `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#ef4444"><path d="m6 9 6 6 6-6"/></svg>`
+        : `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#eab308"><path d="M5 12h14"/></svg>`;
+
+    let comparisonHtml = "—";
+    if (weightedAvg && classAvg) {
+        const diff = classAvg - weightedAvg;
+        comparisonHtml = Math.abs(diff) < 0.1
+            ? `<span style="color:#eab308">=</span>`
+            : diff > 0
+            ? `<span style="color:#22c55e">+${diff.toFixed(1)}</span>`
+            : `<span style="color:#ef4444">${diff.toFixed(1)}</span>`;
+    }
+
+    // Category breakdown (inline)
+    const gradesByCat = {};
+    filteredGrades.forEach(g => {
+        if (!gradesByCat[g.categoryId]) gradesByCat[g.categoryId] = { name: g.categoryName, grades: [] };
+        gradesByCat[g.categoryId].grades.push(g);
+    });
+    const catBreakdownHtml = Object.entries(gradesByCat).length === 0
+        ? `<p style="opacity:0.45;font-size:0.85em;padding:0.5rem 0">${t("student.noGrades")}</p>`
+        : Object.entries(gradesByCat).map(([, cat]) => {
+            const numeric = cat.grades.filter(g => !g.isPlusMinus);
+            const pm = cat.grades.filter(g => g.isPlusMinus);
+            let avg = "—"; let pct = ""; let gClass = "";
+            if (numeric.length > 0) {
+                const a = numeric.reduce((s, g) => s + g.value, 0) / numeric.length;
+                avg = a.toFixed(2);
+                const p = Math.round(((6 - a) / 5) * 100);
+                pct = p >= 80 ? `grade-1` : p >= 60 ? `grade-2` : p >= 40 ? `grade-3` : p >= 20 ? `grade-4` : `grade-5`;
+                gClass = pct;
+            } else if (pm.length > 0) {
+                const plusC = pm.filter(g => g.value === '+').length;
+                const minusC = pm.filter(g => g.value === '-').length;
+                avg = plusC > minusC ? '+' : minusC > plusC ? '-' : '~';
+                gClass = plusC > minusC ? 'grade-plus' : minusC > plusC ? 'grade-minus' : 'grade-neutral';
+            }
+            const pmInfo = pm.length > 0 ? ` · ${pm.filter(g=>g.value==='+').length}+ ${pm.filter(g=>g.value==='-').length}-` : "";
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.45rem 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:0.85em">${escapeHtml(cat.name)}<span style="opacity:0.4;font-size:0.8em">${pmInfo}</span></span>
+                <span class="grade-badge ${gClass}" style="padding:0.1rem 0.5rem;border-radius:4px;font-weight:700;min-width:2rem;text-align:center">${avg}</span>
+            </div>`;
+        }).join("");
+
+    // Grades list (newest first)
+    const sortedGrades = [...filteredGrades].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    const gradeListHtml = sortedGrades.length === 0
+        ? `<p style="opacity:0.45;font-size:0.85em;padding:0.5rem 0">${t("student.noGrades")}</p>`
+        : sortedGrades.map(g => {
+            const val = g.isPlusMinus ? (g.value === '+' ? '+' : g.value === '-' ? '−' : '~') : g.value;
+            const gNum = g.isPlusMinus ? (g.value === '+' ? 'plus' : g.value === '-' ? 'minus' : 'neutral') : g.value;
+            const dateStr = g.createdAt ? new Date(g.createdAt).toLocaleDateString('de-AT', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '';
+            return `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;border-bottom:1px solid var(--border)">
+                <span class="grade-badge grade-${gNum}" style="padding:0.1rem 0.5rem;border-radius:4px;font-weight:700;min-width:2rem;text-align:center;flex-shrink:0">${val}</span>
+                <span style="flex:1;font-size:0.85em">${escapeHtml(g.name || g.categoryName || '')}</span>
+                <span style="font-size:0.75em;opacity:0.4">${dateStr}</span>
+                <span style="font-size:0.75em;opacity:0.4">×${g.weight}</span>
+            </div>`;
+        }).join("");
+
+    if (window.qsbChartInstance) { window.qsbChartInstance.destroy(); window.qsbChartInstance = null; }
+
+    const _qsbMkSemBtn = (label, val) => {
+        const active = _qsbSemesterFilter === val;
+        return `<button class="${active ? 'btn-sm-primary' : 'btn-sm-outline'}" data-qsb-sem="${val ?? '__all__'}">${label}</button>`;
+    };
+
+    document.getElementById("qsb-content").innerHTML = `
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap">
+            <button id="qsb-add-grade-btn" class="btn-primary" style="flex:1;font-size:0.85rem;padding:0.4rem 0.75rem;min-width:8rem">
+                + ${t("grade.addGrade")}
+            </button>
+            <div style="display:flex;gap:0.25rem;flex-shrink:0">
+                ${_qsbMkSemBtn(t("semester.all") || "Gesamt", null)}
+                ${_qsbMkSemBtn(t("semester.WS") || "WS", "WS")}
+                ${_qsbMkSemBtn(t("semester.SS") || "SS", "SS")}
+            </div>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="qsb-stat-grid">
+            <div class="qsb-stat-card">
+                <div class="qsb-stat-label">${t("student.average")}</div>
+                <div class="qsb-stat-value">${weightedAvg ? weightedAvg.toFixed(2) : "—"}</div>
+            </div>
+            <div class="qsb-stat-card">
+                <div class="qsb-stat-label">${t("table.semFinalGrade")}</div>
+                <div class="qsb-stat-value ${gcls(finalGrade)}" style="padding:0.1rem 0.4rem;border-radius:4px;display:inline-block">${finalGrade}</div>
+            </div>
+            <div class="qsb-stat-card">
+                <div class="qsb-stat-label">${t("table.gradeCount")}</div>
+                <div class="qsb-stat-value">${filteredGrades.length}</div>
+            </div>
+            <div class="qsb-stat-card">
+                <div class="qsb-stat-label">${t("student.trend")}</div>
+                <div class="qsb-stat-value" style="font-size:1rem;display:flex;align-items:center;gap:0.3rem">${trendHtml} ${comparisonHtml}</div>
+            </div>
+        </div>
+
+        <!-- Year overview -->
+        <div class="qsb-section-title">${t("table.yearOverview")}</div>
+        <div style="display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0.75rem;background:var(--muted);border-radius:0.5rem;margin-bottom:0.25rem">
+            <div style="display:flex;align-items:center;gap:0.3rem">
+                <span style="opacity:0.5;font-size:0.8em">WS</span>
+                <span class="${gcls(wsFinal)}" style="padding:0.2rem 0.6rem;border-radius:5px;font-weight:700;font-size:1.1rem">${wsFinal}</span>
+            </div>
+            <span style="opacity:0.25">·</span>
+            <div style="display:flex;align-items:center;gap:0.3rem">
+                <span style="opacity:0.5;font-size:0.8em">SS</span>
+                <span class="${gcls(ssFinal)}" style="padding:0.2rem 0.6rem;border-radius:5px;font-weight:700;font-size:1.1rem">${ssFinal}</span>
+            </div>
+            <span style="opacity:0.25">·</span>
+            <div style="display:flex;align-items:center;gap:0.3rem">
+                <span style="opacity:0.5;font-size:0.8em">∑</span>
+                <span class="${gcls(yearFinal)}" style="padding:0.2rem 0.6rem;border-radius:5px;font-weight:700;font-size:1.1rem">${yearFinal}</span>
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="qsb-section-title">${t("chart.grades") || "Verlauf"}</div>
+        <div style="height:180px;margin-bottom:0.25rem;position:relative">
+            <canvas id="qsb-grade-chart"></canvas>
+        </div>
+
+        <!-- Category breakdown -->
+        <div class="qsb-section-title">${t("student.categoryBreakdown") || "Kategorien"}</div>
+        <div style="margin-bottom:0.25rem">${catBreakdownHtml}</div>
+
+        <!-- Grades list -->
+        <div class="qsb-section-title">${_qsbSemesterFilter || (t("semester.all") || "Gesamt")}${currentSubjectName ? ` · ${escapeHtml(currentSubjectName)}` : ""}</div>
+        <div>${gradeListHtml}</div>
+    `;
+
+    // Wire add-grade button
+    document.getElementById("qsb-add-grade-btn")?.addEventListener("click", () => {
+        openAddGradeDialog(studentId, () => _renderStudentQuickContent(studentId));
+    });
+
+    // Wire semester filter buttons
+    document.querySelectorAll("[data-qsb-sem]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            _qsbSemesterFilter = btn.dataset.qsbSem === '__all__' ? null : btn.dataset.qsbSem;
+            _renderStudentQuickContent(studentId);
+        });
+    });
+
+    // Render chart into qsb-grade-chart canvas
+    _renderQsbChart(filteredGrades);
+};
+
+const _renderQsbChart = (grades) => {
+    const canvas = document.getElementById("qsb-grade-chart");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const categoryColors = [
+        { bg: 'rgba(59,130,246,0.2)', border: 'rgb(59,130,246)' },
+        { bg: 'rgba(34,197,94,0.2)', border: 'rgb(34,197,94)' },
+        { bg: 'rgba(249,115,22,0.2)', border: 'rgb(249,115,22)' },
+        { bg: 'rgba(168,85,247,0.2)', border: 'rgb(168,85,247)' },
+        { bg: 'rgba(236,72,153,0.2)', border: 'rgb(236,72,153)' },
+        { bg: 'rgba(234,179,8,0.2)', border: 'rgb(234,179,8)' },
+    ];
+
+    const byCategory = {};
+    grades.forEach(g => {
+        const cat = g.categoryName || '?';
+        if (!byCategory[cat]) byCategory[cat] = [];
+        let y = g.isPlusMinus ? (g.value === '+' ? 1.5 : g.value === '-' ? 4.5 : 3) : g.value;
+        byCategory[cat].push({ x: g.createdAt || Date.now(), y });
+    });
+    Object.values(byCategory).forEach(arr => arr.sort((a, b) => a.x - b.x));
+
+    const datasets = Object.entries(byCategory).map(([name, data], i) => ({
+        label: name, data,
+        borderColor: categoryColors[i % categoryColors.length].border,
+        backgroundColor: categoryColors[i % categoryColors.length].bg,
+        borderWidth: 2, tension: 0.3, pointRadius: 4, fill: false
+    }));
+
+    if (datasets.length === 0) {
+        ctx.font = '13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#6b7280';
+        ctx.fillText(t("student.noGrades"), canvas.width / 2, canvas.height / 2);
+        return;
+    }
+
+    window.qsbChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd.MM' } }, ticks: { maxTicksLimit: 5, font: { size: 10 } } },
+                y: { reverse: true, min: 1, max: 5, ticks: { stepSize: 1, font: { size: 10 } } }
+            }
+        }
+    });
+};
+
+const openStudentQuickSidebar = (studentId) => {
+    const sidebar = document.getElementById("student-quick-sidebar");
+    if (!sidebar) return;
+
+    const currentYear = getCurrentYear();
+    const student = currentYear?.students?.find(s => s.id === studentId);
+    if (!student) return;
+    _qsbCurrentStudentId = studentId;
+    _qsbSemesterFilter = null; // reset to all-year on new student open
+
+    // Prev/next navigation
+    const { column, direction } = window.studentSortState || { column: 'lastName', direction: 'asc' };
+    const sorted = [...currentYear.students].sort((a, b) => {
+        const dir = direction === 'asc' ? 1 : -1;
+        if (column === 'lastName') {
+            const c = (a.lastName || '').localeCompare(b.lastName || '', 'de');
+            return c !== 0 ? c * dir : (a.firstName || '').localeCompare(b.firstName || '', 'de') * dir;
+        }
+        return (a.firstName || '').localeCompare(b.firstName || '', 'de') * dir;
+    });
+    const idx = sorted.findIndex(s => s.id === studentId);
+    const prev = idx > 0 ? sorted[idx - 1] : null;
+    const next = idx < sorted.length - 1 ? sorted[idx + 1] : null;
+
+    document.getElementById("qsb-name").textContent = getStudentDisplayName(student);
+
+    const prevBtn = document.getElementById("qsb-prev-btn");
+    const nextBtn = document.getElementById("qsb-next-btn");
+    prevBtn.disabled = !prev;
+    prevBtn.onclick = prev ? () => openStudentQuickSidebar(prev.id) : null;
+    nextBtn.disabled = !next;
+    nextBtn.onclick = next ? () => openStudentQuickSidebar(next.id) : null;
+
+    document.getElementById("qsb-close-btn").onclick = _closeStudentQuickSidebar;
+    document.getElementById("qsb-fullscreen-btn").onclick = () => {
+        _closeStudentQuickSidebar();
+        showStudentDetailView(studentId);
+    };
+
+    // Show sidebar (push layout)
+    sidebar.style.display = "flex";
+    document.querySelector("main")?.classList.add("qsb-open");
+    requestAnimationFrame(() => { sidebar.classList.add("open"); });
+
+    _renderStudentQuickContent(studentId);
+};
 
 /**
  * SHOW STUDENT DETAIL VIEW
@@ -2752,6 +3292,7 @@ window.window.studentGradeChartInstance = null;
  * @param {string} studentId - The ID of the student to display
  */
 const showStudentDetailView = (studentId) => {
+    window.detailSemesterFilter = null; // reset to all-year on new student open
     const classView = document.getElementById("class-view");
     const homeView = document.getElementById("home-view");
     const studentDetailView = document.getElementById("student-detail-view");
@@ -2986,14 +3527,26 @@ const calculateTrend = (grades) => {
  *
  * @returns {number} - Class average or 0 if no grades
  */
-const calculateClassAverage = () => {
+const calculateClassAverage = (semesterFilter = undefined) => {
     const currentYear = getCurrentYear();
     if (!currentYear) return 0;
+    const sid = currentYear.currentSubjectId;
 
     const averages = [];
     currentYear.students.forEach(student => {
-        const filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
-        const avg = calculateWeightedAverage(filteredGrades);
+        let grades;
+        if (semesterFilter === undefined) {
+            // default: use current semester filter (for class table stats)
+            grades = filterGradesBySubject(student.grades, sid);
+        } else {
+            // explicit filter: null = all year, "WS"/"SS" = specific semester
+            grades = sid ? student.grades.filter(g => {
+                if (g.subjectId !== sid) return false;
+                if (semesterFilter && g.semester !== semesterFilter) return false;
+                return true;
+            }) : [];
+        }
+        const avg = calculateWeightedAverage(grades);
         if (avg > 0) averages.push(avg);
     });
 
@@ -3070,18 +3623,44 @@ const renderStudentDetail = (studentId) => {
         showHomeView();
     };
 
-    // Noten nach aktivem Fach filtern
-    const filteredGrades = filterGradesBySubject(student.grades, currentYear.currentSubjectId);
+    // Noten nach aktivem Fach filtern (kein Semester-Filter — zeigt gesamtes Jahr; optional nach Semester filtern)
+    const currentSubjectId = currentYear.currentSubjectId || null;
+    const filteredGrades = currentSubjectId
+        ? student.grades.filter(g => {
+            if (g.subjectId !== currentSubjectId) return false;
+            if (window.detailSemesterFilter && g.semester !== window.detailSemesterFilter) return false;
+            return true;
+        })
+        : [];
+
+    // Semester-Filter Toggle rendern
+    const semFilterEl = document.getElementById("student-semester-filter");
+    if (semFilterEl) {
+        const mkBtn = (label, val) => {
+            const active = window.detailSemesterFilter === val;
+            return `<button class="${active ? 'btn-sm-primary' : 'btn-sm-outline'}" data-detail-sem="${val ?? '__all__'}">${label}</button>`;
+        };
+        semFilterEl.innerHTML = `<div class="flex gap-1 items-center">
+            ${mkBtn(t("semester.all") || "Gesamt", null)}
+            ${mkBtn(t("semester.WS") || "WS", "WS")}
+            ${mkBtn(t("semester.SS") || "SS", "SS")}
+        </div>`;
+        semFilterEl.querySelectorAll("[data-detail-sem]").forEach(btn => {
+            btn.addEventListener("click", () => {
+                window.detailSemesterFilter = btn.dataset.detailSem === '__all__' ? null : btn.dataset.detailSem;
+                renderStudentDetail(studentId);
+            });
+        });
+    }
 
     // Calculate statistics with filtered grades
     const weightedAvg = calculateWeightedAverage(filteredGrades);
     let finalGrade = calculateFinalGrade(weightedAvg);
     const trend = calculateTrend(filteredGrades);
-    const classAvg = calculateClassAverage();
+    const classAvg = calculateClassAverage(window.detailSemesterFilter);
     const numericGradeCount = filteredGrades.filter(g => !g.isPlusMinus).length;
 
     // Check attendance status for current subject and override final grade if critical
-    const currentSubjectId = currentYear.currentSubjectId || null;
     const attendanceStatus = getAttendanceStatus(studentId, currentSubjectId);
     if (attendanceStatus.status === 'critical') {
         finalGrade = '5';

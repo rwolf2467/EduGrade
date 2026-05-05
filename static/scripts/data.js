@@ -19,6 +19,10 @@
  * │       │   └── [Jahrgang]
  * │       │       ├── id: String - Eindeutige ID
  * │       │       ├── name: String - Name des Jahrgangs (z.B. "2024/2025")
+ * │       │       ├── startDate: String|null - Schuljahresbeginn (YYYY-MM-DD)
+ * │       │       ├── semesterSwitchDate: String|null - Semesterwechsel (YYYY-MM-DD)
+ * │       │       ├── endDate: String|null - Schuljahresende (YYYY-MM-DD)
+ * │       │       ├── currentSemester: "WS"|"SS" - Aktives Semester
  * │       │       ├── subjects: Array - Unterrichtsfächer dieses Jahrgangs
  * │       │       │   └── [Fach]
  * │       │       │       ├── id: String - Eindeutige ID

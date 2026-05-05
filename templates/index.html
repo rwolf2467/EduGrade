@@ -353,6 +353,7 @@
                                 <button id="profile-popover-trigger" type="button"
                                     aria-expanded="false"
                                     aria-controls="profile-popover-content"
+                                    data-keep-mobile-sidebar-open
                                     class="btn-outline w-full" style="justify-content: flex-start; gap: 0.75rem; padding: 0.5rem 0.75rem; height: auto;">
                                     <div id="profile-avatar" style="min-width: 2.25rem; width: 2.25rem; height: 2.25rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; color: white; letter-spacing: 0.04em; flex-shrink: 0; font-family: 'Syne', sans-serif; overflow: hidden;"></div>
                                     <span id="profile-display-name" class="truncate" style="flex: 1; text-align: left; font-size: 0.9375rem;"></span>
@@ -392,7 +393,7 @@
                                             </svg>
                                             <span data-i18n="nav.about">About</span>
                                         </a>
-                                        <a href="https://edugrade.avocloud.net/docs/" target="_blank" rel="noopener noreferrer" class="btn-ghost w-full" style="justify-content: flex-start;">
+                                        <a href="https://edugrade.avocloud.net/docs" target="_blank" rel="noopener noreferrer" class="btn-ghost w-full" style="justify-content: flex-start;">
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
                                                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
                                                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
@@ -443,6 +444,13 @@
                             <span id="greeting-context" class="hidden"></span>
                         </h2>
                     </div>
+                    <div class="flex items-center gap-2">
+                    <button type="button" id="mobile-settings-btn" class="btn-outline md:hidden" data-tooltip="Settings" data-i18n-tooltip="nav.settings" data-side="bottom">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                            <circle cx="12" cy="12" r="3" />
+                        </svg>
+                    </button>
                     <div id="offline-indicator" class="hidden items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border" style="background:rgba(234,179,8,0.1);color:#a16207;border-color:rgba(234,179,8,0.3);">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="1" y1="1" x2="23" y2="23"/>
@@ -454,6 +462,7 @@
                             <line x1="12" y1="20" x2="12.01" y2="20"/>
                         </svg>
                         <span id="offline-indicator-text">Offline</span>
+                    </div>
                     </div>
                 </div>
                 <!-- Undo notification bar -->
@@ -565,11 +574,18 @@
                             </div>
                             <!-- Language -->
                             <div class="grid gap-2">
-                                <label for="profile-language" class="text-sm font-medium" data-i18n="profile.language">Language</label>
-                                <select id="profile-language" class="select">
-                                    <option value="en">English</option>
-                                    <option value="de">Deutsch</option>
-                                </select>
+                                <label class="text-sm font-medium" data-i18n="profile.language">Language</label>
+                                <input type="hidden" id="profile-language" value="en">
+                                <div class="grid grid-cols-2 gap-3" id="profile-language-buttons">
+                                    <button type="button" id="lang-btn-en" class="lang-card school-type-card flex items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all select-none" style="border-color: var(--primary, #6366f1);" onclick="setProfileLanguage('en')">
+                                        <span class="text-lg">🇬🇧</span>
+                                        <span class="text-sm font-semibold">English</span>
+                                    </button>
+                                    <button type="button" id="lang-btn-de" class="lang-card school-type-card flex items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all select-none" style="border-color: var(--border, #2d2d3d);" onclick="setProfileLanguage('de')">
+                                        <span class="text-lg">🇩🇪</span>
+                                        <span class="text-sm font-semibold">Deutsch</span>
+                                    </button>
+                                </div>
                                 <p class="text-gray-400 text-sm" data-i18n="profile.languageHint">Choose your preferred language.</p>
                             </div>
                             <!-- School Type -->
@@ -961,7 +977,10 @@
                             <h2 class="text-xl font-semibold mb-3">Class: <span id="current-class-name"></span></h2>
 
                             <!-- Year Tabs -->
-                            <div id="year-selector" class="flex items-center gap-2 flex-wrap mb-3"></div>
+                            <div id="year-selector" class="flex items-center gap-2 flex-wrap mb-2"></div>
+
+                            <!-- Semester Tabs (WS/SS) -->
+                            <div id="semester-selector" class="flex items-center gap-2 mb-3"></div>
 
                             <div class="flex flex-wrap gap-2">
                                 <button id="add-student" class="btn-primary">
@@ -1081,9 +1100,9 @@
                                         <th class="sortable-header" data-sort="firstName" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.firstName">First Name</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
                                         <th class="compact-hide" data-i18n="table.middleName">Middle Name</th>
                                         <th class="sortable-header" data-sort="gradeCount" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.gradeCount"># Grades</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
-                                        <th class="sortable-header" data-sort="average" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.average">Average</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
-                                        <th class="sortable-header" data-sort="weighted" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.weighted">Weighted</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
-                                        <th class="sortable-header" data-sort="finalGrade" style="cursor:pointer;user-select:none;white-space:nowrap;"><span id="students-finalgrade-header-label" data-i18n="table.finalGrade">Final Grade</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
+                                        <th class="sortable-header" data-sort="weighted" style="cursor:pointer;user-select:none;white-space:nowrap;"><span data-i18n="table.semWeighted">Sem. Avg.</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
+                                        <th class="sortable-header" data-sort="finalGrade" style="cursor:pointer;user-select:none;white-space:nowrap;"><span id="students-finalgrade-header-label" data-i18n="table.semFinalGrade">Sem. Grade</span> <span class="sort-icon" style="opacity:0.4;font-size:0.75em;">↕</span></th>
+                                        <th data-i18n="table.yearOverview">Year Overview</th>
                                         <th data-i18n="table.actions">Actions</th>
                                     </tr>
                                 </thead>
@@ -1171,6 +1190,7 @@
                         </header>
 
                         <section class="p-7">
+                            <div id="student-semester-filter" class="mb-4"></div>
                             <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                                 <div class="stat-card p-4 rounded-lg border">
                                     <div class="flex justify-between items-start mb-2">
@@ -1858,6 +1878,28 @@ Anna,,Schmidt</code></pre>
                     </div>
                 </dialog>
             </main>
+
+            <!-- Quick Student Detail Sidebar -->
+            <aside id="student-quick-sidebar" class="qsb-panel">
+                <header class="qsb-header">
+                    <div style="display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0">
+                        <button id="qsb-prev-btn" class="btn-icon btn-secondary" aria-label="Previous" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+                        </button>
+                        <h2 id="qsb-name" style="font-weight:600;font-size:1rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></h2>
+                        <button id="qsb-next-btn" class="btn-icon btn-secondary" aria-label="Next" disabled>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                        </button>
+                    </div>
+                    <div style="display:flex;gap:0.4rem;flex-shrink:0">
+                        <button id="qsb-fullscreen-btn" class="btn-outline" style="padding:0.25rem 0.6rem;font-size:0.8rem;white-space:nowrap" data-i18n="student.fullView">Vollansicht</button>
+                        <button id="qsb-close-btn" class="btn-icon btn-secondary" aria-label="Close">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                        </button>
+                    </div>
+                </header>
+                <div id="qsb-content" class="qsb-content"></div>
+            </aside>
         </div>
     </div>
 
@@ -1972,7 +2014,7 @@ Anna,,Schmidt</code></pre>
                 const languageInput = document.getElementById('profile-language');
                 if (teacherNameInput) teacherNameInput.value = appData.teacherName || '';
                 if (schoolInput) schoolInput.value = appData.school || '';
-                if (languageInput) languageInput.value = appData.language || 'en';
+                if (languageInput) { languageInput.value = appData.language || 'en'; updateLanguageBtnStyles(); }
 
                 // Load school type selection
                 const schoolType = appData.schoolType || 'secondary';
@@ -2002,6 +2044,22 @@ Anna,,Schmidt</code></pre>
             document.querySelectorAll('input[name="schoolType"]').forEach(radio => {
                 radio.addEventListener('change', updateSchoolTypeCardStyles);
             });
+
+            const updateLanguageBtnStyles = () => {
+                const val = (document.getElementById('profile-language') || {}).value || 'en';
+                const activeColor = 'var(--primary, #6366f1)';
+                const inactiveColor = 'var(--border, #2d2d3d)';
+                const en = document.getElementById('lang-btn-en');
+                const de = document.getElementById('lang-btn-de');
+                if (en) en.style.borderColor = val === 'en' ? activeColor : inactiveColor;
+                if (de) de.style.borderColor = val === 'de' ? activeColor : inactiveColor;
+            };
+
+            window.setProfileLanguage = (lang) => {
+                const input = document.getElementById('profile-language');
+                if (input) input.value = lang;
+                updateLanguageBtnStyles();
+            };
 
             document.getElementById('profile-btn').addEventListener('click', openProfileDialog);
 
