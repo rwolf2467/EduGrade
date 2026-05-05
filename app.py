@@ -1362,6 +1362,31 @@ async def startup():
     migrate_plaintext_shares()  # Migrate any existing plaintext shares
     await cleanup_expired_sessions()
     print("Database initialized successfully")
+
+@app.after_request
+async def set_cache_control_headers(response):
+    """
+    Set Cache-Control headers to prevent stale cache issues on mobile/desktop.
+    
+    This ensures CSS, JS, and other static assets are always fetched fresh from
+    the server instead of using cached versions. The version query parameter
+    (?v=VERSION) provides additional cache busting for deployments.
+    
+    Headers used:
+    - no-cache: Revalidate with server before using cached version
+    - no-store: Don't store in cache at all
+    - must-revalidate: Must check with server after expiry
+    - max-age=0: Cache expires immediately
+    """
+    path = request.path
+    
+    if path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    
+    return response
+
 # ============ Startup ============
 
 
