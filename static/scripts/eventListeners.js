@@ -564,3 +564,8 @@ document.addEventListener('keydown', (e) => {
             break;
     }
 });
+
+// Class Exam Mode initialisieren
+document.addEventListener('DOMContentLoaded', () => {
+    initClassExamMode();
+});

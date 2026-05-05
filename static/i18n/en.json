@@ -276,6 +276,7 @@
   "grade.plusMinusOnlyHint": "This category only allows +/~/- grades. The final grade is calculated from the total number of +, ~ and - entries.",
   "grade.mixedHint": "You can enter a numeric grade (1-6) or a +/~/- grade.",
   "grade.mustSelectSubject": "You must select a subject to add a grade.",
+  "grade.noSubjectsError": "No subjects are assigned to this school year yet. Please add a subject first using the '+' button in the subject bar.",
   "grade.previousNames": "Previous grade names",
   "grade.editTooltip": "Edit grade",
   "grade.deleteTooltip": "Delete grade",
@@ -813,5 +814,14 @@
   "semester.SS": "SS",
   "semester.all": "All Year",
   "semester.winter": "Winter semester",
-  "semester.summer": "Summer semester"
+  "semester.summer": "Summer semester",
+
+  "classExam.title": "Class Exam",
+  "classExam.setupHint": "Enter the exam details first, then enter grades student by student.",
+  "classExam.examName": "Name",
+  "classExam.start": "Enter Grades →",
+  "classExam.absent": "Absent – skip",
+  "classExam.summary": "Summary",
+  "classExam.summaryHint": "Review the grades before saving. Absent students receive no grade.",
+  "classExam.save": "Save All Grades"
 }

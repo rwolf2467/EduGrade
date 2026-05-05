@@ -276,6 +276,7 @@
   "grade.plusMinusOnlyHint": "Diese Kategorie erlaubt nur +/~/- Noten. Die Endnote wird aus der Gesamtzahl der +, ~ und - Einträge berechnet.",
   "grade.mixedHint": "Du kannst eine numerische Note (1-6) oder eine +/~/- Note eingeben.",
   "grade.mustSelectSubject": "Sie müssen ein Fach auswählen, um eine Note hinzuzufügen.",
+  "grade.noSubjectsError": "Diesem Schuljahr sind noch keine Fächer zugeordnet. Bitte zuerst ein Fach über das '+' Symbol in der Fächerleiste hinzufügen.",
   "grade.previousNames": "Bisherige Notennamen",
   "grade.editTooltip": "Note bearbeiten",
   "grade.deleteTooltip": "Note löschen",
@@ -813,5 +814,14 @@
   "semester.SS": "SS",
   "semester.all": "Gesamt",
   "semester.winter": "Wintersemester",
-  "semester.summer": "Sommersemester"
+  "semester.summer": "Sommersemester",
+
+  "classExam.title": "Klassenarbeit",
+  "classExam.setupHint": "Zuerst die Details eingeben, dann Schüler für Schüler die Noten eintragen.",
+  "classExam.examName": "Bezeichnung",
+  "classExam.start": "Noten eintragen →",
+  "classExam.absent": "Abwesend – überspringen",
+  "classExam.summary": "Zusammenfassung",
+  "classExam.summaryHint": "Überprüfe die Noten bevor du speicherst. Abwesende Schüler erhalten keine Note.",
+  "classExam.save": "Alle Noten speichern"
 }

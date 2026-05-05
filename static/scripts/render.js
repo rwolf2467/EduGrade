@@ -1057,6 +1057,12 @@ const openAddGradeDialog = (studentId, onSuccess) => {
     if (!student) return;
     const studentName = getStudentDisplayName(student);
 
+    // Require at least one subject in the current year
+    if (!currentYear.subjects || currentYear.subjects.length === 0) {
+        showAlertDialog(t("grade.noSubjectsError"));
+        return;
+    }
+
     // For primary school: require at least one category to exist
     if (appData.schoolType === 'primary' && appData.categories.length === 0) {
         showAlertDialog("Bitte zuerst mindestens eine Kategorie in den Einstellungen anlegen.");
@@ -5318,4 +5324,211 @@ const _renderAttStudentPanel = () => {
         bulkAddAttendance(pending, selectedDate, subjectId);
         _renderAttCalendar(); // refresh dots
     };
+};
+
+// ── Class Exam Mode ────────────────────────────────────────────────────────
+const initClassExamMode = () => {
+    const overlay   = document.getElementById('class-exam-overlay');
+    const stepSetup = document.getElementById('class-exam-step-setup');
+    const stepEntry = document.getElementById('class-exam-step-entry');
+    const stepSum   = document.getElementById('class-exam-step-summary');
+
+    const showStep = (step) => {
+        [stepSetup, stepEntry, stepSum].forEach(s => {
+            s.classList.add('hidden');
+            s.style.display = 'none';
+        });
+        step.classList.remove('hidden');
+        step.style.display = 'flex';
+        step.style.flexDirection = 'column';
+        step.style.height = '100%';
+    };
+
+    // State
+    let examState = null; // { name, categoryId, date, students, results, currentIdx }
+
+    // ── Open / Close ────────────────────────────────────────────────────────
+    const openExam = () => {
+        const currentYear = getCurrentYear();
+        if (!currentYear || !currentYear.students || currentYear.students.length === 0) {
+            showAlertDialog(t('emptyState.noStudents') || 'Keine Schüler in dieser Klasse.');
+            return;
+        }
+        if (!appData.categories || appData.categories.length === 0) {
+            showAlertDialog('Bitte zuerst mindestens eine Kategorie in den Einstellungen anlegen.');
+            return;
+        }
+
+        // Populate category select
+        const catSel = document.getElementById('class-exam-category');
+        catSel.innerHTML = appData.categories.map(cat =>
+            `<option value="${safeAttr(cat.id)}">${escapeHtml(cat.name)} (${(cat.weight*100).toFixed(0)}%)</option>`
+        ).join('');
+
+        // Set today's date
+        document.getElementById('class-exam-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('class-exam-name').value = '';
+        document.getElementById('class-exam-setup-error').classList.add('hidden');
+
+        showStep(stepSetup);
+        overlay.classList.add('active');
+        setTimeout(() => document.getElementById('class-exam-name').focus(), 50);
+    };
+
+    const closeExam = () => {
+        overlay.classList.remove('active');
+        examState = null;
+    };
+
+    // ── Step 1 → 2 ──────────────────────────────────────────────────────────
+    document.getElementById('class-exam-start').addEventListener('click', () => {
+        const name = document.getElementById('class-exam-name').value.trim();
+        const categoryId = document.getElementById('class-exam-category').value;
+        const date = document.getElementById('class-exam-date').value;
+        const errEl = document.getElementById('class-exam-setup-error');
+
+        if (!name) { errEl.textContent = 'Bitte eine Bezeichnung eingeben.'; errEl.classList.remove('hidden'); return; }
+        if (!date) { errEl.textContent = 'Bitte ein Datum wählen.'; errEl.classList.remove('hidden'); return; }
+        errEl.classList.add('hidden');
+
+        const currentYear = getCurrentYear();
+        // Sort students same as table (lastName asc)
+        const students = [...currentYear.students].sort((a, b) =>
+            (a.lastName || '').localeCompare(b.lastName || '', 'de') ||
+            (a.firstName || '').localeCompare(b.firstName || '', 'de')
+        );
+
+        examState = { name, categoryId, date, students, results: [], currentIdx: 0 };
+        _renderExamEntry();
+        showStep(stepEntry);
+    });
+
+    // ── Entry rendering ──────────────────────────────────────────────────────
+    const _renderExamEntry = () => {
+        if (!examState) return;
+        const { students, currentIdx } = examState;
+
+        if (currentIdx >= students.length) {
+            _renderExamSummary();
+            showStep(stepSum);
+            return;
+        }
+
+        const student = students[currentIdx];
+        const displayName = `${escapeHtml(student.lastName || '')}${student.firstName ? ', ' + escapeHtml(student.firstName) : ''}`;
+        document.getElementById('class-exam-student-name').innerHTML = displayName;
+
+        const pct = Math.round((currentIdx / students.length) * 100);
+        document.getElementById('class-exam-progress-fill').style.width = pct + '%';
+        document.getElementById('class-exam-progress-text').textContent = `${currentIdx + 1} / ${students.length}`;
+
+        document.getElementById('class-exam-undo').disabled = currentIdx === 0;
+    };
+
+    // Grade buttons
+    document.querySelectorAll('[data-exam-grade]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!examState) return;
+            const grade = parseInt(btn.dataset.examGrade, 10);
+            examState.results[examState.currentIdx] = { type: 'grade', value: grade };
+            examState.currentIdx++;
+            _renderExamEntry();
+        });
+    });
+
+    // Absent button
+    document.getElementById('class-exam-absent-btn').addEventListener('click', () => {
+        if (!examState) return;
+        examState.results[examState.currentIdx] = { type: 'absent' };
+        examState.currentIdx++;
+        _renderExamEntry();
+    });
+
+    // Undo
+    document.getElementById('class-exam-undo').addEventListener('click', () => {
+        if (!examState || examState.currentIdx === 0) return;
+        examState.currentIdx--;
+        examState.results[examState.currentIdx] = undefined;
+        _renderExamEntry();
+    });
+
+    // Back to setup from entry
+    document.getElementById('class-exam-back-to-setup').addEventListener('click', () => {
+        showStep(stepSetup);
+    });
+
+    // ── Summary ──────────────────────────────────────────────────────────────
+    const _gradeColor = (g) => {
+        if (g === 1) return '#22c55e'; if (g === 2) return '#3b82f6';
+        if (g === 3) return '#eab308'; if (g === 4) return '#f97316';
+        return '#ef4444';
+    };
+
+    const _renderExamSummary = () => {
+        if (!examState) return;
+        const { students, results } = examState;
+        const listEl = document.getElementById('class-exam-summary-list');
+        listEl.innerHTML = students.map((s, i) => {
+            const r = results[i];
+            const name = `${escapeHtml(s.lastName || '')}${s.firstName ? ', ' + escapeHtml(s.firstName) : ''}`;
+            let right = '';
+            if (!r || r.type === 'absent') {
+                right = `<span class="exam-absent-label">Abwesend</span>`;
+            } else {
+                const color = _gradeColor(r.value);
+                right = `<span class="exam-grade-badge grade-${r.value}" style="background:${color}20;color:${color};">${r.value}</span>`;
+            }
+            return `<div class="class-exam-summary-row"><span>${name}</span>${right}</div>`;
+        }).join('');
+    };
+
+    // Back to entry from summary
+    document.getElementById('class-exam-back-to-entry').addEventListener('click', () => {
+        if (!examState) return;
+        examState.currentIdx = examState.students.length - 1;
+        // roll back to last non-undefined
+        while (examState.currentIdx > 0 && examState.results[examState.currentIdx] === undefined) {
+            examState.currentIdx--;
+        }
+        _renderExamEntry();
+        showStep(stepEntry);
+    });
+
+    // Save all grades
+    document.getElementById('class-exam-save').addEventListener('click', () => {
+        if (!examState) return;
+        const { name, categoryId, date, students, results } = examState;
+        const currentYear = getCurrentYear();
+        if (!currentYear) return;
+
+        const subjectId = currentYear.currentSubjectId;
+        const gradeTimestamp = new Date(date).getTime() || Date.now();
+        let saved = 0;
+
+        students.forEach((student, i) => {
+            const r = results[i];
+            if (!r || r.type === 'absent') return;
+            addGrade(student.id, categoryId, r.value, name, subjectId, gradeTimestamp, false);
+            saved++;
+        });
+
+        closeExam();
+        renderStudents();
+        showToast(`${saved} Note${saved !== 1 ? 'n' : ''} gespeichert.`, 'success');
+    });
+
+    // Cancel from summary
+    document.getElementById('class-exam-cancel-summary').addEventListener('click', closeExam);
+
+    // Close button
+    document.getElementById('class-exam-close').addEventListener('click', closeExam);
+
+    // Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && overlay.classList.contains('active')) closeExam();
+    });
+
+    // Open trigger
+    const triggerBtn = document.getElementById('class-exam-btn');
+    if (triggerBtn) triggerBtn.addEventListener('click', openExam);
 };
