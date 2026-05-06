@@ -53,7 +53,9 @@ body {
     padding: 1.5rem;
     width: 100%;
     max-width: 100%;
-    overflow-x: hidden;
+    /* `clip` instead of `hidden` so we don't accidentally establish a scroll
+       container, which would break `position: sticky` on descendants. */
+    overflow-x: clip;
     box-sizing: border-box;
     background-color: #f8fafc;
     background-image: radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px);
@@ -77,7 +79,9 @@ html.dark body {
 /* App-Container beschränken */
 #app {
     max-width: 100%;
-    overflow-x: hidden;
+    /* `clip` keeps horizontal overflow contained without creating a scroll
+       container, so `position: sticky` keeps working inside #app. */
+    overflow-x: clip;
 }
 
 /* Sidebar nav fills full height; class list section grows and scrolls */

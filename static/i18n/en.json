@@ -470,6 +470,11 @@
   "loading.finalizing": "Finalizing...",
   "loading.accountCreated": "Account created!",
   "loading.creating": "Creating...",
+  "loading.saving": "Saving…",
+  "save.errorTitle": "Save failed",
+  "save.errorMsg": "Your changes haven't been synced yet. Check your connection and try again.",
+  "save.retry": "Retry",
+  "save.retryRunning": "Retrying…",
 
   "error.somethingWrong": "Oops! Something went wrong. Please try again.",
   "error.tooManyRequests": "Too Many Requests",

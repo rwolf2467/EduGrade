@@ -1,23 +1,119 @@
 // storage.js
 // This file manages saving and loading data via API.
-// Data is stored both locally (localStorage) and on the server.
-
-
-/**
- * STORAGE STRATEGY
- *
- * - Server is the PRIMARY data source
- * - LocalStorage serves as cache/backup
- * - Data is first sent to the server
- * - On success, data is also saved locally (for offline use)
- * - On server error, data is saved locally and a warning is shown
- *
- * Key for LocalStorage: "notenverwaltung"
- */
+// Sensitive data (names, grades, classes) is NEVER persisted in localStorage.
+// On save failure, the unsaved blob is held only in this module's memory
+// and retried; if the tab is closed while a retry is pending, the user is
+// warned via the standard beforeunload prompt.
 
 // Debounce timer for API calls
 let saveDebounceTimer = null;
 const SAVE_DEBOUNCE_MS = 500;
+
+// In-memory retry queue for failed saves. Holds the most recent unsaved
+// snapshot only — newer attempts overwrite older ones (the full blob is
+// always self-contained, so older retries become redundant).
+let pendingSaveSnapshot = null;
+let retryTimer = null;
+const RETRY_DELAY_MS = 5000;
+
+// Save-progress indicator: always shown when a save runs, with a minimum
+// visible duration so it doesn't flash and leave the user uncertain.
+let activeSaveCount = 0;
+let saveIndicatorShownAt = 0;
+let saveIndicatorHideTimer = null;
+const SAVE_INDICATOR_MIN_VISIBLE_MS = 500;
+
+const showSaveIndicator = () => {
+    const el = document.getElementById('save-indicator');
+    if (!el) return;
+    const txt = document.getElementById('save-indicator-text');
+    if (txt && typeof t === 'function') {
+        try { txt.textContent = t('loading.saving'); } catch (_) { /* keep default */ }
+    }
+    el.classList.remove('hidden');
+    el.classList.add('flex');
+};
+
+const hideSaveIndicator = () => {
+    const el = document.getElementById('save-indicator');
+    if (!el) return;
+    el.classList.add('hidden');
+    el.classList.remove('flex');
+};
+
+const beginSaveIndicator = () => {
+    activeSaveCount++;
+    if (activeSaveCount === 1) {
+        // Cancel a pending hide from a previous quick save.
+        if (saveIndicatorHideTimer) {
+            clearTimeout(saveIndicatorHideTimer);
+            saveIndicatorHideTimer = null;
+        }
+        saveIndicatorShownAt = Date.now();
+        showSaveIndicator();
+    }
+};
+
+// Persistent save-failure banner: stays visible while there's an unsaved
+// snapshot, with a retry button that triggers flushPendingSave() immediately.
+const showSaveErrorBanner = () => {
+    const el = document.getElementById('save-error-banner');
+    if (!el) return;
+    el.classList.remove('hidden');
+    el.classList.add('flex');
+    // Defensive: in case the `hidden` Tailwind utility is loaded after `flex`,
+    // force display via inline style so the banner is guaranteed visible.
+    el.style.display = 'flex';
+};
+
+const hideSaveErrorBanner = () => {
+    const el = document.getElementById('save-error-banner');
+    if (!el) return;
+    el.classList.add('hidden');
+    el.classList.remove('flex');
+    el.style.display = '';
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('save-error-banner-retry');
+    if (!btn) return;
+    btn.addEventListener('click', async () => {
+        if (pendingSaveSnapshot === null) {
+            hideSaveErrorBanner();
+            return;
+        }
+        // Cancel any scheduled automatic retry — the user is asking for one now.
+        if (retryTimer) {
+            clearTimeout(retryTimer);
+            retryTimer = null;
+        }
+        const original = btn.textContent;
+        btn.disabled = true;
+        try { btn.textContent = t('save.retryRunning'); } catch (_) { /* keep */ }
+        try {
+            await flushPendingSave();
+        } finally {
+            btn.disabled = false;
+            btn.textContent = original;
+        }
+    });
+});
+
+const endSaveIndicator = () => {
+    activeSaveCount = Math.max(0, activeSaveCount - 1);
+    if (activeSaveCount > 0) return;
+    const elapsed = Date.now() - saveIndicatorShownAt;
+    const remaining = SAVE_INDICATOR_MIN_VISIBLE_MS - elapsed;
+    if (remaining > 0) {
+        if (saveIndicatorHideTimer) clearTimeout(saveIndicatorHideTimer);
+        saveIndicatorHideTimer = setTimeout(() => {
+            saveIndicatorHideTimer = null;
+            if (activeSaveCount === 0) hideSaveIndicator();
+        }, remaining);
+    } else {
+        hideSaveIndicator();
+    }
+};
 
 // ============ HEARTBEAT SYSTEM ============
 // Keeps server-side cache alive while page is open
@@ -99,32 +195,32 @@ const updateOfflineIndicator = (isOffline, text = null) => {
 window.addEventListener('online', () => updateOfflineIndicator(false));
 window.addEventListener('offline', () => updateOfflineIndicator(true, 'Offline'));
 
-// Event listener for window close to ensure data is saved
-window.addEventListener('beforeunload', async (e) => {
-    // If there are pending save operations, save immediately
+// On page close: try one last best-effort sync via sendBeacon (fire-and-forget,
+// works even after the page is unloaded). If a save is still pending or has
+// already failed, warn the user with the standard browser prompt so they can
+// stay on the page and let the retry succeed.
+window.addEventListener('beforeunload', (e) => {
+    const hasPending = saveDebounceTimer !== null || pendingSaveSnapshot !== null;
+    if (!hasPending) return;
+
     if (saveDebounceTimer) {
         clearTimeout(saveDebounceTimer);
+        saveDebounceTimer = null;
+    }
 
-        // Attempt immediate synchronization
-        try {
-            const response = await fetch('/api/data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(appData)
-            });
+    try {
+        const blob = new Blob([JSON.stringify(appData)], { type: 'application/json' });
+        navigator.sendBeacon('/api/data', blob);
+    } catch (_) {
+        // ignore
+    }
 
-            if (!response.ok) {
-                // If server is unavailable, save locally
-                localStorage.setItem("notenverwaltung", JSON.stringify(appData));
-                localStorage.setItem('pendingServerSync', 'true');
-            }
-        } catch (error) {
-            // On network error, save locally
-            localStorage.setItem("notenverwaltung", JSON.stringify(appData));
-            localStorage.setItem('pendingServerSync', 'true');
-        }
+    if (pendingSaveSnapshot !== null) {
+        // Standard browser confirmation: most browsers ignore the custom string
+        // but will show a generic "leave site?" dialog when preventDefault is set.
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
     }
 });
 
@@ -137,192 +233,145 @@ window.addEventListener('beforeunload', async (e) => {
  * @param {string} message - The message to display (Default: "Data saved!")
  * @param {string} type - Toast type: "success", "error", "info" (Default: "success")
  */
-const saveData = (message = "Data saved!", type = "success") => {
-    // Debug output in browser console (F12 -> Console)
-    console.log("Saving data:", appData);
+const scheduleRetry = () => {
+    if (retryTimer) clearTimeout(retryTimer);
+    retryTimer = setTimeout(() => {
+        retryTimer = null;
+        if (pendingSaveSnapshot !== null) flushPendingSave();
+    }, RETRY_DELAY_MS);
+};
 
-    // Create personalized message
+// Attempt to push the latest pending snapshot to the server.
+// On failure the snapshot is kept and a retry is scheduled.
+const flushPendingSave = async () => {
+    if (pendingSaveSnapshot === null) return;
+    const body = pendingSaveSnapshot;
+    beginSaveIndicator();
+    try {
+        const response = await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body
+        });
+        if (response.ok) {
+            pendingSaveSnapshot = null;
+            updateOfflineIndicator(false);
+            hideSaveErrorBanner();
+            return;
+        }
+        if (response.status === 401) {
+            const data = await response.json().catch(() => ({}));
+            // Keep snapshot in memory so the user can re-login and retry
+            showSessionExpiredDialog(data.message ? t(data.message) : t("error.sessionExpiredMsg"));
+            showSaveErrorBanner();
+            return;
+        }
+        if (response.status === 429) {
+            const data = await response.json().catch(() => ({}));
+            showRateLimitDialog(data.message ? t(data.message, data.message_params || {}) : t("error.tooManyRequestsMsg"));
+            showSaveErrorBanner();
+            scheduleRetry();
+            return;
+        }
+        updateOfflineIndicator(true, 'Sync-Fehler');
+        showSaveErrorBanner();
+        scheduleRetry();
+    } catch (error) {
+        console.error('Error saving to server:', error);
+        updateOfflineIndicator(true, 'Offline');
+        showSaveErrorBanner();
+        scheduleRetry();
+    } finally {
+        endSaveIndicator();
+    }
+};
+
+const saveData = (message = "Data saved!", type = "success") => {
     const teacherName = appData.teacherName || "there";
     const personalizedMessage = message.replace("successfully", `successfully, ${teacherName}`);
-
-    // Show toast notification
     showToast(personalizedMessage, type);
 
-    // Debounced API call to server (primary storage)
-    if (saveDebounceTimer) {
-        clearTimeout(saveDebounceTimer);
-    }
+    if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
 
     saveDebounceTimer = setTimeout(async () => {
-        try {
-            const response = await fetch('/api/data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(appData)
-            });
-
-            if (response.ok) {
-                console.log('Data saved to server successfully');
-                // After successful server save, also save locally (as cache)
-                localStorage.setItem("notenverwaltung", JSON.stringify(appData));
-                // Reset error counter
-                localStorage.removeItem('pendingServerSync');
-                updateOfflineIndicator(false);
-            } else if (response.status === 401) {
-                // Session expired or no encryption key - need to re-login
-                const data = await response.json();
-                console.warn('Session expired:', data.message);
-                localStorage.setItem("notenverwaltung", JSON.stringify(appData));
-                localStorage.setItem('pendingServerSync', 'true');
-                // Show alert and redirect to login
-                showSessionExpiredDialog(data.message ? t(data.message) : t("error.sessionExpiredMsg"));
-            } else if (response.status === 429) {
-                // Rate limited - show prominent dialog
-                const data = await response.json();
-                console.warn('Rate limited:', data.message);
-                localStorage.setItem("notenverwaltung", JSON.stringify(appData));
-                localStorage.setItem('pendingServerSync', 'true');
-                showRateLimitDialog(data.message ? t(data.message, data.message_params || {}) : t("error.tooManyRequestsMsg"));
-            } else {
-                console.error('Server save failed:', response.statusText);
-                // On server error, save locally as backup and mark for later sync
-                localStorage.setItem("notenverwaltung", JSON.stringify(appData));
-                localStorage.setItem('pendingServerSync', 'true');
-                updateOfflineIndicator(true, 'Sync-Fehler');
-                showToast(t("toast.localSyncFailed"), "warning");
-            }
-        } catch (error) {
-            console.error('Error saving to server:', error);
-            // On network error, save locally as backup and mark for later sync
-            localStorage.setItem("notenverwaltung", JSON.stringify(appData));
-            localStorage.setItem('pendingServerSync', 'true');
-            updateOfflineIndicator(true, 'Offline');
-            showToast(t("toast.localNetworkError"), "warning");
-        }
+        saveDebounceTimer = null;
+        // Stash latest blob as the pending snapshot. flushPendingSave clears it on success.
+        pendingSaveSnapshot = JSON.stringify(appData);
+        await flushPendingSave();
     }, SAVE_DEBOUNCE_MS);
 };
 
 
 /**
+ * One-shot rescue: if a previous version of the app left an unsynced blob in
+ * localStorage, push it to the server before we wipe it. This runs at most
+ * once per browser per upgrade and protects users who had pending offline
+ * changes when we removed the localStorage fallback.
+ */
+const rescueLegacyLocalStorage = async () => {
+    const legacyData = localStorage.getItem('notenverwaltung');
+    if (!legacyData) return;
+    const wasPending = localStorage.getItem('pendingServerSync') === 'true';
+    try {
+        if (wasPending) {
+            await fetch('/api/data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: legacyData
+            }).catch(() => null);
+        }
+    } finally {
+        // Sensitive data must not linger in localStorage regardless of sync result.
+        localStorage.removeItem('notenverwaltung');
+        localStorage.removeItem('pendingServerSync');
+    }
+};
+
+/**
  * LOAD DATA
  *
- * Loads saved data from the server.
- * Falls back to localStorage if server is unavailable.
- *
+ * Server is the single source of truth. No localStorage fallback for user data.
  * Called on application start (DOMContentLoaded).
  */
 const loadData = async () => {
-    console.log("Loading data from server...");
-
-    // Show loading overlay while decrypting data
     showLoadingOverlay(t('loading.loadingData'), t('loading.decrypting'));
 
+    // Rescue any legacy localStorage payload before we go online.
+    await rescueLegacyLocalStorage();
+
     try {
-        // Try to load data from server
         const response = await fetch('/api/data');
 
         if (response.ok) {
-            const serverData = await response.json();
-            console.log("Loaded data from server:", serverData);
-
-            // Use server data (primary data source)
-            appData = serverData;
-
-            // Also save locally as cache
-            localStorage.setItem("notenverwaltung", JSON.stringify(appData));
-
-            // Check for pending synchronizations
-            await checkPendingSync();
+            appData = await response.json();
         } else if (response.status === 401) {
-            // Not logged in - redirect to login page
+            // The session cookie may still be valid but unusable (e.g. the
+            // server's in-memory encryption key was cleared by a restart).
+            // Tear down the session on the server first so the /login page
+            // doesn't immediately bounce us back here in a redirect loop.
+            try {
+                await fetch('/api/logout', { method: 'POST' });
+            } catch (_) { /* ignore — logout is best-effort */ }
             hideLoadingOverlay();
             window.location.href = '/login';
             return;
         } else {
-            // Server error - try local data
-            console.warn("Server error, trying localStorage...");
-            loadFromLocalStorage();
-
-            // Check for pending synchronizations
-            await checkPendingSync();
+            console.error("Server error loading data:", response.status);
+            showToast(t("toast.localSyncFailed"), "error");
         }
     } catch (error) {
-        // Network error - try local data
-        console.warn("Network error, trying localStorage:", error);
-        loadFromLocalStorage();
-
-        // Check for pending synchronizations
-        await checkPendingSync();
+        console.error("Network error loading data:", error);
+        updateOfflineIndicator(true, 'Offline');
+        showToast(t("toast.localNetworkError"), "error");
     }
 
-    // Migration and initialization
     migrateData();
 
-    // Sync language from server data to i18n engine
     if (appData.language && appData.language !== I18n.getCurrentLanguage()) {
         I18n.setLanguage(appData.language);
     }
 
-    // Hide loading overlay after data is loaded
     hideLoadingOverlay();
-};
-
-/**
- * LOAD DATA FROM LOCALSTORAGE (Fallback)
- */
-const loadFromLocalStorage = () => {
-    const data = localStorage.getItem("notenverwaltung");
-
-    if (data) {
-        try {
-            appData = JSON.parse(data);
-            console.log("Loaded data from localStorage (fallback):", appData);
-            showToast(t("toast.usingLocalData"), "warning");
-        } catch (e) {
-            console.error("Error parsing localStorage data:", e);
-            showToast(t("toast.errorLoadingLocal"), "error");
-        }
-    } else {
-        console.log("No local data available");
-        showToast(t("toast.noLocalData"), "info");
-    }
-};
-
-/**
- * CHECK PENDING SYNCHRONIZATION
- *
- * Checks if there is local data that hasn't been synchronized with the server
- * and attempts to synchronize.
- */
-const checkPendingSync = async () => {
-    if (localStorage.getItem('pendingServerSync') === 'true') {
-        console.log('Found pending server sync, attempting to synchronize...');
-
-        const localData = localStorage.getItem('notenverwaltung');
-        if (localData) {
-            try {
-                const response = await fetch('/api/data', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: localData
-                });
-
-                if (response.ok) {
-                    console.log('Pending data synchronized successfully');
-                    localStorage.removeItem('pendingServerSync');
-                    showToast(t('toast.pendingSynced'), 'success');
-                } else {
-                    console.error('Sync failed, will retry later');
-                }
-            } catch (error) {
-                console.error('Sync error, will retry later:', error);
-            }
-        }
-    }
 };
 
 /**

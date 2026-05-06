@@ -470,6 +470,11 @@
   "loading.finalizing": "Wird abgeschlossen...",
   "loading.accountCreated": "Konto erstellt!",
   "loading.creating": "Wird erstellt...",
+  "loading.saving": "Speichern…",
+  "save.errorTitle": "Speichern fehlgeschlagen",
+  "save.errorMsg": "Deine Änderungen sind noch nicht synchronisiert. Verbindung prüfen und erneut versuchen.",
+  "save.retry": "Erneut versuchen",
+  "save.retryRunning": "Wird erneut versucht…",
 
   "error.somethingWrong": "Hoppla! Etwas ist schiefgelaufen. Bitte versuche es erneut.",
   "error.tooManyRequests": "Zu viele Anfragen",

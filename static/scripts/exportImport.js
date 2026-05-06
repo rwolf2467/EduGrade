@@ -214,19 +214,16 @@ document.getElementById("confirm-import").addEventListener("click", async () => 
                 body: JSON.stringify(appData)
             })
             .then(response => {
-                if (response.ok) {
-                    localStorage.setItem("notenverwaltung", JSON.stringify(appData));
-                } else {
-                    // Save locally as backup
-                    localStorage.setItem("notenverwaltung", JSON.stringify(appData));
-                    localStorage.setItem('pendingServerSync', 'true');
+                if (!response.ok) {
+                    // Hand off to the regular save path so the in-memory retry
+                    // queue takes over — sensitive data never hits localStorage.
+                    saveData(t("toast.localSyncFailed"), "warning");
                 }
                 resolve();
             })
             .catch(error => {
                 console.error('Import save error:', error);
-                localStorage.setItem("notenverwaltung", JSON.stringify(appData));
-                localStorage.setItem('pendingServerSync', 'true');
+                saveData(t("toast.localNetworkError"), "warning");
                 resolve();
             });
         });

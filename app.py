@@ -97,8 +97,8 @@ rate_limit_storage = defaultdict(lambda: defaultdict(list))
 RATE_LIMITS = {
     'login': (5, 60),           # 5 attempts per minute
     'register': (3, 60),        # 3 attempts per minute
-    'data_write': (30, 60),     # 30 writes per minute
-    'data_read': (60, 60),      # 60 reads per minute
+    'data_write': (120, 60),    # 120 writes per minute (granular per-class saves)
+    'data_read': (240, 60),     # 240 reads per minute (granular per-class loads)
     'pin_verify': (5, 60),      # 5 PIN attempts per minute
     'share_manage': (20, 60),   # 20 share management requests per minute
     'password_reset': (3, 300), # 3 attempts per 5 minutes
@@ -887,6 +887,19 @@ def build_share_snapshot(user_data: dict, class_id: str) -> dict | None:
         })
     }
 
+def user_has_active_share(user_id: str, class_id=None) -> bool:
+    """Cheap check: does this user have any active class share (optionally for a specific class)?"""
+    db = load_db()
+    shares = db.get('class_shares') or {}
+    for share in shares.values():
+        if share.get('user_id') != user_id or not share.get('active', False):
+            continue
+        if class_id is not None and str(share.get('class_id')) != str(class_id):
+            continue
+        return True
+    return False
+
+
 def update_active_shares_for_user(user_id: str, user_data: dict):
     """Update all active share snapshots for a user"""
     db = load_db()
@@ -1036,37 +1049,250 @@ async def cleanup_expired_sessions():
     save_db(db)
     return None
 
+# ============ V2 SCHEMA HELPERS ============
+# v2 layout in db["user_data"][user_id]:
+# {
+#   "version": 2,
+#   "encrypted": True,
+#   "meta":    <ciphertext of meta dict>,         # everything except 'classes', plus 'classOrder'
+#   "classes": { "<class_id>": <ciphertext>, ... } # one ciphertext per class (students/grades/etc.)
+# }
+
+def _split_blob_for_v2(data: dict):
+    """Split a full user-data blob into (meta_dict, classes_dict).
+    classes_dict maps class_id (str) -> class object.
+    meta_dict carries 'classOrder' (list of class_ids) so order is preserved.
+    """
+    data = data or {}
+    classes_list = data.get('classes', []) or []
+    classes_dict = {}
+    class_order = []
+    for c in classes_list:
+        if not isinstance(c, dict):
+            continue
+        cid = c.get('id')
+        if cid is None:
+            continue
+        classes_dict[str(cid)] = c
+        class_order.append(str(cid))
+    meta = {k: v for k, v in data.items() if k != 'classes'}
+    meta['classOrder'] = class_order
+    return meta, classes_dict
+
+
+def _assemble_blob_from_v2(meta: dict, classes_dict: dict) -> dict:
+    """Reassemble a full blob from v2 meta + per-class dicts."""
+    meta = dict(meta or {})
+    classes_dict = classes_dict or {}
+    order = meta.pop('classOrder', None) or []
+    classes_list = []
+    seen = set()
+    for cid in order:
+        c = classes_dict.get(str(cid))
+        if c is not None:
+            classes_list.append(c)
+            seen.add(str(cid))
+    for cid, c in classes_dict.items():
+        if str(cid) not in seen:
+            classes_list.append(c)
+    meta['classes'] = classes_list
+    return meta
+
+
+def _is_v2_record(stored) -> bool:
+    return isinstance(stored, dict) and stored.get('version') == 2
+
+
+def migrate_user_to_v2(user_id: str, encryption_key: bytes) -> bool:
+    """One-shot migration of a legacy single-blob record to v2 split format.
+    Returns True if a migration was actually performed.
+    """
+    if not encryption_key:
+        return False
+    db = load_db()
+    stored = db.get('user_data', {}).get(user_id, {})
+    if not stored or _is_v2_record(stored):
+        return False
+
+    if isinstance(stored, dict) and stored.get('encrypted'):
+        full = decrypt_user_data(stored.get('data', ''), encryption_key)
+    else:
+        full = stored if isinstance(stored, dict) else {}
+
+    if not isinstance(full, dict):
+        full = {}
+
+    meta, classes_dict = _split_blob_for_v2(full)
+    new_record = {
+        'version': 2,
+        'encrypted': True,
+        'meta': encrypt_user_data(meta, encryption_key),
+        'classes': {
+            cid: encrypt_user_data(cobj, encryption_key)
+            for cid, cobj in classes_dict.items()
+        }
+    }
+    db['user_data'][user_id] = new_record
+    save_db(db)
+    logger.info("Migrated user %s to v2 schema (%d classes)", user_id, len(classes_dict))
+    return True
+
+
+def _ensure_v2(user_id: str, encryption_key: bytes):
+    """Migrate the user's record to v2 if it isn't already (no-op otherwise)."""
+    if not encryption_key:
+        return
+    db = load_db()
+    stored = db.get('user_data', {}).get(user_id, {})
+    if not stored or _is_v2_record(stored):
+        return
+    migrate_user_to_v2(user_id, encryption_key)
+
+
 def save_user_data(user_id: str, data, encryption_key: bytes = None, session_token: str = None):
-    """Save user data (ALWAYS encrypted - encryption_key is required)"""
+    """Save full user data using v2 split layout (legacy callers still work)."""
     if not encryption_key:
         raise ValueError("Encryption key is required to save user data securely")
 
+    meta, classes_dict = _split_blob_for_v2(data or {})
     db = load_db()
-    # Store encrypted data
-    encrypted = encrypt_user_data(data, encryption_key)
-    db["user_data"][user_id] = {"encrypted": True, "data": encrypted}
+    record = {
+        'version': 2,
+        'encrypted': True,
+        'meta': encrypt_user_data(meta, encryption_key),
+        'classes': {
+            cid: encrypt_user_data(cobj, encryption_key)
+            for cid, cobj in classes_dict.items()
+        }
+    }
+    db.setdefault('user_data', {})[user_id] = record
     save_db(db)
 
-    # Update cache if session token provided
     if session_token and session_token in user_data_cache:
         user_data_cache[session_token]["data"] = data
         user_data_cache[session_token]["last_heartbeat"] = datetime.now()
 
-def get_user_data(user_id: str, encryption_key: bytes = None):
-    """Get user data from disk (decrypted if encrypted and key is provided)"""
-    db = load_db()
-    stored = db["user_data"].get(user_id, {})
 
-    # Check if data is encrypted
+def _decrypt_v2_record(stored: dict, encryption_key: bytes) -> dict:
+    """Decrypt + reassemble a v2 record into a full blob."""
+    if not stored or not encryption_key:
+        return {}
+    meta = decrypt_user_data(stored.get('meta', ''), encryption_key) if stored.get('meta') else {}
+    classes_dict = {}
+    for cid, enc in (stored.get('classes') or {}).items():
+        try:
+            cobj = decrypt_user_data(enc, encryption_key)
+            if cobj:
+                classes_dict[cid] = cobj
+        except Exception as e:
+            logger.warning("Failed to decrypt class %s: %s", cid, type(e).__name__)
+    return _assemble_blob_from_v2(meta, classes_dict)
+
+
+def get_user_data(user_id: str, encryption_key: bytes = None):
+    """Get full user data, transparently handling v2 + legacy v1 records."""
+    db = load_db()
+    stored = db.get("user_data", {}).get(user_id, {})
+
+    if not stored:
+        return {}
+
+    if _is_v2_record(stored):
+        if not encryption_key:
+            logger.warning("v2 data for user %s but no key provided", user_id)
+            return {}
+        return _decrypt_v2_record(stored, encryption_key)
+
     if isinstance(stored, dict) and stored.get("encrypted"):
         if encryption_key:
             return decrypt_user_data(stored["data"], encryption_key)
-        else:
-            print(f"Warning: Encrypted data for user {user_id} but no key provided")
-            return {}
-    else:
-        # Unencrypted data (legacy)
-        return stored
+        logger.warning("Encrypted data for user %s but no key provided", user_id)
+        return {}
+
+    # Plaintext legacy
+    return stored if isinstance(stored, dict) else {}
+
+
+def get_user_meta(user_id: str, encryption_key: bytes) -> dict:
+    """Get just the meta block (small payload, fast)."""
+    _ensure_v2(user_id, encryption_key)
+    db = load_db()
+    stored = db.get('user_data', {}).get(user_id, {})
+    if not _is_v2_record(stored):
+        return {}
+    enc_meta = stored.get('meta')
+    if not enc_meta:
+        return {}
+    return decrypt_user_data(enc_meta, encryption_key)
+
+
+def save_user_meta(user_id: str, meta: dict, encryption_key: bytes):
+    """Save only the meta block. Leaves per-class blobs untouched."""
+    if not encryption_key:
+        raise ValueError("Encryption key is required to save user data securely")
+    _ensure_v2(user_id, encryption_key)
+    db = load_db()
+    rec = db.setdefault('user_data', {}).get(user_id)
+    if not _is_v2_record(rec):
+        rec = {'version': 2, 'encrypted': True, 'meta': '', 'classes': {}}
+        db['user_data'][user_id] = rec
+    # Defensive: meta must not contain a 'classes' field
+    clean = {k: v for k, v in (meta or {}).items() if k != 'classes'}
+    rec['meta'] = encrypt_user_data(clean, encryption_key)
+    rec['version'] = 2
+    rec['encrypted'] = True
+    save_db(db)
+
+
+def get_user_class(user_id: str, class_id: str, encryption_key: bytes):
+    """Get one decrypted class object. Returns None if not found."""
+    _ensure_v2(user_id, encryption_key)
+    db = load_db()
+    stored = db.get('user_data', {}).get(user_id, {})
+    if not _is_v2_record(stored):
+        return None
+    enc = (stored.get('classes') or {}).get(str(class_id))
+    if not enc:
+        return None
+    return decrypt_user_data(enc, encryption_key)
+
+
+def save_user_class(user_id: str, class_id: str, class_obj: dict, encryption_key: bytes):
+    """Save (insert or update) a single class blob."""
+    if not encryption_key:
+        raise ValueError("Encryption key is required to save user data securely")
+    _ensure_v2(user_id, encryption_key)
+    db = load_db()
+    rec = db.setdefault('user_data', {}).get(user_id)
+    if not _is_v2_record(rec):
+        rec = {
+            'version': 2,
+            'encrypted': True,
+            'meta': encrypt_user_data({'classOrder': []}, encryption_key),
+            'classes': {}
+        }
+        db['user_data'][user_id] = rec
+    if not isinstance(rec.get('classes'), dict):
+        rec['classes'] = {}
+    rec['classes'][str(class_id)] = encrypt_user_data(class_obj, encryption_key)
+    rec['version'] = 2
+    rec['encrypted'] = True
+    save_db(db)
+
+
+def delete_user_class(user_id: str, class_id: str) -> bool:
+    """Delete a single class blob. Returns True if it existed."""
+    db = load_db()
+    rec = db.get('user_data', {}).get(user_id)
+    if not _is_v2_record(rec):
+        return False
+    classes = rec.get('classes') or {}
+    cid = str(class_id)
+    if cid not in classes:
+        return False
+    del classes[cid]
+    save_db(db)
+    return True
 
 def get_user_data_cached(user_id: str, session_token: str, encryption_key: bytes = None):
     """Get user data from cache or decrypt and cache it"""
@@ -1342,6 +1568,12 @@ def login_user(email: str, password: str) -> dict:
         print(f"Migrating unencrypted data for user {user_id}")
         save_user_data(user_id, stored, encryption_key)
 
+    # Migrate to v2 split layout if still on legacy single-blob v1
+    try:
+        migrate_user_to_v2(user_id, encryption_key)
+    except Exception as e:
+        logger.warning("v2 migration failed for user %s: %s", user_id, type(e).__name__)
+
     # Reload user to get any updates (e.g. legacy migration above)
     db = load_db()
     user = db["users"].get(email, user)
@@ -1553,7 +1785,11 @@ async def login_page():
     token = get_token_from_request()
     user = get_user_from_token(token)
 
-    if user:
+    # Only auto-redirect into the app if the session is *fully* usable: a
+    # valid token AND an in-memory encryption key. After a server restart the
+    # token may still verify but the key is gone — without this guard the
+    # user gets stuck in /login → / → 401 → /login redirect loop.
+    if user and get_encryption_key_for_session(token):
         return redirect(url_for('index'))
 
     return await render_template('login.html')
@@ -2067,6 +2303,19 @@ async def api_get_data():
     token = get_token_from_request()
     encryption_key = get_encryption_key_for_session(token)
 
+    # SECURITY/UX: Without an in-memory encryption key (e.g. after a server
+    # restart) we cannot decrypt or encrypt this user's data. The session
+    # cookie may still be valid but is useless on its own — force a re-login
+    # instead of silently handing back an empty blob, which the frontend
+    # would otherwise treat as a fresh account and drop the user into the
+    # setup wizard.
+    if not encryption_key:
+        return jsonify({
+            'success': False,
+            'message': 'backend.sessionExpired',
+            'requireRelogin': True
+        }), 401
+
     try:
         print(f"Loading data for user {user_id}")
         # Use cached data if available
@@ -2143,6 +2392,167 @@ async def api_save_data():
 
     except Exception as e:
         print(f"Error saving data for user {user_id}: {str(e)}")
+        return jsonify({'success': False, 'message': 'backend.error'}), 500
+
+
+DEFAULT_META = {
+    'teacherName': '',
+    'currentClassId': None,
+    'categories': [],
+    'students': [],
+    'participationSettings': {'plusValue': 0.5, 'minusValue': 0.5},
+    'plusMinusGradeSettings': {'startGrade': 3, 'plusValue': 0.5, 'minusValue': 0.5},
+    'tutorial': {'completed': False, 'neverShowAgain': False},
+    'gradePercentageRanges': [
+        {'grade': 1, 'minPercent': 85, 'maxPercent': 100},
+        {'grade': 2, 'minPercent': 70, 'maxPercent': 84},
+        {'grade': 3, 'minPercent': 55, 'maxPercent': 69},
+        {'grade': 4, 'minPercent': 40, 'maxPercent': 54},
+        {'grade': 5, 'minPercent': 0, 'maxPercent': 39}
+    ],
+    'classOrder': []
+}
+
+
+@app.route('/api/data/meta', methods=['GET'])
+@rate_limit('data_read')
+@login_required
+async def api_get_meta():
+    """Return meta block (settings + classOrder) without per-class blobs."""
+    user_id = request.user['id']  # type: ignore
+    token = get_token_from_request()
+    encryption_key = get_encryption_key_for_session(token)
+    if not encryption_key:
+        return jsonify({
+            'success': False,
+            'message': 'backend.sessionExpired',
+            'requireRelogin': True
+        }), 401
+    try:
+        meta = get_user_meta(user_id, encryption_key)
+        if not meta:
+            meta = dict(DEFAULT_META)
+            save_user_meta(user_id, meta, encryption_key)
+        return jsonify(meta)
+    except Exception as e:
+        logger.error("Error loading meta for user %s: %s", user_id, type(e).__name__)
+        return jsonify({'error': 'load_failed'}), 500
+
+
+@app.route('/api/data/meta', methods=['POST'])
+@rate_limit('data_write')
+@login_required
+async def api_save_meta():
+    """Save the meta block. Per-class blobs are unaffected."""
+    user_id = request.user['id']  # type: ignore
+    token = get_token_from_request()
+    encryption_key = get_encryption_key_for_session(token)
+    if not encryption_key:
+        return jsonify({
+            'success': False,
+            'message': 'backend.sessionExpired',
+            'requireRelogin': True
+        }), 401
+    payload = await request.get_json()
+    if not isinstance(payload, dict):
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
+    try:
+        save_user_meta(user_id, payload, encryption_key)
+        # Active shares depend on class names which may change in meta — refresh,
+        # but only if this user actually has shares (avoid full decrypt otherwise).
+        if user_has_active_share(user_id):
+            full = get_user_data(user_id, encryption_key)
+            update_active_shares_for_user(user_id, full)
+        return jsonify({'success': True, 'message': 'backend.dataSaved'})
+    except Exception as e:
+        logger.error("Error saving meta for user %s: %s", user_id, type(e).__name__)
+        return jsonify({'success': False, 'message': 'backend.error'}), 500
+
+
+@app.route('/api/data/class/<class_id>', methods=['GET'])
+@rate_limit('data_read')
+@login_required
+async def api_get_class(class_id):
+    """Return a single decrypted class blob."""
+    user_id = request.user['id']  # type: ignore
+    token = get_token_from_request()
+    encryption_key = get_encryption_key_for_session(token)
+    if not encryption_key:
+        return jsonify({
+            'success': False,
+            'message': 'backend.sessionExpired',
+            'requireRelogin': True
+        }), 401
+    try:
+        cls = get_user_class(user_id, class_id, encryption_key)
+        if cls is None:
+            return jsonify({'error': 'not_found'}), 404
+        return jsonify(cls)
+    except Exception as e:
+        logger.error("Error loading class %s for user %s: %s", class_id, user_id, type(e).__name__)
+        return jsonify({'error': 'load_failed'}), 500
+
+
+@app.route('/api/data/class/<class_id>', methods=['POST'])
+@rate_limit('data_write')
+@login_required
+async def api_save_class(class_id):
+    """Save a single class blob. Other classes/meta are not touched."""
+    user_id = request.user['id']  # type: ignore
+    token = get_token_from_request()
+    encryption_key = get_encryption_key_for_session(token)
+    if not encryption_key:
+        return jsonify({
+            'success': False,
+            'message': 'backend.sessionExpired',
+            'requireRelogin': True
+        }), 401
+    payload = await request.get_json()
+    if not isinstance(payload, dict):
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
+    body_id = payload.get('id')
+    if body_id is not None and str(body_id) != str(class_id):
+        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
+    payload['id'] = body_id if body_id is not None else class_id
+    try:
+        save_user_class(user_id, class_id, payload, encryption_key)
+        # Refresh share snapshot only if there's an active share for THIS class.
+        if user_has_active_share(user_id, class_id):
+            full = get_user_data(user_id, encryption_key)
+            update_active_shares_for_user(user_id, full)
+        return jsonify({'success': True, 'message': 'backend.dataSaved'})
+    except Exception as e:
+        logger.error("Error saving class %s for user %s: %s", class_id, user_id, type(e).__name__)
+        return jsonify({'success': False, 'message': 'backend.error'}), 500
+
+
+@app.route('/api/data/class/<class_id>', methods=['DELETE'])
+@rate_limit('data_write')
+@login_required
+async def api_delete_class(class_id):
+    """Delete a single class blob and remove it from classOrder."""
+    user_id = request.user['id']  # type: ignore
+    token = get_token_from_request()
+    encryption_key = get_encryption_key_for_session(token)
+    if not encryption_key:
+        return jsonify({
+            'success': False,
+            'message': 'backend.sessionExpired',
+            'requireRelogin': True
+        }), 401
+    try:
+        existed = delete_user_class(user_id, class_id)
+        meta = get_user_meta(user_id, encryption_key)
+        order = meta.get('classOrder') or []
+        cid = str(class_id)
+        if cid in order:
+            meta['classOrder'] = [c for c in order if c != cid]
+            if meta.get('currentClassId') == class_id or str(meta.get('currentClassId')) == cid:
+                meta['currentClassId'] = None
+            save_user_meta(user_id, meta, encryption_key)
+        return jsonify({'success': existed})
+    except Exception as e:
+        logger.error("Error deleting class %s for user %s: %s", class_id, user_id, type(e).__name__)
         return jsonify({'success': False, 'message': 'backend.error'}), 500
 
 

@@ -96,6 +96,12 @@ const hideLoadingOverlay = () => {
         overlay.close();
         overlay.remove();
     }
+    // App is now interactive — dismiss the very-early boot loader if still present.
+    const boot = document.getElementById('edu-boot-loader');
+    if (boot && !boot.classList.contains('edu-boot-hide')) {
+        boot.classList.add('edu-boot-hide');
+        setTimeout(() => boot.remove(), 450);
+    }
 };
 
 /**
