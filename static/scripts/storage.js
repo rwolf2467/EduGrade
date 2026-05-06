@@ -177,14 +177,14 @@ const saveData = (message = "Data saved!", type = "success") => {
                 localStorage.setItem("notenverwaltung", JSON.stringify(appData));
                 localStorage.setItem('pendingServerSync', 'true');
                 // Show alert and redirect to login
-                showSessionExpiredDialog(data.message || "Your session has expired. Please log in again to save your data securely.");
+                showSessionExpiredDialog(data.message ? t(data.message) : t("error.sessionExpiredMsg"));
             } else if (response.status === 429) {
                 // Rate limited - show prominent dialog
                 const data = await response.json();
                 console.warn('Rate limited:', data.message);
                 localStorage.setItem("notenverwaltung", JSON.stringify(appData));
                 localStorage.setItem('pendingServerSync', 'true');
-                showRateLimitDialog(data.message || "You've made too many requests. Please wait a moment before trying again.");
+                showRateLimitDialog(data.message ? t(data.message, data.message_params || {}) : t("error.tooManyRequestsMsg"));
             } else {
                 console.error('Server save failed:', response.statusText);
                 // On server error, save locally as backup and mark for later sync
@@ -637,15 +637,20 @@ const VERSION_CHECK_INTERVAL = 60000; // Check every 60 seconds
  * Show update dialog when a new version is detected.
  * Uses the basecoat-css dialog pattern (same style as session-expired).
  */
-const showVersionUpdateDialog = () => {
+const showVersionUpdateDialog = (previousVersion) => {
     // Defer until intro animation finishes
     if (window._avoIntroPlaying) {
-        setTimeout(showVersionUpdateDialog, 300);
+        setTimeout(() => showVersionUpdateDialog(previousVersion), 300);
         return;
     }
 
     // Prevent showing multiple dialogs
     if (document.getElementById('version-update-dialog')) return;
+
+    const newVersion = window.appVersion || '';
+    const buildDate = window.appBuildDate || '';
+    const prevVersionHtml = previousVersion
+        ? `<span class="text-xs text-gray-500 line-through mr-1">v${previousVersion}</span>` : '';
 
     const dialog = document.createElement('dialog');
     dialog.id = 'version-update-dialog';
@@ -663,6 +668,11 @@ const showVersionUpdateDialog = () => {
                     </div>
                     <div>
                         <h2 class="text-lg font-semibold">${t('version.updateTitle')}</h2>
+                        <div class="flex items-center gap-1 mt-0.5">
+                            ${prevVersionHtml}
+                            <span class="text-sm font-semibold text-blue-400">v${newVersion}</span>
+                            ${buildDate ? `<span class="text-xs text-gray-500 ml-2">· ${buildDate}</span>` : ''}
+                        </div>
                     </div>
                 </div>
             </header>
@@ -715,7 +725,7 @@ const initVersionCheck = () => {
         localStorage.setItem(VERSION_CHECK_KEY, currentVersion);
     } else if (storedVersion !== currentVersion) {
         // Version changed since last visit - show update dialog
-        showVersionUpdateDialog();
+        showVersionUpdateDialog(storedVersion);
     }
 
     // Poll for updates while page is open
@@ -727,7 +737,7 @@ const initVersionCheck = () => {
                 const serverVersion = data.version;
                 const knownVersion = localStorage.getItem(VERSION_CHECK_KEY);
                 if (knownVersion && serverVersion !== knownVersion) {
-                    showVersionUpdateDialog();
+                    showVersionUpdateDialog(knownVersion);
                 }
             }
         } catch (e) {

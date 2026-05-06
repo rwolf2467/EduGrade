@@ -358,7 +358,7 @@ const addCategory = (name, weight, allowPlusMinus = false, onlyPlusMinus = false
  * @param {string} subjectId - ID des Fachs
  * @param {number} gradeDate - Optionales Datum als Timestamp (default: jetzt)
  */
-const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null, gradeDate = null, isPending = false) => {
+const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null, gradeDate = null, isPending = false, note = "") => {
     const currentYear = getCurrentYear();
     if (!currentYear) {
         console.error("No current year found!");
@@ -382,6 +382,16 @@ const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null
         }
 
         // Neues Noten-Objekt erstellen
+        let validatedNote = "";
+        if (note && note.trim() !== "") {
+            const noteValidation = validateStringInput(note, 200);
+            if (!noteValidation.isValid) {
+                showAlertDialog(noteValidation.error);
+                return;
+            }
+            validatedNote = noteValidation.value;
+        }
+
         const timestamp = gradeDate || Date.now();
         const newGrade = {
             id: Date.now().toString(),
@@ -389,6 +399,7 @@ const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null
             categoryName: category.name,    // Name der Kategorie speichern (für Anzeige)
             weight: category.weight,        // Gewichtung von Kategorie übernehmen
             name: validatedGradeName,
+            note: validatedNote,
             createdAt: timestamp,           // Zeitstempel für zeitlichen Graph (vom Benutzer wählbar)
             subjectId: subjectId,           // Zugehöriges Fach (null = kein Fach)
             isPending: isPending,           // Marker für ausstehende Noten

@@ -3,6 +3,28 @@
 // Diese Datei enthält alle Funktionen zum Schutz vor XSS-Angriffen (Cross-Site Scripting)
 // und zur Validierung von Benutzereingaben.
 
+// CSRF defence: every same-origin /api/ fetch automatically gets the
+// X-Requested-With header. Browsers refuse to attach custom headers to
+// cross-origin <form>/navigation requests, so a forged request from another
+// site cannot satisfy the server-side check.
+(() => {
+    const _origFetch = window.fetch.bind(window);
+    window.fetch = (input, init = {}) => {
+        try {
+            const url = typeof input === 'string' ? input : (input && input.url) || '';
+            const isApi = url.startsWith('/api/') || url.startsWith(window.location.origin + '/api/');
+            if (isApi) {
+                const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined));
+                if (!headers.has('X-Requested-With')) {
+                    headers.set('X-Requested-With', 'XMLHttpRequest');
+                }
+                init = { ...init, headers };
+            }
+        } catch (_) { /* fall through to original fetch */ }
+        return _origFetch(input, init);
+    };
+})();
+
 /**
  * ESCAPE HTML - Kernfunktion für XSS-Schutz
  *

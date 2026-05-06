@@ -78,6 +78,10 @@
   "class.totalGrades": "Noten gesamt",
   "class.passRate": "Bestehensrate",
   "class.searchPlaceholder": "Nach Name oder Note suchen...",
+  "search.placeholder": "Klassen & Schüler suchen...",
+  "search.classesSection": "Klassen",
+  "search.studentsSection": "Schüler",
+  "search.noResults": "Keine Ergebnisse",
   "class.allCategories": "Alle Kategorien",
   "class.filterAttendanceAll": "Alle Anwesenheit",
   "class.filterAttendanceWarning": "Am Limit",
@@ -688,6 +692,8 @@
   "backend.userExists": "Benutzername oder E-Mail bereits vergeben.",
   "backend.registrationSuccess": "Registrierung erfolgreich!",
   "backend.invalidCredentials": "Ungültige E-Mail oder Passwort.",
+  "backend.accountLocked": "Konto vorübergehend gesperrt nach zu vielen Fehlversuchen. Bitte in {seconds} Sekunden erneut versuchen.",
+  "backend.csrfRequired": "Anfrage abgelehnt (CSRF-Schutz). Bitte Seite neu laden.",
   "backend.loginSuccess": "Anmeldung erfolgreich!",
   "backend.fillAllFields": "Bitte fülle alle Felder aus.",
   "backend.passwordsMismatch": "Die Passwörter stimmen nicht überein.",
@@ -823,5 +829,7 @@
   "classExam.absent": "Abwesend – überspringen",
   "classExam.summary": "Zusammenfassung",
   "classExam.summaryHint": "Überprüfe die Noten bevor du speicherst. Abwesende Schüler erhalten keine Note.",
-  "classExam.save": "Alle Noten speichern"
+  "classExam.save": "Alle Noten speichern",
+  "classExam.errorNoName": "Bitte eine Bezeichnung eingeben.",
+  "classExam.errorNoDate": "Bitte ein Datum wählen."
 }

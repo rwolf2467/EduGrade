@@ -16,13 +16,31 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="EduGrade">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/basecoat.cdn.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/js/all.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4" integrity="sha384-yNSZBFvuOWcmww494a9+1zNuvgUGEXoWkein7cxP8wHUTi3iXCU4vJ7hr3tzBCml" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/basecoat.cdn.min.css" integrity="sha384-6dC3cDSMqy9z8ebhUdgkcvps0xEecjrA8dH320F43+mp8jEVgjsCiWRAjGTeLK6v" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/js/all.min.js" integrity="sha384-4km2iBe4ctopbIOD4zwPsKKoMQsTsYGXAnxBpgIalcQgzegu7w4e+JZMt/BbzScI" crossorigin="anonymous" defer></script>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="stylesheet" href="/static/css/avocloud-branding.css">
     <script src="/static/scripts/theme.js"></script>
     <script src="/static/scripts/i18n.js"></script>
+    <script>
+        // CSRF defence: auto-attach X-Requested-With on /api/ fetches.
+        (() => {
+            const _origFetch = window.fetch.bind(window);
+            window.fetch = (input, init = {}) => {
+                try {
+                    const url = typeof input === 'string' ? input : (input && input.url) || '';
+                    const isApi = url.startsWith('/api/') || url.startsWith(window.location.origin + '/api/');
+                    if (isApi) {
+                        const headers = new Headers(init.headers || (typeof input !== 'string' ? input.headers : undefined));
+                        if (!headers.has('X-Requested-With')) headers.set('X-Requested-With', 'XMLHttpRequest');
+                        init = { ...init, headers };
+                    }
+                } catch (_) {}
+                return _origFetch(input, init);
+            };
+        })();
+    </script>
     <style>
         html, body {
             min-height: 100%;
@@ -651,12 +669,12 @@
                     window.location.href = '/';
                 } else if (response.status === 429) {
                     hideProgress();
-                    showRateLimitDialog(data.message);
+                    showRateLimitDialog(data.message ? t(data.message, data.message_params || {}) : null);
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
                 } else {
                     hideProgress();
-                    showToast(data.message || t('auth.loginFailed'));
+                    showToast(data.message ? t(data.message) : t('auth.loginFailed'));
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
                 }
@@ -762,10 +780,10 @@
                     }
                 } else if (response.status === 429) {
                     hideProgress();
-                    showRateLimitDialog(data.message);
+                    showRateLimitDialog(data.message ? t(data.message, data.message_params || {}) : null);
                 } else {
                     hideProgress();
-                    showToast(data.message || t('auth.registrationFailed'));
+                    showToast(data.message ? t(data.message) : t('auth.registrationFailed'));
                 }
 
                 btn.disabled = false;
@@ -839,9 +857,9 @@
                     await delay(800);
                     showLoginPanel();
                 } else if (response.status === 429) {
-                    showRateLimitDialog(data.message);
+                    showRateLimitDialog(data.message ? t(data.message, data.message_params || {}) : null);
                 } else {
-                    showToast(data.message || t('auth.loginFailed'));
+                    showToast(data.message ? t(data.message) : t('auth.loginFailed'));
                 }
             } catch (error) {
                 showToast(t('error.somethingWrong'));
@@ -873,9 +891,9 @@
                     await delay(800);
                     showLoginPanel();
                 } else if (response.status === 429) {
-                    showRateLimitDialog(data.message);
+                    showRateLimitDialog(data.message ? t(data.message, data.message_params || {}) : null);
                 } else {
-                    showToast(data.message || t('error.somethingWrong'));
+                    showToast(data.message ? t(data.message) : t('error.somethingWrong'));
                 }
             } catch (error) {
                 showToast(t('error.somethingWrong'));

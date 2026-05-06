@@ -14,8 +14,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy and install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir hypercorn
+RUN pip install --no-cache-dir -r requirements.txt
 
 
 # Production stage

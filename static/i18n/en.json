@@ -78,6 +78,10 @@
   "class.totalGrades": "Total Grades",
   "class.passRate": "Pass Rate",
   "class.searchPlaceholder": "Search by name or grade...",
+  "search.placeholder": "Search classes & students...",
+  "search.classesSection": "Classes",
+  "search.studentsSection": "Students",
+  "search.noResults": "No results",
   "class.allCategories": "All Categories",
   "class.filterAttendanceAll": "All Attendance",
   "class.filterAttendanceWarning": "Near Limit",
@@ -688,6 +692,8 @@
   "backend.userExists": "Username or email already taken.",
   "backend.registrationSuccess": "Registration successful!",
   "backend.invalidCredentials": "Invalid email or password.",
+  "backend.accountLocked": "Account temporarily locked after too many failed attempts. Please try again in {seconds} seconds.",
+  "backend.csrfRequired": "Request rejected (CSRF protection). Please reload the page.",
   "backend.loginSuccess": "Login successful!",
   "backend.fillAllFields": "Please fill in all fields.",
   "backend.passwordsMismatch": "Passwords do not match.",
@@ -823,5 +829,7 @@
   "classExam.absent": "Absent – skip",
   "classExam.summary": "Summary",
   "classExam.summaryHint": "Review the grades before saving. Absent students receive no grade.",
-  "classExam.save": "Save All Grades"
+  "classExam.save": "Save All Grades",
+  "classExam.errorNoName": "Please enter a name.",
+  "classExam.errorNoDate": "Please select a date."
 }

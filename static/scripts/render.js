@@ -70,6 +70,150 @@ const getCurrentYear = () => {
  *
  * SICHERHEIT: Alle Benutzerdaten werden mit escapeHtml() escaped!
  */
+// ── Class / Student Search ──────────────────────────────────────────────────
+
+let _sidebarSearchQuery = '';
+let _homeSearchQuery = '';
+
+const _searchStudentMatches = (query) => {
+    const matches = [];
+    const seen = new Set();
+    appData.classes.forEach(cls => {
+        (cls.years || []).forEach(year => {
+            (year.students || []).forEach(student => {
+                if (seen.has(student.id)) return;
+                const hay = `${student.lastName || ''} ${student.firstName || ''}`.toLowerCase();
+                const hay2 = `${student.firstName || ''} ${student.lastName || ''}`.toLowerCase();
+                if (hay.includes(query) || hay2.includes(query)) {
+                    seen.add(student.id);
+                    matches.push({ student, cls });
+                }
+            });
+        });
+    });
+    return matches;
+};
+
+const _applySidebarSearch = (query) => {
+    const allClassDivs = document.querySelectorAll('#class-list > div');
+    allClassDivs.forEach(div => {
+        const btn = div.querySelector('[data-class-id]');
+        if (!btn) return;
+        const cls = appData.classes.find(c => c.id === btn.dataset.classId);
+        div.style.display = (!query || (cls && cls.name.toLowerCase().includes(query))) ? '' : 'none';
+    });
+
+    const resultsLi = document.getElementById('sidebar-student-results-li');
+    const resultsEl = document.getElementById('sidebar-student-results');
+    if (!resultsLi || !resultsEl) return;
+
+    if (!query) { resultsLi.classList.add('hidden'); resultsEl.innerHTML = ''; return; }
+
+    const matches = _searchStudentMatches(query).slice(0, 10);
+    if (matches.length === 0) { resultsLi.classList.add('hidden'); resultsEl.innerHTML = ''; return; }
+
+    resultsLi.classList.remove('hidden');
+    resultsEl.innerHTML = `
+        <p class="text-xs px-1 py-1" style="opacity:0.5;">${t('search.studentsSection')}</p>
+        ${matches.map(({ student, cls }) => `
+            <button class="btn-block btn-ghost w-full" data-sb-student="${safeAttr(student.id)}" data-sb-class="${safeAttr(cls.id)}"
+                style="justify-content:flex-start;gap:0.4rem;padding:0.3rem 0.5rem;font-size:0.85rem;">
+                <span style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    ${escapeHtml(`${student.lastName || ''}${student.firstName ? ', ' + student.firstName : ''}`)}
+                </span>
+                <span style="font-size:0.75rem;opacity:0.5;flex-shrink:0;">${escapeHtml(cls.name)}</span>
+            </button>
+        `).join('')}`;
+
+    resultsEl.querySelectorAll('[data-sb-student]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            appData.currentClassId = btn.dataset.sbClass;
+            saveData();
+            showStudentDetailView(btn.dataset.sbStudent);
+        });
+    });
+};
+
+const _initSidebarSearch = () => {
+    const input = document.getElementById('sidebar-search');
+    if (!input) return;
+    input.placeholder = t('search.placeholder') || 'Suchen...';
+    input.value = _sidebarSearchQuery;
+    input.oninput = (e) => {
+        _sidebarSearchQuery = e.target.value.trim().toLowerCase();
+        _applySidebarSearch(_sidebarSearchQuery);
+    };
+    _applySidebarSearch(_sidebarSearchQuery);
+};
+
+const _applyHomeSearch = (query) => {
+    const overviewList = document.getElementById('class-overview-list');
+    const resultsEl = document.getElementById('home-search-results');
+    if (!overviewList || !resultsEl) return;
+
+    if (!query) {
+        overviewList.querySelectorAll('[data-goto-class]').forEach(c => c.style.display = '');
+        resultsEl.innerHTML = '';
+        resultsEl.classList.add('hidden');
+        return;
+    }
+
+    let classCount = 0;
+    overviewList.querySelectorAll('[data-goto-class]').forEach(card => {
+        const cls = appData.classes.find(c => c.id === card.dataset.gotoClass);
+        const show = cls && cls.name.toLowerCase().includes(query);
+        card.style.display = show ? '' : 'none';
+        if (show) classCount++;
+    });
+
+    const studentMatches = _searchStudentMatches(query).slice(0, 20);
+    if (studentMatches.length === 0 && classCount === 0) {
+        resultsEl.innerHTML = `<p class="text-sm text-center py-2" style="opacity:0.5;">${t('search.noResults')}</p>`;
+        resultsEl.classList.remove('hidden');
+        return;
+    }
+    if (studentMatches.length === 0) { resultsEl.innerHTML = ''; resultsEl.classList.add('hidden'); return; }
+
+    resultsEl.classList.remove('hidden');
+    const chevron = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>`;
+    resultsEl.innerHTML = `
+        <p class="text-sm font-medium mb-2" style="opacity:0.5;">${t('search.studentsSection')}</p>
+        <div class="space-y-2">
+            ${studentMatches.map(({ student, cls }) => `
+                <div class="flex items-center justify-between p-3 border rounded cursor-pointer"
+                    data-hs-student="${safeAttr(student.id)}" data-hs-class="${safeAttr(cls.id)}">
+                    <div>
+                        <p class="font-semibold">${escapeHtml(`${student.lastName || ''}${student.firstName ? ', ' + student.firstName : ''}`)}</p>
+                        <p class="text-sm" style="opacity:0.5;">${escapeHtml(cls.name)}</p>
+                    </div>
+                    ${chevron}
+                </div>
+            `).join('')}
+        </div>`;
+
+    resultsEl.querySelectorAll('[data-hs-student]').forEach(el => {
+        el.addEventListener('click', () => {
+            appData.currentClassId = el.dataset.hsClass;
+            saveData();
+            showStudentDetailView(el.dataset.hsStudent);
+        });
+    });
+};
+
+const _initHomeSearch = () => {
+    const input = document.getElementById('home-search');
+    if (!input) return;
+    input.placeholder = t('search.placeholder') || 'Suchen...';
+    input.value = _homeSearchQuery;
+    input.oninput = (e) => {
+        _homeSearchQuery = e.target.value.trim().toLowerCase();
+        _applyHomeSearch(_homeSearchQuery);
+    };
+    _applyHomeSearch(_homeSearchQuery);
+};
+
+// ── End Class / Student Search ──────────────────────────────────────────────
+
 const renderClassList = () => {
     const classList = document.getElementById("class-list");
     classList.innerHTML = appData.classes.map(cls =>
@@ -157,6 +301,7 @@ const renderClassList = () => {
             }
         });
     });
+    _initSidebarSearch();
 };
 
 /**
@@ -1738,12 +1883,23 @@ const renderStudents = () => {
     });
 
     // Sort headers: attach click listeners and update active state
+    const _SVG_UPDOWN = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></svg>`;
+    const _SVG_UP    = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>`;
+    const _SVG_DOWN  = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>`;
     document.querySelectorAll(".sortable-header").forEach(th => {
         th.classList.remove('sort-asc', 'sort-desc');
+        const icon = th.querySelector('.sort-icon');
         if (th.dataset.sort === window.studentSortState.column) {
             th.classList.add(window.studentSortState.direction === 'asc' ? 'sort-asc' : 'sort-desc');
-            const icon = th.querySelector('.sort-icon');
-            if (icon) icon.style.opacity = '1';
+            if (icon) {
+                icon.style.opacity = '1';
+                icon.innerHTML = window.studentSortState.direction === 'asc' ? _SVG_UP : _SVG_DOWN;
+            }
+        } else {
+            if (icon) {
+                icon.style.opacity = '0.4';
+                icon.innerHTML = _SVG_UPDOWN;
+            }
         }
         th.onclick = () => {
             const col = th.dataset.sort;
@@ -2692,6 +2848,7 @@ const renderHome = () => {
             showClassView();
         });
     });
+    _initHomeSearch();
 };
 
 // Reload all settings form inputs from appData (restores saved values)
@@ -5367,7 +5524,10 @@ const initClassExamMode = () => {
 
         // Set today's date
         document.getElementById('class-exam-date').value = new Date().toISOString().split('T')[0];
-        document.getElementById('class-exam-name').value = '';
+        const _nameEl = document.getElementById('class-exam-name');
+        _nameEl.value = '';
+        _nameEl.removeAttribute('aria-invalid');
+        document.getElementById('class-exam-date').removeAttribute('aria-invalid');
         document.getElementById('class-exam-setup-error').classList.add('hidden');
 
         showStep(stepSetup);
@@ -5387,8 +5547,22 @@ const initClassExamMode = () => {
         const date = document.getElementById('class-exam-date').value;
         const errEl = document.getElementById('class-exam-setup-error');
 
-        if (!name) { errEl.textContent = 'Bitte eine Bezeichnung eingeben.'; errEl.classList.remove('hidden'); return; }
-        if (!date) { errEl.textContent = 'Bitte ein Datum wählen.'; errEl.classList.remove('hidden'); return; }
+        const nameInput = document.getElementById('class-exam-name');
+        const dateInput = document.getElementById('class-exam-date');
+        nameInput.removeAttribute('aria-invalid');
+        dateInput.removeAttribute('aria-invalid');
+        if (!name) {
+            errEl.textContent = t('classExam.errorNoName');
+            errEl.classList.remove('hidden');
+            nameInput.setAttribute('aria-invalid', 'true');
+            return;
+        }
+        if (!date) {
+            errEl.textContent = t('classExam.errorNoDate');
+            errEl.classList.remove('hidden');
+            dateInput.setAttribute('aria-invalid', 'true');
+            return;
+        }
         errEl.classList.add('hidden');
 
         const currentYear = getCurrentYear();
@@ -5423,6 +5597,7 @@ const initClassExamMode = () => {
         document.getElementById('class-exam-progress-text').textContent = `${currentIdx + 1} / ${students.length}`;
 
         document.getElementById('class-exam-undo').disabled = currentIdx === 0;
+        document.getElementById('class-exam-note').value = '';
     };
 
     // Grade buttons
@@ -5430,7 +5605,8 @@ const initClassExamMode = () => {
         btn.addEventListener('click', () => {
             if (!examState) return;
             const grade = parseInt(btn.dataset.examGrade, 10);
-            examState.results[examState.currentIdx] = { type: 'grade', value: grade };
+            const note = document.getElementById('class-exam-note').value.trim();
+            examState.results[examState.currentIdx] = { type: 'grade', value: grade, note };
             examState.currentIdx++;
             _renderExamEntry();
         });
@@ -5439,7 +5615,8 @@ const initClassExamMode = () => {
     // Absent button
     document.getElementById('class-exam-absent-btn').addEventListener('click', () => {
         if (!examState) return;
-        examState.results[examState.currentIdx] = { type: 'absent' };
+        const note = document.getElementById('class-exam-note').value.trim();
+        examState.results[examState.currentIdx] = { type: 'absent', note };
         examState.currentIdx++;
         _renderExamEntry();
     });
@@ -5478,7 +5655,8 @@ const initClassExamMode = () => {
                 const color = _gradeColor(r.value);
                 right = `<span class="exam-grade-badge grade-${r.value}" style="background:${color}20;color:${color};">${r.value}</span>`;
             }
-            return `<div class="class-exam-summary-row"><span>${name}</span>${right}</div>`;
+            const noteHtml = r?.note ? `<span class="exam-summary-note">${escapeHtml(r.note)}</span>` : '';
+            return `<div class="class-exam-summary-row"><span>${name}${noteHtml}</span>${right}</div>`;
         }).join('');
     };
 
@@ -5508,10 +5686,11 @@ const initClassExamMode = () => {
         students.forEach((student, i) => {
             const r = results[i];
             if (!r || r.type === 'absent') return;
-            addGrade(student.id, categoryId, r.value, name, subjectId, gradeTimestamp, false);
+            addGrade(student.id, categoryId, r.value, name, subjectId, gradeTimestamp, false, r.note || '');
             saved++;
         });
 
+        saveData();
         closeExam();
         renderStudents();
         showToast(`${saved} Note${saved !== 1 ? 'n' : ''} gespeichert.`, 'success');

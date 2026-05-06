@@ -80,8 +80,22 @@ html.dark body {
     overflow-x: hidden;
 }
 
-/* Profile popover must escape sidebar section's overflow-y:auto clip */
+/* Sidebar nav fills full height; class list section grows and scrolls */
+.sidebar nav {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.sidebar nav > section:first-of-type {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+/* Profile section: shrink to fit, don't share flex space, popover must escape clip */
 .sidebar nav > section:last-of-type {
+    flex: 0 0 auto;
     overflow: visible;
 }
 
@@ -1157,8 +1171,11 @@ table.single-category td:nth-child(2) {
 .sortable-header:hover {
     background-color: oklch(.708 0 0 / 0.05);
 }
-.sortable-header.sort-asc .sort-icon::after { content: '↑'; opacity: 1 !important; }
-.sortable-header.sort-desc .sort-icon::after { content: '↓'; opacity: 1 !important; }
+.sort-icon {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+}
 .sortable-header.sort-asc .sort-icon,
 .sortable-header.sort-desc .sort-icon { opacity: 1 !important; }
 
@@ -1641,6 +1658,22 @@ main.qsb-open {
 /* ===== MOBILE FIXES ===== */
 @media (max-width: 768px) {
 
+    /* 0. Fixed top bar on mobile (below sidebar z-index:40) */
+    #main-topbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 20;
+        background: var(--background);
+        padding: 0.75rem 0.75rem 0.5rem;
+    }
+
+    /* Offset main content so fixed topbar doesn't cover it */
+    main {
+        padding-top: 3.75rem;
+    }
+
     /* 1. Class-view action buttons: prevent overflow, hide kbd shortcuts */
     #class-view .card > header .flex.flex-wrap.gap-2 button {
         min-width: 0;
@@ -1702,19 +1735,44 @@ main.qsb-open {
         min-width: 480px;
     }
 
-    /* 6. Mobile: hide middle name column in students table */
+    /* 6. Mobile: show only last name, first name, actions — hide all other columns */
+    #students-table td:nth-child(1),
     #students-table td:nth-child(4),
-    #students-table ~ * th.compact-hide,
-    table:has(#students-table) thead th:nth-child(4) {
+    #students-table td:nth-child(5),
+    #students-table td:nth-child(6),
+    #students-table td:nth-child(7),
+    #students-table td:nth-child(8),
+    table:has(#students-table) thead th:nth-child(1),
+    table:has(#students-table) thead th:nth-child(4),
+    table:has(#students-table) thead th:nth-child(5),
+    table:has(#students-table) thead th:nth-child(6),
+    table:has(#students-table) thead th:nth-child(7),
+    table:has(#students-table) thead th:nth-child(8) {
         display: none;
     }
 
-    /* 7. Mobile: reorder action buttons — add-grade first, then view */
+    /* Mobile: smaller row height */
+    table:has(#students-table) thead th,
+    #students-table td {
+        padding-top: 0.3rem !important;
+        padding-bottom: 0.3rem !important;
+    }
+
+    /* 7. Mobile: smaller action buttons */
     #students-table td:last-child {
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.25rem;
+        flex-wrap: nowrap;
+        gap: 0.15rem;
         align-items: center;
+    }
+    #students-table td:last-child .btn-icon {
+        width: 1.75rem !important;
+        height: 1.75rem !important;
+        padding: 0.2rem !important;
+    }
+    #students-table td:last-child .btn-icon svg {
+        width: 14px !important;
+        height: 14px !important;
     }
     #students-table td:last-child [data-add-grade] { order: 1; }
     #students-table td:last-child [data-view-student] { order: 2; }
@@ -1777,6 +1835,9 @@ main.qsb-open {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 0.75rem;
+    max-width: 400px;
+    width: 100%;
+    margin: 0 auto;
 }
 .class-exam-grade-btn {
     aspect-ratio: 1;
@@ -1796,6 +1857,22 @@ main.qsb-open {
 .class-exam-grade-btn.g3 { background: rgba(234,179,8,0.15); color: #eab308; border-color: rgba(234,179,8,0.3); }
 .class-exam-grade-btn.g4 { background: rgba(249,115,22,0.15); color: #f97316; border-color: rgba(249,115,22,0.3); }
 .class-exam-grade-btn.g5 { background: rgba(239,68,68,0.15); color: #ef4444; border-color: rgba(239,68,68,0.3); }
+.class-exam-setup-inner {
+    max-width: 480px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+.class-exam-entry-controls {
+    max-width: 400px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
 .class-exam-absent-btn {
     width: 100%;
     padding: 0.875rem;
@@ -1829,4 +1906,32 @@ main.qsb-open {
     color: oklch(.556 0 0);
     font-style: italic;
     font-size: 0.85rem;
+}
+.class-exam-note-field {
+    resize: none;
+    font-size: 0.9rem;
+    background: var(--input, #1e1e2e);
+    border: 1px solid var(--border, #2d2d3d);
+    border-radius: 0.5rem;
+    color: var(--foreground, #e2e8f0);
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    font-family: inherit;
+    line-height: 1.5;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.class-exam-note-field:focus {
+    border-color: var(--primary, #6d28d9);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary, #6d28d9) 20%, transparent);
+}
+.class-exam-note-field::placeholder {
+    color: oklch(.556 0 0);
+}
+.exam-summary-note {
+    display: block;
+    font-size: 0.75rem;
+    color: oklch(.556 0 0);
+    margin-top: 0.15rem;
+    font-style: italic;
 }

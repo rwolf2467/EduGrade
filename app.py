@@ -30,6 +30,7 @@ import os
 import time
 import smtplib
 import asyncio
+import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -65,6 +66,28 @@ except ImportError:
     REPORTLAB_AVAILABLE = False
     print("Warning: reportlab library not available. PDF generation will not work.")
 
+# ============ LOGGING ============
+
+# Use a proper logger instead of print(). Set log level via LOG_LEVEL env var.
+logging.basicConfig(
+    level=os.environ.get('LOG_LEVEL', 'INFO').upper(),
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+)
+logger = logging.getLogger('edugrade')
+
+
+def _scrub_email(email: str) -> str:
+    """Redact most of an email address to keep PII out of logs.
+    'alice@example.com' -> 'a***@example.com'
+    """
+    if not email or '@' not in email:
+        return '***'
+    local, _, domain = email.partition('@')
+    if not local:
+        return f'***@{domain}'
+    return f'{local[0]}***@{domain}'
+
+
 # ============ RATE LIMITING ============
 
 # Rate limit storage: {ip: {endpoint: [(timestamp, count)]}}
@@ -82,12 +105,22 @@ RATE_LIMITS = {
     'default': (100, 60),       # 100 requests per minute default
 }
 
+# Only honor X-Forwarded-For when running behind a trusted reverse proxy.
+# Otherwise it is attacker-controlled and lets clients spoof their source IP
+# to bypass per-IP rate limits. Set TRUSTED_PROXY=1 in your env when fronted
+# by a TLS-terminating proxy (nginx, Caddy, Traefik).
+TRUSTED_PROXY = os.environ.get('TRUSTED_PROXY', '').lower() in ('1', 'true', 'yes')
+
+# Cookies must be Secure in production; set COOKIE_SECURE=1 (or rely on TRUSTED_PROXY)
+COOKIE_SECURE = os.environ.get('COOKIE_SECURE', '').lower() in ('1', 'true', 'yes') or TRUSTED_PROXY
+
 def get_client_ip():
-    """Get client IP from request"""
-    # Check for forwarded headers (reverse proxy)
-    forwarded = request.headers.get('X-Forwarded-For', '')
-    if forwarded:
-        return forwarded.split(',')[0].strip()
+    """Get client IP from request, only trusting X-Forwarded-For behind a trusted proxy."""
+    if TRUSTED_PROXY:
+        forwarded = request.headers.get('X-Forwarded-For', '')
+        if forwarded:
+            # Use the LAST hop (set by our proxy) — earlier values are client-supplied and untrusted.
+            return forwarded.split(',')[-1].strip()
     return request.remote_addr or 'unknown'
 
 def check_rate_limit(endpoint_type: str = 'default') -> tuple[bool, int]:
@@ -159,9 +192,11 @@ def load_or_create_config():
     # First start - generate secure secret key
     print("First start detected - generating secure secret key...")
     secret_key = secrets.token_hex(64)  # 128 character hexadecimal string (512 bits)
+    master_share_key = secrets.token_hex(32)  # 256-bit AES key for shares
 
     config = {
         "secret_key": secret_key,
+        "master_share_key": master_share_key,
         "created_at": datetime.now().isoformat(),
         "version": "1.0"
     }
@@ -186,9 +221,19 @@ encryption_keys = {}
 # This avoids re-decrypting on every request
 user_data_cache = {}
 
-# Master key for encrypting shared data (class_shares)
-# This is generated on server startup and stored in memory
-MASTER_SHARE_KEY = os.urandom(32)  # 256-bit key for AES-256
+# Master key for encrypting shared data (class_shares).
+# Persisted in config.json so existing shares remain decryptable across restarts.
+def _get_or_create_master_share_key():
+    if 'master_share_key' in APP_CONFIG:
+        return bytes.fromhex(APP_CONFIG['master_share_key'])
+    # Migration path: existing config without key — generate, persist, reload.
+    print("No master_share_key in config — generating and persisting...")
+    APP_CONFIG['master_share_key'] = secrets.token_hex(32)
+    with open(CONFIG_PATH, 'w', encoding='utf-8') as _f:
+        json.dump(APP_CONFIG, _f, indent=2, ensure_ascii=False)
+    return bytes.fromhex(APP_CONFIG['master_share_key'])
+
+MASTER_SHARE_KEY = _get_or_create_master_share_key()
 
 # Heartbeat timeout in seconds - cache is cleared if no heartbeat received
 HEARTBEAT_TIMEOUT = 60
@@ -236,7 +281,7 @@ def decrypt_user_data(encrypted_data: str, key: bytes) -> dict:
         # Parse JSON
         return json.loads(plaintext.decode('utf-8'))
     except Exception as e:
-        print(f"Decryption error: {e}")
+        logger.warning("Decryption error (type=%s)", type(e).__name__)
         return {}
 
 
@@ -274,7 +319,7 @@ def decrypt_share_data(encrypted_data: str, key: bytes) -> dict:
         # Parse JSON
         return json.loads(plaintext.decode('utf-8'))
     except Exception as e:
-        print(f"Share data decryption error: {e}")
+        logger.warning("Share data decryption error (type=%s)", type(e).__name__)
         return {}
 
 def hash_password(password: str) -> str:
@@ -353,18 +398,32 @@ def decrypt_bytes(encrypted: str, key: bytes) -> bytes:
     aesgcm = AESGCM(key)
     return aesgcm.decrypt(nonce, ciphertext, None)
 
+def _recovery_wrap_key(email: str) -> bytes:
+    """Derive the wrap-key for the stored recovery-key copy.
+
+    Uses HMAC-SHA256(MASTER_SHARE_KEY, email) so an attacker with read access
+    to the user DB *alone* cannot recover the plaintext recovery key — they
+    additionally need the server-side master key (config.json). Previously the
+    key was sha256(email), which made the encrypted recovery key trivially
+    reversible from the DB row alone.
+    """
+    msg = email.lower().strip().encode('utf-8')
+    return hashlib.sha256(MASTER_SHARE_KEY + b'|recovery|' + msg).digest()
+
 def decrypt_recovery_key(encrypted_recovery_key: str, email: str) -> str:
-    """Decrypt the encrypted recovery key using the user's email as the key derivation input"""
-    # The recovery key is stored encrypted with a key derived from the email
-    # We need to derive the same key that was used for encryption
-    email_key = hashlib.sha256(email.lower().strip().encode()).digest()
-    decrypted = decrypt_bytes(encrypted_recovery_key, email_key)
-    return decrypted.decode('utf-8')
+    """Decrypt the encrypted recovery key copy."""
+    try:
+        decrypted = decrypt_bytes(encrypted_recovery_key, _recovery_wrap_key(email))
+        return decrypted.decode('utf-8')
+    except Exception:
+        # Backward compatibility: legacy entries were wrapped with sha256(email)
+        legacy_key = hashlib.sha256(email.lower().strip().encode()).digest()
+        decrypted = decrypt_bytes(encrypted_recovery_key, legacy_key)
+        return decrypted.decode('utf-8')
 
 def encrypt_recovery_key(recovery_key: str, email: str) -> str:
-    """Encrypt the recovery key using the user's email as the key derivation input"""
-    email_key = hashlib.sha256(email.lower().strip().encode()).digest()
-    return encrypt_bytes(recovery_key.encode('utf-8'), email_key)
+    """Encrypt the recovery key with a server-master-key-derived wrap key."""
+    return encrypt_bytes(recovery_key.encode('utf-8'), _recovery_wrap_key(email))
 
 # ============ EMAIL / SMTP FUNCTIONS ============
 
@@ -1189,13 +1248,62 @@ def login_user(email: str, password: str) -> dict:
     db = load_db()
     user = db["users"].get(email)
 
-    if not user or not verify_password(user["password_hash"], password):
+    # Per-account lockout: independent of per-IP rate limiting, so distributed
+    # brute-force across many IPs still hits an account-level wall.
+    LOCKOUT_THRESHOLD = 10        # consecutive failures
+    LOCKOUT_DURATION_SECONDS = 900  # 15 min
+    if user:
+        locked_until = user.get('locked_until_ts', 0)
+        now_ts = int(time.time())
+        if locked_until and now_ts < locked_until:
+            return {
+                'success': False,
+                'message': 'backend.accountLocked',
+                'message_params': {'seconds': locked_until - now_ts},
+                'token': None,
+                'user': None
+            }
+
+    # Constant-time-ish path: always run a PBKDF2 verify even when the user
+    # does not exist, so the response time does not reveal account presence.
+    if not user:
+        # Dummy hash with same iteration count as real hashes — deliberately
+        # do work then fail. salt/hash content is irrelevant.
+        _dummy = "00" * 32 + ":" + "00" * 32
+        verify_password(_dummy, password)
         return {
             'success': False,
             'message': 'backend.invalidCredentials',
             'token': None,
             'user': None
         }
+    if not verify_password(user["password_hash"], password):
+        # Increment fail counter; lock after threshold.
+        fails = int(user.get('failed_login_count', 0)) + 1
+        db["users"][email]['failed_login_count'] = fails
+        if fails >= LOCKOUT_THRESHOLD:
+            db["users"][email]['locked_until_ts'] = int(time.time()) + LOCKOUT_DURATION_SECONDS
+            db["users"][email]['failed_login_count'] = 0
+            save_db(db)
+            return {
+                'success': False,
+                'message': 'backend.accountLocked',
+                'message_params': {'seconds': LOCKOUT_DURATION_SECONDS},
+                'token': None,
+                'user': None
+            }
+        save_db(db)
+        return {
+            'success': False,
+            'message': 'backend.invalidCredentials',
+            'token': None,
+            'user': None
+        }
+
+    # Successful auth: clear fail counter + lockout state.
+    if user.get('failed_login_count') or user.get('locked_until_ts'):
+        db["users"][email]['failed_login_count'] = 0
+        db["users"][email]['locked_until_ts'] = 0
 
     # Create session
     token = generate_session_token()
@@ -1363,6 +1471,41 @@ async def startup():
     await cleanup_expired_sessions()
     print("Database initialized successfully")
 
+# CSRF defence: require X-Requested-With on cookie-authenticated state-changing
+# requests. Browsers will not let cross-origin <form> submissions or top-level
+# navigations attach custom headers, so a forged request cannot satisfy this
+# check. Public/PIN-protected share endpoints are exempt because they do not
+# rely on session cookies.
+_CSRF_EXEMPT_PREFIXES = (
+    '/api/login',
+    '/api/register',
+    '/api/logout',
+    '/api/password-reset',
+    '/api/recovery-key',
+    '/api/share/verify',  # public share PIN verification, no cookie auth
+    '/api/share/access',  # public share access, no cookie auth
+    '/api/grades/',       # public class-share grade view (token-based)
+)
+
+@app.before_request
+async def _csrf_guard():
+    method = request.method.upper()
+    if method in ('GET', 'HEAD', 'OPTIONS'):
+        return None
+    path = request.path or ''
+    for prefix in _CSRF_EXEMPT_PREFIXES:
+        if path.startswith(prefix):
+            return None
+    # Only enforce on JSON API routes (state-changing endpoints under /api/).
+    if not path.startswith('/api/'):
+        return None
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        return jsonify({
+            'success': False,
+            'message': 'backend.csrfRequired'
+        }), 403
+    return None
+
 @app.after_request
 async def set_cache_control_headers(response):
     """
@@ -1401,7 +1544,7 @@ async def index():
     if not user:
         return redirect(url_for('login_page'))
 
-    return await render_template('index.html', user=user, app_version=APP_VERSION, version_string=VERSION_STRING)
+    return await render_template('index.html', user=user, app_version=APP_VERSION, version_string=VERSION_STRING, build_date=BUILD_DATE)
 
 
 @app.route('/login')
@@ -1517,9 +1660,9 @@ async def api_login():
             'session_token',
             result['token'],
             httponly=True,
-            secure=False,  # Set to True in production with HTTPS
+            secure=COOKIE_SECURE,
             samesite='Lax',
-            max_age=1 * 60 * 60 
+            max_age=1 * 60 * 60
         )
         return response
 
@@ -1667,7 +1810,7 @@ async def api_password_reset_email_request():
     try:
         await send_password_reset_email(email, user.get('username', email), reset_token)
     except Exception as e:
-        print(f"Failed to send reset email to {email}: {e}")
+        logger.warning("Failed to send reset email to %s: %s", _scrub_email(email), e)
         # Don't reveal the error to the client
 
     return generic_ok
@@ -1704,7 +1847,7 @@ async def api_recovery_key_email_request():
     try:
         recovery_key = decrypt_recovery_key(encrypted_recovery_key, email)
     except Exception as e:
-        print(f"Failed to decrypt recovery key for {email}: {e}")
+        logger.warning("Failed to decrypt recovery key for %s: %s", _scrub_email(email), e)
         return jsonify({'success': False, 'message': 'backend.error'}), 500
 
     # Get user's language preference from encrypted user data
@@ -1721,14 +1864,14 @@ async def api_recovery_key_email_request():
                 # No session - user requested from login page
                 # Try to derive DEK from recovery key (since they're using recovery key flow)
                 # For now, just use German as default
-                print(f"No active session for {email}, using default language 'de'")
+                logger.info("No active session for %s, using default language de", _scrub_email(email))
     except Exception as e:
         print(f"Could not determine user language preference: {e}")
 
     try:
         await send_recovery_key_email(email, user.get('username', email), recovery_key, language)
     except Exception as e:
-        print(f"Failed to send recovery key email to {email}: {e}")
+        logger.warning("Failed to send recovery key email to %s: %s", _scrub_email(email), e)
         return jsonify({'success': False, 'message': 'backend.error'}), 500
 
     return jsonify({'success': True, 'message': 'backend.recoveryKeyEmailSent'})
@@ -2411,4 +2554,5 @@ async def api_generate_qr():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=1601, debug=True)
+    DEBUG_MODE = os.environ.get('DEBUG', '').lower() in ('1', 'true', 'yes')
+    app.run(host='0.0.0.0', port=1601, debug=DEBUG_MODE)

@@ -317,10 +317,6 @@ document.getElementById("nav-settings").addEventListener("click", () => {
     showSettingsView();
 });
 
-// Mobile settings button (top header, visible only on mobile)
-document.getElementById("mobile-settings-btn")?.addEventListener("click", () => {
-    showSettingsView();
-});
 
 document.getElementById("save-plusminus-settings").addEventListener("click", () => {
     const plusPercent = document.getElementById("plusminus-plus-percent").value;
@@ -568,4 +564,30 @@ document.addEventListener('keydown', (e) => {
 // Class Exam Mode initialisieren
 document.addEventListener('DOMContentLoaded', () => {
     initClassExamMode();
+    _initBackNavGuard();
 });
+
+// Prevent browser back-button / swipe-back from leaving the app to the login page.
+// Pushes a guard state on load; every popstate re-pushes and routes in-app instead.
+const _initBackNavGuard = () => {
+    history.pushState({ app: true }, '');
+
+    window.addEventListener('popstate', () => {
+        const studentDetailView = document.getElementById('student-detail-view');
+        const classView         = document.getElementById('class-view');
+        const settingsView      = document.getElementById('settings-view');
+        const attendanceView    = document.getElementById('attendance-view');
+
+        if (studentDetailView && !studentDetailView.classList.contains('hidden')) {
+            backToClassView();
+        } else if (classView && !classView.classList.contains('hidden')) {
+            showHomeView();
+        } else if (settingsView && !settingsView.classList.contains('hidden')) {
+            showHomeView();
+        } else if (attendanceView && !attendanceView.classList.contains('hidden')) {
+            showHomeView();
+        }
+        // Re-push so there is always a guard entry to consume before the browser leaves the app
+        history.pushState({ app: true }, '');
+    });
+};
