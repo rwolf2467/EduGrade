@@ -475,6 +475,12 @@
   "save.errorMsg": "Deine Änderungen sind noch nicht synchronisiert. Verbindung prüfen und erneut versuchen.",
   "save.retry": "Erneut versuchen",
   "save.retryRunning": "Wird erneut versucht…",
+  "auth.sessionConflictTitle": "Bereits angemeldet",
+  "auth.sessionConflictMsg": "Auf einem anderen Gerät besteht bereits eine aktive Sitzung für dieses Konto. Es kann nur ein Gerät gleichzeitig angemeldet sein. Hier fortfahren beendet die andere Sitzung und meldet dich hier an.",
+  "auth.sessionConflictTakeover": "Hier anmelden",
+  "auth.sessionConflictCancel": "Abbrechen",
+  "auth.sessionConflictConfirm": "Es besteht bereits eine aktive Sitzung. Hier anmelden und andere Sitzung beenden?",
+  "backend.sessionAlreadyActive": "Bereits aktive Sitzung auf einem anderen Gerät.",
 
   "error.somethingWrong": "Hoppla! Etwas ist schiefgelaufen. Bitte versuche es erneut.",
   "error.tooManyRequests": "Zu viele Anfragen",

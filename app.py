@@ -27,6 +27,7 @@ import secrets
 import functools
 import base64
 import os
+import tempfile
 import time
 import smtplib
 import asyncio
@@ -265,24 +266,26 @@ def encrypt_user_data(data: dict, key: bytes) -> str:
     return encrypted
 
 def decrypt_user_data(encrypted_data: str, key: bytes) -> dict:
-    """Decrypt user data using AES-256-GCM"""
+    """Decrypt user data using AES-256-GCM. Returns {} on error (lossy)."""
     try:
-        # Decode from base64
-        raw = base64.b64decode(encrypted_data)
-
-        # Extract nonce (first 12 bytes) and ciphertext
-        nonce = raw[:12]
-        ciphertext = raw[12:]
-
-        # Decrypt
-        aesgcm = AESGCM(key)
-        plaintext = aesgcm.decrypt(nonce, ciphertext, None)
-
-        # Parse JSON
-        return json.loads(plaintext.decode('utf-8'))
+        return decrypt_user_data_strict(encrypted_data, key)
     except Exception as e:
         logger.warning("Decryption error (type=%s)", type(e).__name__)
         return {}
+
+
+def decrypt_user_data_strict(encrypted_data: str, key: bytes) -> dict:
+    """Decrypt user data using AES-256-GCM. Raises on any failure.
+
+    Use this in code paths where silent data loss must be impossible (e.g.
+    schema migrations that overwrite the original record on success).
+    """
+    raw = base64.b64decode(encrypted_data)
+    nonce = raw[:12]
+    ciphertext = raw[12:]
+    aesgcm = AESGCM(key)
+    plaintext = aesgcm.decrypt(nonce, ciphertext, None)
+    return json.loads(plaintext.decode('utf-8'))
 
 
 def encrypt_share_data(data: dict, key: bytes) -> str:
@@ -983,9 +986,26 @@ def migrate_plaintext_shares():
         print("Completed migration of plaintext shares to encrypted format")
 
 def save_db(data):
-    """Save database to JSON file"""
-    with open(DB_PATH, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    """Atomically save database to JSON file.
+
+    Writes to a temp file in the same directory, fsyncs, and renames over the
+    target. This prevents partial writes from corrupting the DB if the process
+    crashes, the disk fills up, or the host loses power mid-write.
+    """
+    db_dir = DB_PATH.parent
+    fd, tmp_path = tempfile.mkstemp(prefix='.db.', suffix='.tmp', dir=str(db_dir))
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_path, DB_PATH)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
 async def cleanup_expired_sessions():
     """Remove expired sessions and their caches"""
@@ -1106,6 +1126,10 @@ def _is_v2_record(stored) -> bool:
 def migrate_user_to_v2(user_id: str, encryption_key: bytes) -> bool:
     """One-shot migration of a legacy single-blob record to v2 split format.
     Returns True if a migration was actually performed.
+
+    SAFETY: never overwrites the original record unless decryption succeeded.
+    A failed decrypt raises and leaves the v1 blob intact, so a wrong key or
+    corrupted ciphertext can never silently wipe a user's data.
     """
     if not encryption_key:
         return False
@@ -1115,12 +1139,19 @@ def migrate_user_to_v2(user_id: str, encryption_key: bytes) -> bool:
         return False
 
     if isinstance(stored, dict) and stored.get('encrypted'):
-        full = decrypt_user_data(stored.get('data', ''), encryption_key)
+        try:
+            full = decrypt_user_data_strict(stored.get('data', ''), encryption_key)
+        except Exception as e:
+            logger.error(
+                "Refusing v2 migration for user %s: decrypt failed (%s). "
+                "Original v1 record kept intact.",
+                user_id, type(e).__name__
+            )
+            raise
+        if not isinstance(full, dict):
+            raise ValueError("Decrypted v1 payload is not a JSON object")
     else:
         full = stored if isinstance(stored, dict) else {}
-
-    if not isinstance(full, dict):
-        full = {}
 
     meta, classes_dict = _split_blob_for_v2(full)
     new_record = {
@@ -1467,7 +1498,34 @@ def register_user(username: str, email: str, password: str) -> dict:
         'recovery_key': recovery_key
     }
 
-def login_user(email: str, password: str) -> dict:
+def _list_active_sessions_for_user(db: dict, user_id: str) -> list[str]:
+    """Return all non-expired session tokens belonging to this user."""
+    now = datetime.now()
+    active = []
+    for tok, sess in db.get('sessions', {}).items():
+        if sess.get('user_id') != user_id:
+            continue
+        try:
+            if datetime.fromisoformat(sess.get('expires_at', '')) < now:
+                continue
+        except (TypeError, ValueError):
+            continue
+        active.append(tok)
+    return active
+
+
+def _terminate_user_sessions(db: dict, user_id: str) -> int:
+    """Delete all sessions for a user and clear in-memory caches/keys.
+    Returns the number of sessions removed. Caller must save_db afterwards.
+    """
+    tokens = [t for t, s in db.get('sessions', {}).items() if s.get('user_id') == user_id]
+    for tok in tokens:
+        db['sessions'].pop(tok, None)
+        clear_session_cache(tok)
+    return len(tokens)
+
+
+def login_user(email: str, password: str, force: bool = False) -> dict:
     """Log in a user"""
     email = email.strip().lower()
 
@@ -1530,6 +1588,24 @@ def login_user(email: str, password: str) -> dict:
     if user.get('failed_login_count') or user.get('locked_until_ts'):
         db["users"][email]['failed_login_count'] = 0
         db["users"][email]['locked_until_ts'] = 0
+
+    # Single-session enforcement: only one active session per user. If another
+    # one already exists, refuse the login unless the caller explicitly opts
+    # in to take over (`force=True`), in which case the old sessions are
+    # invalidated first.
+    user_id = user["id"]
+    existing_tokens = _list_active_sessions_for_user(db, user_id)
+    if existing_tokens and not force:
+        return {
+            'success': False,
+            'message': 'backend.sessionAlreadyActive',
+            'code': 'session_exists',
+            'token': None,
+            'user': None
+        }
+    if existing_tokens and force:
+        removed = _terminate_user_sessions(db, user_id)
+        logger.info("Force-login for user %s terminated %d existing session(s)", user_id, removed)
 
     # Create session
     token = generate_session_token()
@@ -1884,11 +1960,16 @@ async def api_login():
 
     email = data.get('email', '')
     password = data.get('password', '')
+    force = bool(data.get('force', False))
 
     if not email or not password:
         return jsonify({'success': False, 'message': 'backend.fillAllFields'}), 400
 
-    result = login_user(email, password)
+    result = login_user(email, password, force=force)
+
+    if result.get('code') == 'session_exists':
+        # 409 Conflict: client must confirm before we kill the other session.
+        return jsonify(result), 409
 
     if result['success']:
         response = await make_response(jsonify(result))

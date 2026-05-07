@@ -312,18 +312,32 @@ const rescueLegacyLocalStorage = async () => {
     const legacyData = localStorage.getItem('notenverwaltung');
     if (!legacyData) return;
     const wasPending = localStorage.getItem('pendingServerSync') === 'true';
-    try {
-        if (wasPending) {
-            await fetch('/api/data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: legacyData
-            }).catch(() => null);
-        }
-    } finally {
-        // Sensitive data must not linger in localStorage regardless of sync result.
+
+    // No unsynced changes → server is already authoritative, safe to wipe.
+    if (!wasPending) {
         localStorage.removeItem('notenverwaltung');
         localStorage.removeItem('pendingServerSync');
+        return;
+    }
+
+    // Unsynced changes exist. Push them to the server first; only wipe local
+    // copy on a confirmed successful sync. Otherwise keep the data and try
+    // again on the next page load — better to keep a sensitive blob around
+    // briefly than to silently lose offline changes.
+    try {
+        const response = await fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: legacyData
+        });
+        if (response.ok) {
+            localStorage.removeItem('notenverwaltung');
+            localStorage.removeItem('pendingServerSync');
+        } else {
+            console.warn('Legacy localStorage rescue: server rejected sync, keeping local copy for retry.', response.status);
+        }
+    } catch (err) {
+        console.warn('Legacy localStorage rescue: network failure, keeping local copy for retry.', err);
     }
 };
 

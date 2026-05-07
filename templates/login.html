@@ -91,6 +91,36 @@
         </div>
     </dialog>
 
+    <!-- Session conflict dialog: shown when login is rejected because another
+         session is already active for the same account. -->
+    <dialog id="session-conflict-dialog" class="dialog w-full sm:max-w-[460px]">
+        <div>
+            <header>
+                <div class="flex items-center gap-3">
+                    <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-500">
+                            <path d="M12 9v4"/>
+                            <path d="M12 17h.01"/>
+                            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-semibold" data-i18n="auth.sessionConflictTitle">Already signed in elsewhere</h2>
+                    </div>
+                </div>
+            </header>
+            <section class="py-4">
+                <p class="text-muted-foreground" data-i18n="auth.sessionConflictMsg">
+                    There is already an active session for this account on another device. Only one device can be signed in at a time. Continue here to end the other session and sign in.
+                </p>
+            </section>
+            <footer class="flex justify-end gap-2">
+                <button type="button" id="session-conflict-cancel" class="btn-outline" data-i18n="auth.sessionConflictCancel">Cancel</button>
+                <button type="button" id="session-conflict-takeover" class="btn-primary" data-i18n="auth.sessionConflictTakeover">Sign in here</button>
+            </footer>
+        </div>
+    </dialog>
+
     <!-- Top-right Controls -->
     <div class="fixed top-4 right-4 z-50 flex items-center gap-2">
     <!-- Docs Link Button -->
@@ -587,10 +617,32 @@
         // Spinner SVG for buttons
         const SPINNER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="status" aria-label="Loading" class="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>`;
 
-        // Login form handler
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        // Resolve the "already active session" prompt. Resolves with `true` if
+        // the user wants to take over the existing session, `false` to cancel.
+        function showSessionConflictDialog() {
+            return new Promise((resolve) => {
+                const dlg = document.getElementById('session-conflict-dialog');
+                if (!dlg) {
+                    // Fallback if HTML markup is missing — assume confirm to avoid lockout.
+                    resolve(window.confirm(t('auth.sessionConflictConfirm') || 'There is already an active session for this account. Sign in here and end the other session?'));
+                    return;
+                }
+                const takeoverBtn = document.getElementById('session-conflict-takeover');
+                const cancelBtn = document.getElementById('session-conflict-cancel');
+                const cleanup = () => {
+                    takeoverBtn.removeEventListener('click', onTakeover);
+                    cancelBtn.removeEventListener('click', onCancel);
+                    dlg.close();
+                };
+                const onTakeover = () => { cleanup(); resolve(true); };
+                const onCancel = () => { cleanup(); resolve(false); };
+                takeoverBtn.addEventListener('click', onTakeover);
+                cancelBtn.addEventListener('click', onCancel);
+                dlg.showModal();
+            });
+        }
 
+        async function performLogin(force) {
             const btn = document.getElementById('login-btn');
             const originalHtml = btn.innerHTML;
             const startTime = Date.now();
@@ -615,9 +667,21 @@
                     },
                     body: JSON.stringify({
                         email: document.getElementById('login-email').value,
-                        password: document.getElementById('login-password').value
+                        password: document.getElementById('login-password').value,
+                        force: !!force
                     })
                 });
+
+                if (response.status === 409) {
+                    hideProgress();
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    const takeover = await showSessionConflictDialog();
+                    if (takeover) {
+                        await performLogin(true);
+                    }
+                    return;
+                }
 
                 const data = await response.json();
 
@@ -684,6 +748,13 @@
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;
             }
+        }
+
+        // Login form handler — defers actual work to performLogin so we can
+        // re-call it with `force=true` after the session-conflict prompt.
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await performLogin(false);
         });
 
         // Register form handler

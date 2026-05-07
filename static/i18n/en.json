@@ -475,6 +475,12 @@
   "save.errorMsg": "Your changes haven't been synced yet. Check your connection and try again.",
   "save.retry": "Retry",
   "save.retryRunning": "Retrying…",
+  "auth.sessionConflictTitle": "Already signed in elsewhere",
+  "auth.sessionConflictMsg": "There is already an active session for this account on another device. Only one device can be signed in at a time. Continue here to end the other session and sign in.",
+  "auth.sessionConflictTakeover": "Sign in here",
+  "auth.sessionConflictCancel": "Cancel",
+  "auth.sessionConflictConfirm": "There is already an active session for this account. Sign in here and end the other session?",
+  "backend.sessionAlreadyActive": "There is already an active session on another device.",
 
   "error.somethingWrong": "Oops! Something went wrong. Please try again.",
   "error.tooManyRequests": "Too Many Requests",
