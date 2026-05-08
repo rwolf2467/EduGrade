@@ -1847,12 +1847,19 @@ const renderStudents = () => {
               <label class="block mb-2">${t("student.lastName")}</label>
               <input type="text" name="lastName" class="input w-full" value="${escapeHtml(student.lastName || '')}" required maxlength="50">
             </div>
+            <div class="grid gap-2 mt-3">
+              <label class="block mb-2">${t("student.notes")}</label>
+              <textarea name="notes" class="input w-full" rows="4" maxlength="2000" placeholder="${escapeHtml(t("student.notesPlaceholder"))}">${escapeHtml(student.notes || '')}</textarea>
+              <p class="text-gray-400 text-sm">${t("student.notesHint")}</p>
+            </div>
           `;
 
                 showDialog("edit-dialog", t("class.editStudent"), content, (formData) => {
                     student.firstName = formData.get("firstName");
                     student.middleName = formData.get("middleName") || '';
                     student.lastName = formData.get("lastName");
+                    const rawNotes = (formData.get("notes") || '').toString();
+                    student.notes = rawNotes.slice(0, 2000);
                     saveData(t("toast.studentEdited"), "success");
                     renderStudents();
                 });
@@ -3738,6 +3745,21 @@ const renderStudentDetail = (studentId) => {
     // Set student name
     const studentName = getStudentDisplayName(student);
     document.getElementById("student-detail-name").textContent = studentName;
+
+    // Show notes (e.g. accommodations, learning differences) if present.
+    // Hidden by default, only revealed for students that have notes saved.
+    const notesCard = document.getElementById("student-detail-notes-card");
+    const notesText = document.getElementById("student-detail-notes-text");
+    if (notesCard && notesText) {
+        const noteValue = (student.notes || '').toString().trim();
+        if (noteValue) {
+            notesText.textContent = noteValue;
+            notesCard.classList.remove("hidden");
+        } else {
+            notesText.textContent = '';
+            notesCard.classList.add("hidden");
+        }
+    }
 
     // Prev/next student navigation (same sort order as table)
     const { column, direction } = window.studentSortState || { column: 'lastName', direction: 'asc' };

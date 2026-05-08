@@ -29,7 +29,9 @@
       "Bash(cp -r en/* i18n/en/docusaurus-plugin-content-docs/current/)",
       "Bash(cp -r de/* .)",
       "Bash(rm -rf de en)",
-      "Bash(node --check /home/murauer/Nextcloud/avocloud/Code/EduGrade/static/scripts/storage.js)"
+      "Bash(node --check /home/murauer/Nextcloud/avocloud/Code/EduGrade/static/scripts/storage.js)",
+      "Bash(node --check /home/murauer/Nextcloud/avocloud/Code/EduGrade/static/scripts/render.js)",
+      "Bash(node --check /home/murauer/Nextcloud/avocloud/Code/EduGrade/static/scripts/dataManagement.js)"
     ]
   }
 }

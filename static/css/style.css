@@ -54,7 +54,10 @@ body {
     width: 100%;
     max-width: 100%;
     /* `clip` instead of `hidden` so we don't accidentally establish a scroll
-       container, which would break `position: sticky` on descendants. */
+       container, which would break `position: sticky` on descendants.
+       `hidden` is kept as a fallback for browsers that don't yet support
+       `clip`; both prevent the page from scrolling sideways. */
+    overflow-x: hidden;
     overflow-x: clip;
     box-sizing: border-box;
     background-color: #f8fafc;
@@ -80,7 +83,9 @@ html.dark body {
 #app {
     max-width: 100%;
     /* `clip` keeps horizontal overflow contained without creating a scroll
-       container, so `position: sticky` keeps working inside #app. */
+       container, so `position: sticky` keeps working inside #app. `hidden`
+       fallback for browsers without `clip` support. */
+    overflow-x: hidden;
     overflow-x: clip;
 }
 
@@ -112,7 +117,9 @@ html.dark body {
         left: 0;
         height: 100vh;
         height: 100dvh;
-        z-index: 40;
+        /* Above the sticky topbar (z-index: 40) so the off-canvas sidebar
+           covers the topbar instead of slipping behind it on mobile. */
+        z-index: 60;
         box-shadow: none !important;
     }
 
@@ -1182,6 +1189,56 @@ table.single-category td:nth-child(2) {
 }
 .sortable-header.sort-asc .sort-icon,
 .sortable-header.sort-desc .sort-icon { opacity: 1 !important; }
+
+/* Settings tabs: keep all four on one horizontal row on small screens.
+   `flex-nowrap` plus a horizontal scroll fallback ensures the tab strip
+   never breaks into a second line, which looks broken on phones. */
+.settings-tabs-nav {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+@media (max-width: 768px) {
+    .settings-tabs-nav button[role="tab"] {
+        flex: 0 0 auto;
+        padding-left: 0.6rem !important;
+        padding-right: 0.6rem !important;
+        font-size: 0.85rem !important;
+        white-space: nowrap;
+    }
+}
+
+/* On mobile we always compact the student table: only the essentials fit on
+   a 360px viewport. The user can still toggle compact off, but the *minimum*
+   compaction kicks in automatically below 768px so the table never forces a
+   horizontal scroll wider than the surrounding card. */
+@media (max-width: 768px) {
+    table.table .compact-hide {
+        display: none !important;
+    }
+    table.table tbody td,
+    table.table thead th {
+        padding: 0.25rem 0.4rem !important;
+        font-size: 0.78rem !important;
+        line-height: 1.15rem !important;
+    }
+    /* Year-overview column is purely informational — drop it entirely on
+       narrow screens; users can still see it in the student detail view. */
+    table.table thead th:nth-last-child(2),
+    table.table tbody tr td:nth-last-child(2) {
+        display: none;
+    }
+    /* Section wrapping the table must scroll on its own, not the whole page,
+       so swiping horizontally on the table doesn't shove the layout. */
+    section.overflow-x-auto {
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .card {
+        min-width: 0;
+        max-width: 100%;
+    }
+}
 
 /* ===== COMPACT TABLE MODE ===== */
 .compact-table tbody td,

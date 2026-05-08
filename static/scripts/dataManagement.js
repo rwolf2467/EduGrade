@@ -299,6 +299,7 @@ const addStudent = (firstName, lastName, middleName) => {
         firstName: firstNameValidation.value,
         lastName: lastNameValidation.value,
         middleName: validatedMiddleName,
+        notes: '',               // Vertrauliche Notizen (Lernschwächen etc.)
         grades: [],              // Leeres Array für Noten
         participation: []        // Für zukünftige Mitarbeits-Funktion
     };
