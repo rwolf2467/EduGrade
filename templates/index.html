@@ -43,6 +43,7 @@
         crossorigin="anonymous"></script>
     <link rel="stylesheet" href="/static/css/style.css?v={{ app_version }}">
     <link rel="stylesheet" href="/static/css/avocloud-branding.css?v={{ app_version }}">
+    <link rel="stylesheet" href="/static/css/mobile.css?v={{ app_version }}">
     <script src="/static/scripts/theme.js?v={{ app_version }}"></script>
     <style>
         #avo-intro-overlay {
@@ -2069,6 +2070,9 @@ Anna,,Schmidt</code></pre>
                 </header>
                 <div id="qsb-content" class="qsb-content"></div>
             </aside>
+
+            <!-- Mobile Bottom Navigation (rendered by mobile.js, hidden on desktop via CSS) -->
+            <nav id="mobile-bottom-nav" aria-label="Mobile navigation"></nav>
         </div>
     </div>
 
@@ -2084,6 +2088,7 @@ Anna,,Schmidt</code></pre>
     <script src="/static/scripts/exportImport.js?v={{ app_version }}"></script>
     <script src="/static/scripts/tutorial.js?v={{ app_version }}"></script>
     <script src="/static/scripts/eventListeners.js?v={{ app_version }}"></script>
+    <script src="/static/scripts/mobile.js?v={{ app_version }}"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
