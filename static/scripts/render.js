@@ -1698,8 +1698,28 @@ const renderStudents = () => {
             onclick: 'document.getElementById(\'add-student\').click()'
         }] : [];
 
-        studentsTable.innerHTML = `<tr><td colspan="9">${createEmptyState(icon, title, description, buttons)}</td></tr>`;
+        const tableSection = document.getElementById('students-table-section');
+        const emptyHost = document.getElementById('students-empty-state');
+        if (currentYear.students.length === 0 && tableSection && emptyHost) {
+            // No students at all → hide table entirely, show empty state alone.
+            tableSection.classList.add('hidden');
+            emptyHost.classList.remove('hidden');
+            emptyHost.innerHTML = createEmptyState(icon, title, description, buttons);
+            studentsTable.innerHTML = '';
+        } else {
+            // Filtered-empty: keep table chrome, show empty state inside body.
+            if (tableSection) tableSection.classList.remove('hidden');
+            if (emptyHost) { emptyHost.classList.add('hidden'); emptyHost.innerHTML = ''; }
+            studentsTable.innerHTML = `<tr><td colspan="9">${createEmptyState(icon, title, description, buttons)}</td></tr>`;
+        }
         return;
+    }
+    // Students exist → ensure table visible and empty host hidden.
+    {
+        const tableSection = document.getElementById('students-table-section');
+        const emptyHost = document.getElementById('students-empty-state');
+        if (tableSection) tableSection.classList.remove('hidden');
+        if (emptyHost) { emptyHost.classList.add('hidden'); emptyHost.innerHTML = ''; }
     }
 
     studentsTable.innerHTML = filteredStudents.map(student => {

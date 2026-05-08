@@ -378,6 +378,8 @@
   "profile.secondarySchoolDesc": "AHS · NMS · BHS · Noten 1–5",
   "profile.language": "Sprache",
   "profile.languageHint": "Wähle deine bevorzugte Sprache.",
+  "profile.accentColor": "Akzentfarbe",
+  "profile.accentColorHint": "Wirkt auf Buttons, Links und aktive Elemente.",
   "profile.defaultSubjects": "Standard-Fächer",
   "profile.defaultSubjectsHint": "Diese Fächer werden automatisch bei neuen Klassen angelegt.",
   "profile.addSubject": "Fach hinzufügen",

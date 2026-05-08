@@ -62,23 +62,30 @@
     }
 
     function actClasses() {
-        // Reuse the existing sidebar toggle event the topbar hamburger fires.
+        if (typeof appData !== "undefined" && appData && Array.isArray(appData.classes) && appData.classes.length > 0) {
+            openClassPickerSheet();
+            return;
+        }
+        // Fallback when no classes exist yet — let user create one.
+        const addBtn = document.getElementById("add-class");
+        if (addBtn) { addBtn.click(); return; }
         document.dispatchEvent(new CustomEvent("basecoat:sidebar"));
     }
 
     function actQuickAdd() {
-        // Context-aware "Note hinzufügen".
+        // Student detail open → add grade for that student.
         if (isStudentDetailVisible()) {
             const btn = document.getElementById("student-detail-add-grade");
             if (btn) { btn.click(); return; }
         }
+        // Class view open → ask: new student or new grade?
         if (isClassViewVisible()) {
-            // From class view: trigger class exam "Noten eintragen" fast-mode.
-            const btn = document.getElementById("class-exam-btn");
-            if (btn) { btn.click(); return; }
+            const cid = (typeof appData !== "undefined" && appData) ? appData.currentClassId : null;
+            if (cid) { openClassFabChoice(); return; }
         }
-        // No active class context → open sidebar so user can pick one.
-        actClasses();
+        // Home view (or anything else) → open new-class dialog.
+        const addBtn = document.getElementById("add-class");
+        if (addBtn) { addBtn.click(); return; }
         toast(tr("mobile.pickClass", "Bitte zuerst eine Klasse öffnen."));
     }
 
@@ -190,10 +197,86 @@
         });
     }
 
+    /* ---------- Shared sheet gestures: body-lock + swipe-down close ---------- */
+    function attachSheetGestures(sheet, backdrop, onClose, dragZone) {
+        const prevBodyOverflow = document.body.style.overflow;
+        const prevBodyOverscroll = document.body.style.overscrollBehavior;
+        const prevHtmlOverflow = document.documentElement.style.overflow;
+        document.body.style.overflow = "hidden";
+        document.body.style.overscrollBehavior = "contain";
+        document.documentElement.style.overflow = "hidden";
+        document.body.classList.add("m-sheet-open");
+
+        let _yStart = 0;
+        const blockBgTouch = (e) => {
+            if (!sheet.contains(e.target)) { e.preventDefault(); return; }
+            const list = sheet.querySelector(".m-picker-list");
+            if (!list || !list.contains(e.target)) { e.preventDefault(); return; }
+            const atTop = list.scrollTop <= 0;
+            const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 1;
+            const t = e.touches[0];
+            const dy = t.clientY - _yStart;
+            if ((atTop && dy > 0) || (atBottom && dy < 0)) e.preventDefault();
+        };
+        const onListStart = (e) => { _yStart = e.touches[0].clientY; };
+        document.addEventListener("touchmove", blockBgTouch, { passive: false });
+        document.addEventListener("touchstart", onListStart, { passive: true });
+
+        let sStartY = 0, sStartX = 0, sDy = 0, sDx = 0, sTracking = false, sDecided = false, sVertical = false;
+        const dz = dragZone || sheet;
+        const dragStart = (e) => {
+            const t = e.touches[0];
+            sStartY = t.clientY; sStartX = t.clientX;
+            sDy = 0; sDx = 0; sTracking = true; sDecided = false; sVertical = false;
+            sheet.style.transition = "none";
+        };
+        const dragMove = (e) => {
+            if (!sTracking) return;
+            const t = e.touches[0];
+            sDy = t.clientY - sStartY;
+            sDx = t.clientX - sStartX;
+            if (!sDecided) {
+                if (Math.abs(sDy) > 8 || Math.abs(sDx) > 8) {
+                    sVertical = Math.abs(sDy) > Math.abs(sDx);
+                    sDecided = true;
+                }
+            }
+            if (sVertical && sDy > 0) sheet.style.transform = `translateY(${sDy}px)`;
+        };
+        const dragEnd = () => {
+            if (!sTracking) return;
+            sTracking = false;
+            sheet.style.transition = "";
+            if (sVertical && sDy > 80) onClose();
+            else sheet.style.transform = "";
+        };
+        dz.addEventListener("touchstart", dragStart, { passive: true });
+        dz.addEventListener("touchmove", dragMove, { passive: true });
+        dz.addEventListener("touchend", dragEnd, { passive: true });
+        dz.addEventListener("touchcancel", dragEnd, { passive: true });
+
+        const onKey = (e) => { if (e.key === "Escape") onClose(); };
+        document.addEventListener("keydown", onKey);
+
+        return function cleanup() {
+            document.body.style.overflow = prevBodyOverflow || "";
+            document.body.style.overscrollBehavior = prevBodyOverscroll || "";
+            document.documentElement.style.overflow = prevHtmlOverflow || "";
+            document.body.classList.remove("m-sheet-open");
+            document.removeEventListener("touchmove", blockBgTouch);
+            document.removeEventListener("touchstart", onListStart);
+            document.removeEventListener("keydown", onKey);
+            dz.removeEventListener("touchstart", dragStart);
+            dz.removeEventListener("touchmove", dragMove);
+            dz.removeEventListener("touchend", dragEnd);
+            dz.removeEventListener("touchcancel", dragEnd);
+        };
+    }
+
     /* ---------- Menu sheet ---------- */
-    let _sheetEls = null;
-    function ensureSheet() {
-        if (_sheetEls) return _sheetEls;
+    let _menuSheet = null;
+    function openMenuSheet() {
+        if (_menuSheet) return; // already open
         const backdrop = document.createElement("div");
         backdrop.className = "mobile-sheet-backdrop";
         backdrop.setAttribute("aria-hidden", "true");
@@ -251,61 +334,216 @@
         document.body.appendChild(backdrop);
         document.body.appendChild(sheet);
 
+        const cleanup = attachSheetGestures(sheet, backdrop, () => closeMenuSheet(), sheet);
+
+        function closeMenuSheet() {
+            if (!_menuSheet) return;
+            const m = _menuSheet;
+            _menuSheet = null;
+            m.sheet.classList.remove("is-open");
+            m.backdrop.classList.remove("is-open");
+            m.cleanup();
+            setTimeout(() => { m.backdrop.remove(); m.sheet.remove(); }, 250);
+        }
+
         backdrop.addEventListener("click", closeMenuSheet);
-        sheet.addEventListener("click", onSheetClick);
+        sheet.addEventListener("click", (ev) => {
+            const target = ev.target.closest("[data-sheet-act]");
+            if (!target) return;
+            const act = target.dataset.sheetAct;
+            if (target.tagName !== "A") ev.preventDefault();
+            closeMenuSheet();
+            switch (act) {
+                case "settings": { const b = document.getElementById("nav-settings"); if (b) b.click(); break; }
+                case "profile":  { const b = document.getElementById("profile-btn"); if (b) b.click(); break; }
+                case "export":   { const b = document.getElementById("export-data"); if (b) b.click(); break; }
+                case "theme":    document.dispatchEvent(new CustomEvent("basecoat:theme")); break;
+                case "logout":   { const b = document.getElementById("logout-btn"); if (b) b.click(); break; }
+                case "about":    /* anchor handles navigation */ break;
+            }
+        });
 
-        _sheetEls = { backdrop, sheet };
-        return _sheetEls;
-    }
-
-    function openMenuSheet() {
-        const { backdrop, sheet } = ensureSheet();
-        backdrop.classList.add("is-open");
-        // Force reflow so transition runs from the initial transform.
+        _menuSheet = { backdrop, sheet, cleanup };
         sheet.offsetHeight;
+        backdrop.classList.add("is-open");
         sheet.classList.add("is-open");
     }
 
-    function closeMenuSheet() {
-        if (!_sheetEls) return;
-        _sheetEls.sheet.classList.remove("is-open");
-        _sheetEls.backdrop.classList.remove("is-open");
+    /* ---------- Generic list picker sheet ---------- */
+    let _pickerEls = null;
+
+    const escHtml = (s) => String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+    function closeListPicker() {
+        if (!_pickerEls) return;
+        const { backdrop, sheet, cleanup } = _pickerEls;
+        _pickerEls = null;
+        sheet.classList.remove("is-open");
+        backdrop.classList.remove("is-open");
+        cleanup && cleanup();
+        setTimeout(() => { backdrop.remove(); sheet.remove(); }, 250);
     }
 
-    function onSheetClick(ev) {
-        const target = ev.target.closest("[data-sheet-act]");
-        if (!target) return;
-        const act = target.dataset.sheetAct;
-        // Allow <a> default navigation (about) to proceed; close sheet for buttons.
-        if (target.tagName !== "A") ev.preventDefault();
-        closeMenuSheet();
-        switch (act) {
-            case "settings": {
-                const b = document.getElementById("nav-settings");
-                if (b) b.click();
-                break;
-            }
-            case "profile": {
-                const b = document.getElementById("profile-btn");
-                if (b) b.click();
-                break;
-            }
-            case "export": {
-                const b = document.getElementById("export-data");
-                if (b) b.click();
-                break;
-            }
-            case "theme":
-                document.dispatchEvent(new CustomEvent("basecoat:theme"));
-                break;
-            case "logout": {
-                const b = document.getElementById("logout-btn");
-                if (b) b.click();
-                break;
-            }
-            case "about":
-                /* anchor handles navigation */ break;
+    /**
+     * Open a generic mobile list picker.
+     * opts: { title, subtitle, items: [{id, name, search, meta}], onPick(id), showSearch }
+     */
+    function openListPicker(opts) {
+        if (_pickerEls) return;
+        const items = opts.items || [];
+        if (items.length === 0) return;
+        const showSearch = (opts.showSearch !== undefined) ? opts.showSearch : items.length > 10;
+
+        const backdrop = document.createElement("div");
+        backdrop.className = "mobile-sheet-backdrop";
+        backdrop.setAttribute("aria-hidden", "true");
+
+        const sheet = document.createElement("div");
+        sheet.className = "mobile-sheet mobile-sheet--picker";
+        sheet.setAttribute("role", "dialog");
+        sheet.setAttribute("aria-modal", "true");
+        if (opts.title) sheet.setAttribute("aria-label", opts.title);
+
+        const searchHtml = showSearch
+            ? `<input type="search" class="m-picker-search" placeholder="${tr("mobile.search", "Suchen…")}" autocomplete="off"/>`
+            : "";
+
+        const itemsHtml = items.map(it => {
+            const name = escHtml(it.name || "");
+            const search = escHtml(String(it.search || it.name || "").toLowerCase());
+            const meta = (it.meta != null) ? `<span class="m-picker-meta">${escHtml(it.meta)}</span>` : "";
+            return `<button type="button" data-pick-id="${escHtml(it.id)}" data-search="${search}" class="m-picker-item">
+                <span class="m-picker-name">${name}</span>
+                ${meta}
+            </button>`;
+        }).join("");
+
+        sheet.innerHTML = `
+            <div class="m-picker-header">
+                <strong>${escHtml(opts.title || "")}</strong>
+                ${opts.subtitle ? `<span class="m-picker-sub">${escHtml(opts.subtitle)}</span>` : ""}
+            </div>
+            ${searchHtml}
+            <div class="m-picker-list" role="listbox">${itemsHtml}</div>
+        `;
+
+        document.body.appendChild(backdrop);
+        document.body.appendChild(sheet);
+
+        backdrop.addEventListener("click", closeListPicker);
+        sheet.addEventListener("click", (ev) => {
+            const item = ev.target.closest("[data-pick-id]");
+            if (!item) return;
+            const id = item.dataset.pickId;
+            closeListPicker();
+            if (typeof opts.onPick === "function") opts.onPick(id);
+        });
+
+        if (showSearch) {
+            const input = sheet.querySelector(".m-picker-search");
+            const list = sheet.querySelector(".m-picker-list");
+            input.addEventListener("input", () => {
+                const q = input.value.trim().toLowerCase();
+                list.querySelectorAll("[data-pick-id]").forEach(btn => {
+                    const hay = btn.dataset.search || "";
+                    btn.style.display = (!q || hay.includes(q)) ? "" : "none";
+                });
+            });
         }
+
+        const header = sheet.querySelector(".m-picker-header");
+        const cleanup = attachSheetGestures(sheet, backdrop, closeListPicker, header || sheet);
+
+        _pickerEls = { backdrop, sheet, cleanup };
+        sheet.offsetHeight;
+        backdrop.classList.add("is-open");
+        sheet.classList.add("is-open");
+    }
+
+    /* ---------- FAB choice on class view: new student / new grade ---------- */
+    function openClassFabChoice() {
+        openListPicker({
+            title: tr("mobile.fabChoiceTitle", "Was möchtest du hinzufügen?"),
+            showSearch: false,
+            items: [
+                { id: "grade",   name: tr("mobile.newGrade",   "Neue Note") },
+                { id: "student", name: tr("mobile.newStudent", "Neuer Schüler") },
+            ],
+            onPick: (id) => {
+                if (id === "grade") {
+                    openStudentPickerForGrade();
+                } else if (id === "student") {
+                    const btn = document.getElementById("add-student");
+                    if (btn) btn.click();
+                }
+            },
+        });
+    }
+
+    /* ---------- Student picker (FAB on class view) ---------- */
+    function openStudentPickerForGrade() {
+        if (typeof getCurrentClass !== "function" || typeof getCurrentYear !== "function") return;
+        const cls = getCurrentClass();
+        const year = getCurrentYear();
+        const students = (year && Array.isArray(year.students)) ? year.students.slice() : [];
+        if (students.length === 0) {
+            toast(tr("mobile.noStudents", "Keine Schüler in dieser Klasse"));
+            return;
+        }
+        students.sort((a, b) => {
+            const an = (a.lastName || "").localeCompare(b.lastName || "", undefined, { sensitivity: "base" });
+            if (an !== 0) return an;
+            return (a.firstName || "").localeCompare(b.firstName || "", undefined, { sensitivity: "base" });
+        });
+        const fullName = (s) => {
+            const parts = [s.firstName];
+            if (s.middleName) parts.push(s.middleName);
+            parts.push(s.lastName);
+            return parts.filter(Boolean).join(" ");
+        };
+        openListPicker({
+            title: tr("mobile.pickStudent", "Schüler auswählen"),
+            subtitle: cls && cls.name ? cls.name : "",
+            items: students.map(s => ({
+                id: s.id,
+                name: fullName(s),
+                search: `${s.lastName || ""} ${s.firstName || ""} ${s.middleName || ""}`,
+                meta: Array.isArray(s.grades) ? s.grades.length : 0,
+            })),
+            onPick: (studentId) => {
+                if (typeof openAddGradeDialog === "function") {
+                    openAddGradeDialog(studentId, () => {
+                        if (typeof renderStudents === "function") renderStudents();
+                    });
+                }
+            },
+        });
+    }
+
+    /* ---------- Class picker (bottom-nav "Klassen") ---------- */
+    function openClassPickerSheet() {
+        if (typeof appData === "undefined" || !appData || !Array.isArray(appData.classes) || appData.classes.length === 0) {
+            const addBtn = document.getElementById("add-class");
+            if (addBtn) addBtn.click();
+            return;
+        }
+        const classes = appData.classes.slice().sort((a, b) =>
+            (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base", numeric: true })
+        );
+        openListPicker({
+            title: tr("mobile.pickClass", "Klasse auswählen"),
+            items: classes.map(c => {
+                const year = Array.isArray(c.years) ? c.years.find(y => y.id === c.currentYearId) : null;
+                const count = year && Array.isArray(year.students) ? year.students.length : 0;
+                return { id: c.id, name: c.name || "", search: c.name || "", meta: count };
+            }),
+            onPick: (classId) => {
+                appData.currentClassId = classId;
+                if (typeof showClassView === "function") showClassView();
+            },
+        });
     }
 
     /* ---------- Sidebar: backdrop + swipe-to-close ---------- */
@@ -390,10 +628,11 @@
         document.addEventListener("i18n:changed", () => {
             const nav = document.getElementById("mobile-bottom-nav");
             if (nav) { nav.innerHTML = ""; delete nav.dataset.rendered; renderBottomNav(); }
-            if (_sheetEls) {
-                _sheetEls.sheet.remove();
-                _sheetEls.backdrop.remove();
-                _sheetEls = null;
+            if (_menuSheet) {
+                _menuSheet.cleanup && _menuSheet.cleanup();
+                _menuSheet.sheet.remove();
+                _menuSheet.backdrop.remove();
+                _menuSheet = null;
             }
         });
 

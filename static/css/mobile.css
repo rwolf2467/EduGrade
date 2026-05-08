@@ -27,9 +27,9 @@
         z-index: 45;
         height: calc(4rem + env(safe-area-inset-bottom, 0px));
         padding-bottom: env(safe-area-inset-bottom, 0px);
-        background: var(--background, #0d0d12);
-        border-top: 1px solid var(--border, #2d2d3d);
-        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.18);
+        background: var(--card);
+        border-top: 1px solid var(--border);
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
         align-items: stretch;
         justify-content: space-around;
         gap: 0.25rem;
@@ -82,14 +82,14 @@
 
     /* Center "primary" button — raised pill */
     #mobile-bottom-nav .mnav-btn.mnav-primary {
-        background: var(--primary, #9333ea);
-        color: var(--primary-foreground, #fff);
+        background: var(--primary);
+        color: var(--primary-foreground);
         margin: 0.4rem 0.15rem;
         border-radius: 999px;
         flex: 0 0 auto;
         padding: 0 1.1rem;
         height: calc(100% - 0.8rem);
-        box-shadow: 0 4px 12px rgba(147, 51, 234, 0.35);
+        box-shadow: 0 4px 12px hsl(var(--accent-h) var(--accent-s) 50% / 0.3);
     }
     #mobile-bottom-nav .mnav-btn.mnav-primary svg {
         width: 26px;
@@ -99,8 +99,11 @@
         display: none; /* icon-only on the FAB-style button */
     }
     #mobile-bottom-nav .mnav-btn.mnav-primary:active {
-        background: var(--primary, #9333ea);
+        background: var(--primary);
         filter: brightness(0.92);
+    }
+    #mobile-bottom-nav .mnav-btn[aria-current="page"] {
+        background: var(--primary-soft);
     }
 
     /* ---------- Mobile sheet (Menu button) ---------- */
@@ -212,6 +215,231 @@
     #main-topbar [data-tooltip="Toggle sidebar"],
     #main-topbar [data-i18n-tooltip="nav.toggleSidebar"] {
         display: none;
+    }
+
+    /* ---------- Trim top header / sticky topbar / class-view margins ---------- */
+    #mobile-header {
+        padding-top: 0.25rem !important;
+        padding-bottom: 0.25rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+    #mobile-header img { height: 22px !important; }
+    #mobile-header span,
+    #mobile-header [data-i18n="nav.docsShort"] { font-size: 0.8rem !important; }
+
+    #main-topbar {
+        padding: 0.25rem 0 !important;
+    }
+    #main-topbar #greeting {
+        font-size: 0.95rem !important;
+        line-height: 1.1 !important;
+    }
+    #main-topbar > div { gap: 0.4rem !important; }
+
+    #class-view, #student-detail-view, #attendance-view, #settings-view, #home-view {
+        margin-top: 0.5rem !important;
+    }
+    #class-view nav[aria-label="Breadcrumb"] {
+        margin-bottom: 0.5rem !important;
+    }
+    #class-view header { margin-bottom: 0.5rem !important; }
+    #current-class-name, #class-view h2 { font-size: 1rem !important; }
+
+    /* ---------- Flatten content cards on mobile (no inner panel chrome) ---------- */
+    main > .card,
+    main .card,
+    main section.card,
+    main #class-view > .card,
+    main #home-view > .card,
+    main #student-detail-view > .card,
+    main #attendance-view > .card,
+    main #settings-view > .card,
+    main .stat-card,
+    main .category-stat-card,
+    main .chart-container {
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+    }
+    /* Restore some inner spacing where flattening removed it */
+    main .stat-card { padding: 0.5rem 0.25rem !important; border-bottom: 1px solid var(--border) !important; border-radius: 0 !important; }
+    main .category-stat-card { padding: 0.5rem 0 !important; border-bottom: 1px solid var(--border) !important; border-radius: 0 !important; }
+    main .chart-container { padding: 0 !important; }
+
+    /* Detail view collapsible sections — Tailwind rounded-lg border wrappers.
+       Strip the panel chrome so content runs full width. */
+    main #student-detail-view > div.rounded-lg.border,
+    main #student-detail-view div.mb-6.rounded-lg.border,
+    main #student-detail-view div.rounded-lg.border {
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        margin-bottom: 0.75rem !important;
+    }
+    /* Inner padding for collapsibles — let them breathe horizontally to edge */
+    main #student-detail-view .collapsible-content {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+    main #student-detail-view .collapsible-toggle {
+        padding-left: 0.25rem !important;
+        padding-right: 0.25rem !important;
+    }
+    /* Stat-card grid: make cards inline rows on phone */
+    main #student-detail-view .grid.grid-cols-2.md\\:grid-cols-5 {
+        gap: 0 !important;
+    }
+    /* Keep some breathing room so flattened cards still separate visually */
+    main .card + .card {
+        margin-top: 1rem !important;
+    }
+    /* Re-tighten main side padding so we use the recovered width */
+    main {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+
+    /* iOS Safari auto-zooms on focus when input font-size < 16px. Force 16px. */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+
+    /* No horizontal swipe on student / class tables — full width fits. */
+    main .overflow-x-auto {
+        overflow-x: hidden !important;
+    }
+    main table {
+        width: 100% !important;
+        table-layout: auto;
+    }
+
+    /* Empty state inside table cell: flatten + use full width on mobile. */
+    main td[colspan] > div.flex.flex-col.items-center {
+        border: 0 !important;
+        padding: 1rem 0.25rem !important;
+        gap: 0.6rem !important;
+        max-width: none !important;
+        width: 100% !important;
+    }
+    main td[colspan] {
+        padding: 0 !important;
+    }
+    /* Inner header / button section have max-w-sm by default — let them fill on mobile. */
+    main td[colspan] > div.flex.flex-col.items-center > header,
+    main td[colspan] > div.flex.flex-col.items-center > section {
+        max-width: none !important;
+        width: 100% !important;
+    }
+    main td[colspan] > div.flex.flex-col.items-center h3 {
+        font-size: 1rem !important;
+    }
+    main td[colspan] > div.flex.flex-col.items-center p {
+        font-size: 0.85rem !important;
+        line-height: 1.4 !important;
+    }
+
+    /* ---------- Basecoat toaster → top on mobile ---------- */
+    .toaster {
+        position: fixed !important;
+        top: calc(env(safe-area-inset-top, 0px) + 0.5rem) !important;
+        bottom: auto !important;
+        left: 0.5rem !important;
+        right: 0.5rem !important;
+        transform: none !important;
+        width: auto !important;
+        max-width: none !important;
+        z-index: 80 !important;
+    }
+    .toaster .toast,
+    .toaster [role="status"],
+    .toaster [data-toast] {
+        font-size: 0.85rem !important;
+        padding: 0.6rem 0.75rem !important;
+    }
+
+    /* ---------- Legacy undo-notification → top on mobile ---------- */
+    #undo-notification {
+        bottom: auto !important;
+        top: calc(env(safe-area-inset-top, 0px) + 0.5rem) !important;
+        left: 0.5rem !important;
+        right: 0.5rem !important;
+        transform: none !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        width: auto !important;
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.85rem !important;
+        gap: 0.5rem !important;
+    }
+    #undo-notification-text {
+        font-size: 0.85rem;
+    }
+
+    /* ---------- Mobile student picker sheet ---------- */
+    .mobile-sheet--picker {
+        max-height: 75vh;
+        display: flex;
+        flex-direction: column;
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+    }
+    .mobile-sheet--picker .m-picker-header {
+        padding: 0.25rem 0.9rem 0.6rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+    }
+    .mobile-sheet--picker .m-picker-header strong {
+        font-size: 1rem;
+    }
+    .mobile-sheet--picker .m-picker-sub {
+        font-size: 0.8rem;
+        color: var(--muted-foreground, #9ca3af);
+    }
+    .mobile-sheet--picker .m-picker-search {
+        margin: 0 0.5rem 0.4rem;
+        padding: 0.6rem 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--border, #2d2d3d);
+        background: var(--secondary, #1f1f2a);
+        color: var(--foreground, inherit);
+        font: inherit;
+        font-size: 0.95rem;
+        outline: none;
+    }
+    .mobile-sheet--picker .m-picker-search:focus {
+        border-color: var(--primary, #9333ea);
+    }
+    .mobile-sheet--picker .m-picker-list {
+        overflow-y: auto;
+        flex: 1;
+        padding-bottom: 0.25rem;
+    }
+    .mobile-sheet--picker .m-picker-item {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .mobile-sheet--picker .m-picker-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .mobile-sheet--picker .m-picker-meta {
+        font-size: 0.78rem;
+        color: var(--muted-foreground, #9ca3af);
+        background: var(--secondary, #1f1f2a);
+        padding: 0.15rem 0.5rem;
+        border-radius: 999px;
+        min-width: 1.6rem;
+        text-align: center;
     }
 }
 

@@ -356,7 +356,7 @@ const renderTutorialStep = (step, stepIndex) => {
 
     // Hinweis wenn auf Aktion gewartet wird
     const waitingHint = !step.manualNext && step.waitFor
-        ? `<p class="text-xs mt-2" style="color: #3b82f6;">${escapeHtml(t("tutorial.waiting"))}</p>`
+        ? `<p class="text-xs mt-2" style="color: var(--primary);">${escapeHtml(t("tutorial.waiting"))}</p>`
         : '';
 
     // Prüfe ob das Ziel-Element in einem Dialog ist

@@ -360,7 +360,7 @@
                     <footer class="flex justify-end gap-2">
                         <button type="button" class="btn-outline" id="import-setup"
                             data-i18n="setup.import">Import</button>
-                        <button type="submit" class="btn-primary" data-i18n="setup.letsGo">Let's go</button>
+                        <button type="submit" class="btn-primary is-cta" data-i18n="setup.letsGo">Let's go</button>
                     </footer>
                     </form>
                 </div>
@@ -714,6 +714,21 @@
                                 </div>
                                 <p class="text-gray-400 text-sm" data-i18n="profile.languageHint">Choose your preferred language.</p>
                             </div>
+                            <!-- Accent Color -->
+                            <div class="grid gap-2">
+                                <label class="text-sm font-medium" data-i18n="profile.accentColor">Akzentfarbe</label>
+                                <div class="grid grid-cols-4 gap-2" id="profile-accent-buttons">
+                                    <button type="button" data-accent="slate-teal" class="accent-swatch" style="--sw:hsl(200 35% 45%);" aria-label="Slate-Teal"></button>
+                                    <button type="button" data-accent="red" class="accent-swatch" style="--sw:hsl(0 55% 50%);" aria-label="Rot"></button>
+                                    <button type="button" data-accent="orange" class="accent-swatch" style="--sw:hsl(25 65% 50%);" aria-label="Orange"></button>
+                                    <button type="button" data-accent="yellow" class="accent-swatch" style="--sw:hsl(45 60% 48%);" aria-label="Gelb"></button>
+                                    <button type="button" data-accent="green" class="accent-swatch" style="--sw:hsl(145 40% 42%);" aria-label="Grün"></button>
+                                    <button type="button" data-accent="blue" class="accent-swatch" style="--sw:hsl(220 45% 50%);" aria-label="Blau"></button>
+                                    <button type="button" data-accent="purple" class="accent-swatch" style="--sw:hsl(270 40% 50%);" aria-label="Lila"></button>
+                                    <button type="button" data-accent="mono" class="accent-swatch" style="--sw:hsl(0 0% 25%);" aria-label="Schwarz/Weiß"></button>
+                                </div>
+                                <p class="text-gray-400 text-sm" data-i18n="profile.accentColorHint">Wählen Sie eine Akzentfarbe — wirkt auf Buttons, Links und aktive Elemente.</p>
+                            </div>
                             <!-- School Type -->
                             <div class="grid gap-2">
                                 <label class="text-sm font-medium" data-i18n="profile.schoolType">Schultyp</label>
@@ -804,7 +819,7 @@
                         <footer class="flex justify-end gap-2">
                             <button type="button" class="btn-outline" id="cancel-profile"
                                 data-i18n="dialog.cancel">Cancel</button>
-                            <button type="button" class="btn-primary" id="save-profile"
+                            <button type="button" class="btn-primary is-cta" id="save-profile"
                                 data-i18n="settings.saveProfile">Save Profile</button>
                         </footer>
                         <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
@@ -1151,7 +1166,8 @@
                             </div>
                         </section>
 
-                        <section class="overflow-x-auto">
+                        <div id="students-empty-state" class="hidden"></div>
+                        <section id="students-table-section" class="overflow-x-auto">
                             <table class="table w-full">
                                 <thead>
                                     <tr class="bg-muted">
@@ -1778,7 +1794,7 @@
                         <footer class="flex justify-end gap-2">
                             <button type="button" class="btn-outline" id="cancel-edit"
                                 data-i18n="dialog.cancel">Cancel</button>
-                            <button type="submit" class="btn-primary" form="edit-form"
+                            <button type="submit" class="btn-primary is-cta" form="edit-form"
                                 data-i18n="dialog.save">Save</button>
                         </footer>
                         <button type="button" aria-label="Close dialog"
@@ -1852,7 +1868,7 @@
                         <footer class="flex justify-end gap-2">
                             <button type="button" class="btn-outline" id="cancel-add-class"
                                 data-i18n="dialog.cancel">Cancel</button>
-                            <button type="submit" class="btn-primary" form="add-class-form"
+                            <button type="submit" class="btn-primary is-cta" form="add-class-form"
                                 data-i18n="dialog.add">Add</button>
                         </footer>
                         <button type="button" aria-label="Close dialog" onclick="this.closest('dialog').close()">
@@ -1934,7 +1950,7 @@
                         <footer class="flex justify-end gap-2">
                             <button type="button" class="btn-outline" id="cancel-add-student"
                                 data-i18n="dialog.cancel">Cancel</button>
-                            <button type="submit" class="btn-primary" form="add-student-form"><svg
+                            <button type="submit" class="btn-primary is-cta" form="add-student-form"><svg
                                     xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
                                     fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                     stroke-linejoin="round" class="lucide lucide-user-plus-icon lucide-user-plus">
@@ -2234,6 +2250,25 @@ Anna,,Schmidt</code></pre>
                 if (input) input.value = lang;
                 updateLanguageBtnStyles();
             };
+
+            // Accent color picker
+            const updateAccentSwatchActive = () => {
+                const current = (window.EduGradeAccent && window.EduGradeAccent.getCurrent()) || 'slate-teal';
+                document.querySelectorAll('#profile-accent-buttons .accent-swatch').forEach(btn => {
+                    btn.classList.toggle('is-active', btn.dataset.accent === current);
+                });
+            };
+            document.querySelectorAll('#profile-accent-buttons .accent-swatch').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const key = btn.dataset.accent;
+                    if (window.EduGradeAccent) window.EduGradeAccent.save(key);
+                    updateAccentSwatchActive();
+                });
+            });
+            document.addEventListener('app:dataLoaded', updateAccentSwatchActive);
+            // Initial sync (cached value)
+            updateAccentSwatchActive();
 
             document.getElementById('profile-btn').addEventListener('click', openProfileDialog);
 
@@ -2915,7 +2950,7 @@ Anna,,Schmidt</code></pre>
                         <input type="date" id="class-exam-date" class="input w-full" required>
                     </div>
                     <div id="class-exam-setup-error" class="text-red-500 text-sm hidden"></div>
-                    <button id="class-exam-start" class="btn-primary w-full" style="padding: 0.875rem; font-size: 1.1rem; margin-top: 0.5rem;" data-i18n="classExam.start">Noten eintragen →</button>
+                    <button id="class-exam-start" class="btn-primary is-cta w-full" style="padding: 0.875rem; font-size: 1.1rem; margin-top: 0.5rem;" data-i18n="classExam.start">Noten eintragen →</button>
                 </div>
             </div>
         </div>
@@ -2964,7 +2999,7 @@ Anna,,Schmidt</code></pre>
             <div class="class-exam-body">
                 <p class="text-gray-400 text-sm" data-i18n="classExam.summaryHint">Überprüfe die Noten bevor du speicherst. Abwesende Schüler erhalten keine Note.</p>
                 <div id="class-exam-summary-list" class="card p-4"></div>
-                <button id="class-exam-save" class="btn-primary w-full" style="padding: 0.875rem; font-size: 1.1rem;" data-i18n="classExam.save">Alle Noten speichern</button>
+                <button id="class-exam-save" class="btn-primary is-cta w-full" style="padding: 0.875rem; font-size: 1.1rem;" data-i18n="classExam.save">Alle Noten speichern</button>
                 <button id="class-exam-cancel-summary" class="btn-outline w-full" data-i18n="dialog.cancel">Abbrechen</button>
             </div>
         </div>

@@ -98,5 +98,6 @@ let appData = {
         minAttendancePercent: 75, // Mindest-Anwesenheit in % (Standard: 75%)
         warningThreshold: 5       // Warnung wenn X% über Minimum (Standard: 80%)
     },
-    schoolType: "secondary"       // Schultyp: "primary" (Grundschule/Volksschule) oder "secondary" (weiterführende Schule)
+    schoolType: "secondary",      // Schultyp: "primary" (Grundschule/Volksschule) oder "secondary" (weiterführende Schule)
+    accentColor: "slate-teal"     // Akzentfarben-Preset: slate-teal | red | orange | yellow | green | blue | purple | mono
 };

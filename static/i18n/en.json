@@ -378,6 +378,8 @@
   "profile.secondarySchoolDesc": "High School · Numeric Grades 1–5",
   "profile.language": "Language",
   "profile.languageHint": "Choose your preferred language.",
+  "profile.accentColor": "Accent color",
+  "profile.accentColorHint": "Applied to buttons, links, and active elements.",
   "profile.defaultSubjects": "Default Subjects",
   "profile.defaultSubjectsHint": "These subjects will be automatically created for new classes.",
   "profile.addSubject": "Add Subject",

@@ -385,6 +385,11 @@ const loadData = async () => {
         I18n.setLanguage(appData.language);
     }
 
+    // Apply user-selected accent from loaded data
+    if (appData.accentColor && window.EduGradeAccent) {
+        window.EduGradeAccent.apply(appData.accentColor);
+    }
+
     hideLoadingOverlay();
 };
 
@@ -437,6 +442,11 @@ const migrateData = () => {
     // MIGRATION: ensure schoolType exists
     if (!appData.schoolType) {
         appData.schoolType = "secondary";
+    }
+
+    // MIGRATION: ensure accentColor exists
+    if (!appData.accentColor) {
+        appData.accentColor = "slate-teal";
     }
 
     // MIGRATION: defaultSubjects from string[] to object[]
