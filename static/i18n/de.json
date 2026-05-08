@@ -3,7 +3,7 @@
   "nav.classes": "Klassen",
   "nav.addClass": "Klasse hinzufügen",
   "nav.export": "Exportieren",
-  "nav.profile": "Profil",
+  "nav.profile": "Profil & Darstellung",
   "nav.logout": "Abmelden",
   "nav.about": "Über",
   "nav.docs": "Dokumentation",
@@ -15,7 +15,7 @@
   "nav.lightMode": "Hellmodus",
   "nav.darkMode": "Dunkelmodus",
   "nav.gradeSettings": "Noteneinstellungen",
-  "nav.settings": "Einstellungen",
+  "nav.settings": "Notengebung",
 
   "settings.title": "Einstellungen",
   "settings.profile": "Profil",

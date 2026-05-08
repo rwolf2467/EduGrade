@@ -3,7 +3,7 @@
   "nav.classes": "Classes",
   "nav.addClass": "Add Class",
   "nav.export": "Export",
-  "nav.profile": "Profile",
+  "nav.profile": "Profile & Appearance",
   "nav.logout": "Logout",
   "nav.about": "About",
   "nav.docs": "Documentation",
@@ -15,7 +15,7 @@
   "nav.lightMode": "Light Mode",
   "nav.darkMode": "Dark Mode",
   "nav.gradeSettings": "Grade Settings",
-  "nav.settings": "Settings",
+  "nav.settings": "Grading",
 
   "settings.title": "Settings",
   "settings.profile": "Profile",
