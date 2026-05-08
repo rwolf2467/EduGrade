@@ -1,0 +1,223 @@
+/* =============================================================
+ * EduGrade Mobile Layer
+ * Phase 1: bottom nav, sidebar swipe, layout offsets, home density
+ * Loaded AFTER style.css. Desktop UI must remain untouched.
+ * ============================================================= */
+
+/* Bottom nav is mobile-only. Hidden on desktop by default. */
+#mobile-bottom-nav {
+    display: none;
+}
+
+/* ============== MOBILE: <= 768px ============== */
+@media (max-width: 768px) {
+
+    /* Reserve space for the fixed bottom nav so the last row is reachable. */
+    main {
+        padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    /* ---------- Bottom Navigation ---------- */
+    #mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 45;
+        height: calc(4rem + env(safe-area-inset-bottom, 0px));
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        background: var(--background, #0d0d12);
+        border-top: 1px solid var(--border, #2d2d3d);
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.18);
+        align-items: stretch;
+        justify-content: space-around;
+        gap: 0.25rem;
+        padding-left: 0.25rem;
+        padding-right: 0.25rem;
+    }
+
+    #mobile-bottom-nav .mnav-btn {
+        appearance: none;
+        background: transparent;
+        border: 0;
+        color: var(--muted-foreground, #9ca3af);
+        flex: 1 1 0;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.15rem;
+        padding: 0.25rem 0.25rem;
+        font: inherit;
+        font-size: 0.68rem;
+        font-weight: 500;
+        line-height: 1;
+        cursor: pointer;
+        border-radius: 0.5rem;
+        transition: color 0.15s ease, background 0.15s ease;
+    }
+
+    #mobile-bottom-nav .mnav-btn svg {
+        width: 22px;
+        height: 22px;
+        stroke-width: 2;
+    }
+
+    #mobile-bottom-nav .mnav-btn span {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+
+    #mobile-bottom-nav .mnav-btn:active {
+        background: var(--secondary, #1f1f2a);
+    }
+
+    #mobile-bottom-nav .mnav-btn[aria-current="page"] {
+        color: var(--primary, #9333ea);
+    }
+
+    /* Center "primary" button — raised pill */
+    #mobile-bottom-nav .mnav-btn.mnav-primary {
+        background: var(--primary, #9333ea);
+        color: var(--primary-foreground, #fff);
+        margin: 0.4rem 0.15rem;
+        border-radius: 999px;
+        flex: 0 0 auto;
+        padding: 0 1.1rem;
+        height: calc(100% - 0.8rem);
+        box-shadow: 0 4px 12px rgba(147, 51, 234, 0.35);
+    }
+    #mobile-bottom-nav .mnav-btn.mnav-primary svg {
+        width: 26px;
+        height: 26px;
+    }
+    #mobile-bottom-nav .mnav-btn.mnav-primary span {
+        display: none; /* icon-only on the FAB-style button */
+    }
+    #mobile-bottom-nav .mnav-btn.mnav-primary:active {
+        background: var(--primary, #9333ea);
+        filter: brightness(0.92);
+    }
+
+    /* ---------- Mobile sheet (Menu button) ---------- */
+    .mobile-sheet-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 60;
+        opacity: 0;
+        transition: opacity 0.18s ease;
+    }
+    .mobile-sheet-backdrop.is-open {
+        opacity: 1;
+    }
+    .mobile-sheet {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 61;
+        background: var(--card, #14141c);
+        border-top-left-radius: 1rem;
+        border-top-right-radius: 1rem;
+        border-top: 1px solid var(--border, #2d2d3d);
+        padding: 0.5rem 0.5rem calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+        transform: translateY(100%);
+        transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    .mobile-sheet.is-open {
+        transform: translateY(0);
+    }
+    .mobile-sheet::before {
+        content: "";
+        display: block;
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--border, #2d2d3d);
+        margin: 0.4rem auto 0.6rem;
+    }
+    .mobile-sheet button,
+    .mobile-sheet a {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.85rem 0.9rem;
+        background: transparent;
+        border: 0;
+        color: var(--foreground, inherit);
+        font: inherit;
+        font-size: 0.95rem;
+        text-align: left;
+        text-decoration: none;
+        cursor: pointer;
+        border-radius: 0.5rem;
+    }
+    .mobile-sheet button:active,
+    .mobile-sheet a:active {
+        background: var(--secondary, #1f1f2a);
+    }
+    .mobile-sheet hr {
+        border: 0;
+        border-top: 1px solid var(--border, #2d2d3d);
+        margin: 0.25rem 0.4rem;
+    }
+
+    /* ---------- Sidebar swipe state ---------- */
+    /* While dragging, suppress transition so finger-tracking feels native. */
+    aside.sidebar.is-swiping {
+        transition: none !important;
+    }
+    /* Backdrop behind the open sidebar so taps outside close it cleanly. */
+    .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 39;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.18s ease;
+    }
+    .sidebar-backdrop.is-open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* ---------- Home: denser class list ---------- */
+    /* Class buttons inside the home class list — single line, full width. */
+    #home-class-list .class-card,
+    #home-class-list > * {
+        margin-bottom: 0.35rem !important;
+    }
+    #home-view .stats-grid {
+        gap: 0.5rem !important;
+    }
+    /* Greeting truncate to one line on mobile so sticky topbar stays compact. */
+    #greeting {
+        max-width: calc(100vw - 7rem);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 1.05rem !important;
+    }
+
+    /* Hide topbar hamburger on mobile — bottom-nav "Classes" replaces it. */
+    #main-topbar [data-tooltip="Toggle sidebar"],
+    #main-topbar [data-i18n-tooltip="nav.toggleSidebar"] {
+        display: none;
+    }
+}
+
+/* ============== PHONE: <= 480px ============== */
+@media (max-width: 480px) {
+    #mobile-bottom-nav .mnav-btn span {
+        font-size: 0.62rem;
+    }
+}
