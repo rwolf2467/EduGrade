@@ -271,7 +271,7 @@
         </div>
 
         <!-- Setup Page -->
-        <div id="setup-page" class="fixed inset-0 z-50 flex items-center justify-center bg-opacity-50">
+        <div id="setup-page" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-opacity-50">
             <dialog id="setup-dialog" class="dialog w-full sm:max-w-[425px]" open>
                 <div>
                     <header>
@@ -2591,8 +2591,9 @@ Anna,,Schmidt</code></pre>
                 }
             });
 
-            // Initialize default subjects list in setup dialog
-            renderDefaultSubjects('setup-subjects-list');
+            // Initialize default subjects list in setup dialog once i18n is ready
+            // so translated strings (e.g. "No default subjects defined") render correctly.
+            I18n.ready.then(() => renderDefaultSubjects('setup-subjects-list'));
 
             // Clear data button in profile
             const clearStorageDialog = document.getElementById('clear-storage-dialog');
