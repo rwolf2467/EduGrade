@@ -2403,8 +2403,12 @@ async def api_get_data():
         user_data = get_user_data_cached(user_id, token, encryption_key)
 
         if not user_data:
-            print(f"No data found for user {user_id}, creating default data")
-            # Create default data if none exists
+            print(f"No data found for user {user_id}, returning empty default (not saved)")
+            # Return minimal default for new users. We intentionally do NOT
+            # call save_user_data here — saving empty data when get_user_data
+            # unexpectedly returns falsy (e.g. due to a transient decryption
+            # issue) would silently overwrite an existing user's classes.
+            # The frontend will save real data when the user completes setup.
             user_data = {
                 'teacherName': '',
                 'currentClassId': None,
@@ -2422,7 +2426,6 @@ async def api_get_data():
                     {'grade': 5, 'minPercent': 0, 'maxPercent': 39}
                 ]
             }
-            save_user_data(user_id, user_data, encryption_key, token)
 
         print(f"Found {len(user_data.get('classes', []))} classes for user {user_id}")
         print(f"Found {len(user_data.get('categories', []))} categories for user {user_id}")

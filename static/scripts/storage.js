@@ -353,11 +353,14 @@ const loadData = async () => {
     // Rescue any legacy localStorage payload before we go online.
     await rescueLegacyLocalStorage();
 
+    let loadSucceeded = false;
+
     try {
         const response = await fetch('/api/data');
 
         if (response.ok) {
             appData = await response.json();
+            loadSucceeded = true;
         } else if (response.status === 401) {
             // The session cookie may still be valid but unusable (e.g. the
             // server's in-memory encryption key was cleared by a restart).
@@ -368,7 +371,7 @@ const loadData = async () => {
             } catch (_) { /* ignore — logout is best-effort */ }
             hideLoadingOverlay();
             window.location.href = '/login';
-            return;
+            return false;
         } else {
             console.error("Server error loading data:", response.status);
             showToast(t("toast.localSyncFailed"), "error");
@@ -391,6 +394,7 @@ const loadData = async () => {
     }
 
     hideLoadingOverlay();
+    return loadSucceeded;
 };
 
 /**

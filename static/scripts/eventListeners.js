@@ -16,11 +16,16 @@ document.getElementById("setup-form").addEventListener("submit", async (e) => {
 
     // Save data and reload page
     try {
-        await fetch('/api/data', {
+        const saveResponse = await fetch('/api/data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(appData)
         });
+        if (!saveResponse.ok) {
+            console.error('Failed to save setup data, status:', saveResponse.status);
+            showAlertDialog(t('error.savingData'));
+            return;
+        }
         location.reload();
     } catch (error) {
         console.error('Error saving setup data:', error);
@@ -434,11 +439,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Wait for translations to load before rendering UI
     await I18n.ready;
 
-    // Load data from server (async)
-    await loadData();
+    // Load data from server (async); returns true on success, false on network/server error
+    const dataLoaded = await loadData();
 
     // Check for app version updates
     initVersionCheck();
+
+    if (!dataLoaded) {
+        // Data loading failed (network error or server error).
+        // Do NOT show the setup screen — this user is already logged in and
+        // likely has existing data. Leaving setup-page hidden avoids
+        // accidentally triggering re-setup for an account that already has data.
+        document.getElementById("setup-page").classList.add("hidden");
+        document.getElementById("dashboard").classList.add("hidden");
+        document.dispatchEvent(new CustomEvent('app:dataLoaded'));
+        return;
+    }
 
     // Check if user has completed setup (has classes)
     if (appData.classes && appData.classes.length > 0) {
@@ -451,20 +467,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         showHomeView();
         I18n.applyI18nToDOM();
 
-        // Data is now stored on the server, show different message
-        // showAlertDialog("Your data is synced to the server and stored securely.");
-
         // Tutorial fuer wiederkehrende User anzeigen (falls nicht abgeschlossen)
         if (appData.tutorial && !appData.tutorial.completed && !appData.tutorial.neverShowAgain) {
             setTimeout(() => {
                 initTutorial();
             }, 1500);
         }
-        
+
         // Attach student access button event listener after DOM is loaded and data is ready
         document.getElementById("student-access-btn").addEventListener("click", window.openStudentAccessDialog);
     } else {
-        // Show setup page if no classes are found
+        // No classes found — show setup screen for new users
         document.getElementById("setup-page").classList.remove("hidden");
         document.getElementById("dashboard").classList.add("hidden");
     }
