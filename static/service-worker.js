@@ -1,5 +1,5 @@
 // EduGrade Service Worker
-const CACHE_NAME = 'edugrade-v21';
+const CACHE_NAME = 'edugrade-v22';
 
 self.addEventListener('install', () => self.skipWaiting());
 

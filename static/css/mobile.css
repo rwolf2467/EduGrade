@@ -122,16 +122,16 @@
         position: fixed;
         left: 0;
         right: 0;
-        bottom: 0;
+        bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
         z-index: 61;
         background: var(--card, #14141c);
         border-top-left-radius: 1rem;
         border-top-right-radius: 1rem;
         border-top: 1px solid var(--border, #2d2d3d);
-        padding: 0.5rem 0.5rem calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
-        transform: translateY(100%);
+        padding: 0.5rem 0.5rem 0.75rem;
+        transform: translateY(calc(100% + 4rem + env(safe-area-inset-bottom, 0px)));
         transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
-        max-height: 80vh;
+        max-height: calc(80vh - 4rem);
         overflow-y: auto;
     }
     .mobile-sheet.is-open {
