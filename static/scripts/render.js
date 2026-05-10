@@ -214,10 +214,66 @@ const _initHomeSearch = () => {
 
 // ── End Class / Student Search ──────────────────────────────────────────────
 
+// Shared edit/delete prompts (used by sidebar list + home overview)
+const _promptEditClass = (classId) => {
+    const cls = appData.classes.find(c => c.id === classId);
+    if (!cls) return;
+    const attendanceOn = cls.attendanceEnabled !== false;
+    const content = `
+        <div class="grid gap-2">
+            <label class="block mb-2">${t("class.newClassName")}</label>
+            <input type="text" name="name" class="input w-full" value="${escapeHtml(cls.name)}" required maxlength="100">
+            <p class="text-gray-400 text-sm">${t("class.renameHint")}</p>
+            <label class="flex items-center gap-2 mt-3 cursor-pointer">
+                <input type="checkbox" name="attendanceEnabled" class="checkbox" ${attendanceOn ? 'checked' : ''}>
+                <span>${t("class.attendanceEnabledLabel")}</span>
+            </label>
+            <p class="text-gray-400 text-sm">${t("class.attendanceEnabledHint")}</p>
+        </div>
+    `;
+    showDialog("edit-dialog", t("class.editClass"), content, (formData) => {
+        editClass(classId, formData.get("name"), formData.has("attendanceEnabled"));
+    });
+};
+
+const _promptDeleteClass = (classId) => {
+    const cls = appData.classes.find(c => c.id === classId);
+    if (!cls) return;
+    let totalStudents = 0, totalGrades = 0;
+    if (cls.years) {
+        cls.years.forEach(year => {
+            if (year.students) {
+                totalStudents += year.students.length;
+                year.students.forEach(student => { totalGrades += student.grades.length; });
+            }
+        });
+    }
+    const message = t("confirm.deleteClass", { name: escapeHtml(cls.name) });
+    const details = `<strong>${t('confirm.classStats') || 'Inhalt'}:</strong><br>
+        • ${totalStudents} ${t('confirm.students') || 'Schüler'}<br>
+        • ${totalGrades} ${t('confirm.grades') || 'Noten'}<br><br>
+        ${t('confirm.allDataDeleted') || 'Alle Daten dieser Klasse werden unwiderruflich gelöscht.'}`;
+    const warning = t('confirm.cannotBeUndone') || 'Diese Aktion kann nicht rückgängig gemacht werden.';
+    showConfirmDialog(message, () => { deleteClass(classId); }, details, warning);
+};
+
 const renderClassList = () => {
     const classList = document.getElementById("class-list");
-    classList.innerHTML = appData.classes.map(cls =>
-        `<div class="w-full">
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+    classList.innerHTML = appData.classes.map(cls => {
+        if (isMobile) {
+            const inner = `<button class="btn-block ${cls.id === appData.currentClassId ? 'btn-primary' : 'btn-secondary'} w-full"
+                data-class-id="${safeAttr(cls.id)}" style="text-align:left;">
+                ${escapeHtml(cls.name)}
+            </button>`;
+            return swipeRowHtml({
+                contentHtml: inner,
+                leftAction:  { label: t('class.editClass') || 'Bearbeiten', iconSvg: SWIPE_ICONS.edit,  attr: `data-edit-class="${safeAttr(cls.id)}"` },
+                rightAction: { label: t('class.deleteClass') || 'Löschen',  iconSvg: SWIPE_ICONS.trash, attr: `data-delete-class="${safeAttr(cls.id)}"` }
+            });
+        }
+        return `<div class="w-full">
             <div role="group" class="button-group w-full">
                 <button class="btn-block ${cls.id === appData.currentClassId ? 'btn-primary' : 'btn-secondary'} flex-1"
                 data-class-id="${safeAttr(cls.id)}">
@@ -230,8 +286,13 @@ const renderClassList = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
             </div>
-        </div>`
-    ).join("");
+        </div>`;
+    }).join("");
+
+    if (isMobile) {
+        classList.querySelectorAll('.swipe-row').forEach(attachSwipe);
+        playSwipeHint(classList, 'classList');
+    }
 
     document.querySelectorAll("[data-class-id]").forEach(btn => {
         btn.addEventListener("click", (e) => {
@@ -243,63 +304,10 @@ const renderClassList = () => {
     });
 
     document.querySelectorAll("[data-edit-class]").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const classId = btn.dataset.editClass;
-            const cls = appData.classes.find(c => c.id === classId);
-            if (cls) {
-                const attendanceOn = cls.attendanceEnabled !== false;
-                const content = `
-                    <div class="grid gap-2">
-                        <label class="block mb-2">${t("class.newClassName")}</label>
-                        <input type="text" name="name" class="input w-full" value="${escapeHtml(cls.name)}" required maxlength="100">
-                        <p class="text-gray-400 text-sm">${t("class.renameHint")}</p>
-                        <label class="flex items-center gap-2 mt-3 cursor-pointer">
-                            <input type="checkbox" name="attendanceEnabled" class="checkbox" ${attendanceOn ? 'checked' : ''}>
-                            <span>${t("class.attendanceEnabledLabel")}</span>
-                        </label>
-                        <p class="text-gray-400 text-sm">${t("class.attendanceEnabledHint")}</p>
-                    </div>
-                `;
-                showDialog("edit-dialog", t("class.editClass"), content, (formData) => {
-                    editClass(classId, formData.get("name"), formData.has("attendanceEnabled"));
-                });
-            }
-        });
+        btn.addEventListener("click", (e) => { e.stopPropagation(); _promptEditClass(btn.dataset.editClass); });
     });
-
     document.querySelectorAll("[data-delete-class]").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const classId = btn.dataset.deleteClass;
-            const cls = appData.classes.find(c => c.id === classId);
-            if (cls) {
-                // Berechne Gesamtzahl der Schüler und Noten
-                let totalStudents = 0;
-                let totalGrades = 0;
-                if (cls.years) {
-                    cls.years.forEach(year => {
-                        if (year.students) {
-                            totalStudents += year.students.length;
-                            year.students.forEach(student => {
-                                totalGrades += student.grades.length;
-                            });
-                        }
-                    });
-                }
-
-                const message = t("confirm.deleteClass", { name: escapeHtml(cls.name) });
-                const details = `<strong>${t('confirm.classStats') || 'Inhalt'}:</strong><br>
-                    • ${totalStudents} ${t('confirm.students') || 'Schüler'}<br>
-                    • ${totalGrades} ${t('confirm.grades') || 'Noten'}<br><br>
-                    ${t('confirm.allDataDeleted') || 'Alle Daten dieser Klasse werden unwiderruflich gelöscht.'}`;
-                const warning = t('confirm.cannotBeUndone') || 'Diese Aktion kann nicht rückgängig gemacht werden.';
-
-                showConfirmDialog(message, () => {
-                    deleteClass(classId);
-                }, details, warning);
-            }
-        });
+        btn.addEventListener("click", (e) => { e.stopPropagation(); _promptDeleteClass(btn.dataset.deleteClass); });
     });
     _initSidebarSearch();
 };
@@ -2826,17 +2834,17 @@ const renderHome = () => {
         return;
     }
 
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
     overviewList.innerHTML = appData.classes.map(cls => {
         let studentCount = 0;
         let classAverage = "-";
         const classAverages = [];
 
-        // Durch alle Jahre iterieren
         if (cls.years) {
             cls.years.forEach(year => {
                 if (year.students) {
                     studentCount += year.students.length;
-
                     year.students.forEach(student => {
                         const avg = calculateWeightedAverage(student.grades);
                         if (avg > 0) classAverages.push(avg);
@@ -2844,12 +2852,11 @@ const renderHome = () => {
                 }
             });
         }
-
         if (classAverages.length > 0) {
             classAverage = (classAverages.reduce((a, b) => a + b, 0) / classAverages.length).toFixed(2);
         }
 
-        return `
+        const card = `
             <div class="flex items-center justify-between p-3 border rounded cursor-pointer" data-goto-class="${safeAttr(cls.id)}">
                 <div>
                     <h3 class="font-semibold">${escapeHtml(cls.name)}</h3>
@@ -2862,19 +2869,41 @@ const renderHome = () => {
                     </div>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="class-card-chevron"><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
-            </div>
-        `;
+            </div>`;
+
+        if (isMobile) {
+            return swipeRowHtml({
+                contentHtml: card,
+                leftAction:  { label: t('class.editClass') || 'Bearbeiten', iconSvg: SWIPE_ICONS.edit,  attr: `data-edit-class="${safeAttr(cls.id)}"` },
+                rightAction: { label: t('class.deleteClass') || 'Löschen',  iconSvg: SWIPE_ICONS.trash, attr: `data-delete-class="${safeAttr(cls.id)}"` }
+            });
+        }
+        return card;
     }).join("");
 
-    // Add click handlers to go to class
-    document.querySelectorAll("[data-goto-class]").forEach(el => {
+    // Click → open class
+    overviewList.querySelectorAll("[data-goto-class]").forEach(el => {
         el.addEventListener("click", () => {
+            closeAllSwipes();
             const classId = el.dataset.gotoClass;
             appData.currentClassId = classId;
             saveData();
             showClassView();
         });
     });
+
+    if (isMobile) {
+        // Edit/Delete side actions
+        overviewList.querySelectorAll("[data-edit-class]").forEach(btn => {
+            btn.addEventListener("click", (e) => { e.stopPropagation(); closeAllSwipes(); _promptEditClass(btn.dataset.editClass); });
+        });
+        overviewList.querySelectorAll("[data-delete-class]").forEach(btn => {
+            btn.addEventListener("click", (e) => { e.stopPropagation(); _promptDeleteClass(btn.dataset.deleteClass); });
+        });
+        // Wire swipe
+        overviewList.querySelectorAll('.swipe-row').forEach(attachSwipe);
+        playSwipeHint(overviewList, 'homeOverview');
+    }
     _initHomeSearch();
 };
 
@@ -5527,13 +5556,16 @@ const _renderAttStudentPanel = () => {
 
 // ── Class Exam Mode ────────────────────────────────────────────────────────
 const initClassExamMode = () => {
-    const overlay   = document.getElementById('class-exam-overlay');
-    const stepSetup = document.getElementById('class-exam-step-setup');
-    const stepEntry = document.getElementById('class-exam-step-entry');
-    const stepSum   = document.getElementById('class-exam-step-summary');
+    const overlay      = document.getElementById('class-exam-overlay');
+    const stepOverview = document.getElementById('class-exam-step-overview');
+    const stepSetup    = document.getElementById('class-exam-step-setup');
+    const stepEntry    = document.getElementById('class-exam-step-entry');
+    const stepSum      = document.getElementById('class-exam-step-summary');
 
     const showStep = (step) => {
-        [stepSetup, stepEntry, stepSum].forEach(s => {
+        if (!step) return;
+        [stepOverview, stepSetup, stepEntry, stepSum].forEach(s => {
+            if (!s) return;
             s.classList.add('hidden');
             s.style.display = 'none';
         });
@@ -5543,8 +5575,410 @@ const initClassExamMode = () => {
         step.style.height = '100%';
     };
 
-    // State
-    let examState = null; // { name, categoryId, date, students, results, currentIdx }
+    // State: { mode: 'create'|'edit', examId, name, categoryId, date, students, results, currentIdx }
+    let examState = null;
+
+    // ── Draft persistence (server-synced via appData.examDrafts) ────────────
+    const _draftKey = () => {
+        const cy = getCurrentYear();
+        if (!cy) return null;
+        return `${cy.id}.${cy.currentSubjectId || 'none'}`;
+    };
+    const _getDraftsStore = () => {
+        if (!appData.examDrafts || typeof appData.examDrafts !== 'object') {
+            appData.examDrafts = {};
+        }
+        return appData.examDrafts;
+    };
+    const _saveDraft = () => {
+        if (!examState || examState.mode !== 'create') return;
+        const k = _draftKey();
+        if (!k) return;
+        const studentIds = examState.students.map(s => s.id);
+        _getDraftsStore()[k] = {
+            name: examState.name,
+            categoryId: examState.categoryId,
+            subjectId: examState.subjectId || (getCurrentYear()?.currentSubjectId) || '',
+            date: examState.date,
+            studentIds,
+            results: examState.results,
+            currentIdx: examState.currentIdx,
+            savedAt: Date.now()
+        };
+        // Silent server-sync (no toast)
+        saveData('');
+    };
+    const _loadDraft = () => {
+        const k = _draftKey();
+        if (!k) return null;
+        const store = appData.examDrafts;
+        if (!store || typeof store !== 'object') return null;
+        return store[k] || null;
+    };
+    const _clearDraft = () => {
+        const k = _draftKey();
+        if (!k) return;
+        const store = appData.examDrafts;
+        if (store && store[k]) {
+            delete store[k];
+            saveData('');
+        }
+    };
+
+    // Legacy: migrate any old localStorage drafts to appData on first access
+    const _migrateLegacyDrafts = () => {
+        try {
+            const cy = getCurrentYear();
+            if (!cy) return;
+            const k = `eduGrade.examDraft.${cy.id}.${cy.currentSubjectId || 'none'}`;
+            const raw = localStorage.getItem(k);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            const newKey = `${cy.id}.${cy.currentSubjectId || 'none'}`;
+            const store = _getDraftsStore();
+            if (!store[newKey]) {
+                store[newKey] = parsed;
+                saveData('');
+            }
+            localStorage.removeItem(k);
+        } catch (e) { /* ignore */ }
+    };
+
+    // ── Existing class exams (grouped by examId) ────────────────────────────
+    const _collectExistingExams = () => {
+        const cy = getCurrentYear();
+        if (!cy || !cy.currentSubjectId) return [];
+        const map = new Map();
+        (cy.students || []).forEach(st => {
+            (st.grades || []).forEach(g => {
+                if (!g.examId) return;
+                if (g.subjectId !== cy.currentSubjectId) return;
+                if (!map.has(g.examId)) {
+                    map.set(g.examId, {
+                        examId: g.examId,
+                        name: g.name || '',
+                        categoryId: g.categoryId,
+                        categoryName: g.categoryName || '',
+                        date: g.createdAt,
+                        count: 0
+                    });
+                }
+                map.get(g.examId).count++;
+            });
+        });
+        return Array.from(map.values()).sort((a, b) => b.date - a.date);
+    };
+
+    const _badge = (label, color) =>
+        `<span style="display:inline-block;padding:0.15rem 0.5rem;border-radius:9999px;font-size:0.7rem;font-weight:600;background:${color}22;color:${color};border:1px solid ${color}66;">${escapeHtml(label)}</span>`;
+
+    const _renderOverview = () => {
+        const listEl     = document.getElementById('class-exam-overview-list');
+        const emptyEl    = document.getElementById('class-exam-overview-empty');
+        const nonEmptyEl = document.getElementById('class-exam-overview-nonempty');
+        if (!listEl) return;
+
+        const draft = _loadDraft();
+        const exams = _collectExistingExams();
+
+        const items = [];
+
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+        const _cardInner = (name, badge, sub) => `<div class="class-exam-overview-card" style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;width:100%;padding:0.85rem 1rem;border:1px solid var(--border,#2d2d3d);border-radius:0.75rem;cursor:pointer;color:inherit;">
+            <span style="display:flex;flex-direction:column;align-items:flex-start;gap:0.25rem;flex:1;min-width:0;overflow:hidden;">
+                <span style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;width:100%;">
+                    <strong style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">${escapeHtml(name)}</strong>
+                    ${badge}
+                </span>
+                <span style="font-size:0.8rem;opacity:0.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">${sub}</span>
+            </span>
+            <span style="opacity:0.4;font-size:1.25rem;flex-shrink:0;">›</span>
+        </div>`;
+
+        const _card = (name, badge, sub, mainAttr, editAttr, deleteAttr) => {
+            const inner = _cardInner(name, badge, sub);
+            if (isMobile) {
+                return swipeRowHtml({
+                    contentHtml: inner,
+                    contentAttr: `${mainAttr} role="button" tabindex="0"`,
+                    leftAction:  { label: t('classExam.editMeta') || 'Bearbeiten', iconSvg: SWIPE_ICONS.edit,  attr: editAttr },
+                    rightAction: { label: t('classExam.delete')   || 'Löschen',    iconSvg: SWIPE_ICONS.trash, attr: deleteAttr }
+                });
+            }
+            // Desktop: card + stacked icon buttons (edit on top, delete below)
+            return `<div style="display:flex;align-items:stretch;gap:0.4rem;margin-bottom:0.5rem;">
+                <div style="flex:1;min-width:0;" ${mainAttr} role="button" tabindex="0">${inner}</div>
+                <div style="display:flex;flex-direction:column;gap:0.3rem;flex-shrink:0;">
+                    <button type="button" class="btn-icon btn-secondary" ${editAttr} title="${escapeHtml(t('classExam.editMeta') || 'Bearbeiten')}" aria-label="${escapeHtml(t('classExam.editMeta') || 'Bearbeiten')}" style="flex:1;border-radius:0.5rem;padding:0.4rem;">${SWIPE_ICONS.edit}</button>
+                    <button type="button" class="btn-icon btn-destructive" ${deleteAttr} title="${escapeHtml(t('classExam.delete') || 'Löschen')}" aria-label="${escapeHtml(t('classExam.delete') || 'Löschen')}" style="flex:1;border-radius:0.5rem;padding:0.4rem;">${SWIPE_ICONS.trash}</button>
+                </div>
+            </div>`;
+        };
+
+        // Draft card (if any)
+        if (draft && Array.isArray(draft.studentIds) && draft.studentIds.length > 0) {
+            const filled = (draft.results || []).filter(r => r && (r.type === 'grade' || r.type === 'absent')).length;
+            const total = draft.studentIds.length;
+            const dateStr = draft.date ? new Date(draft.date).toLocaleDateString() : '';
+            const subRaw = [dateStr, `${filled}/${total}`].filter(Boolean).join(' · ');
+            items.push(_card(
+                draft.name || t('classExam.draft') || 'Entwurf',
+                _badge(t('classExam.badgeDraft') || 'Entwurf', '#f59e0b'),
+                escapeHtml(subRaw),
+                'data-overview-draft="1"',
+                'data-overview-edit-draft="1"',
+                'data-overview-delete-draft="1"'
+            ));
+        }
+
+        // Completed exams
+        exams.forEach(ex => {
+            const dt = new Date(ex.date);
+            const dateStr = isNaN(dt) ? '' : dt.toLocaleDateString();
+            const subRaw = [ex.categoryName, dateStr, `${ex.count}`].filter(Boolean).join(' · ');
+            items.push(_card(
+                ex.name || '—',
+                _badge(t('classExam.badgeDone') || 'Abgeschlossen', '#22c55e'),
+                escapeHtml(subRaw),
+                `data-overview-exam="${safeAttr(ex.examId)}"`,
+                `data-overview-edit-exam="${safeAttr(ex.examId)}"`,
+                `data-overview-delete-exam="${safeAttr(ex.examId)}"`
+            ));
+        });
+
+        listEl.innerHTML = items.join('');
+        const isEmpty = items.length === 0;
+        if (emptyEl)    emptyEl.style.display    = isEmpty ? 'flex'  : 'none';
+        if (nonEmptyEl) nonEmptyEl.style.display = isEmpty ? 'none'  : 'block';
+
+        // Wire main card clicks
+        listEl.querySelectorAll('[data-overview-draft]').forEach(el => {
+            el.addEventListener('click', () => { closeAllSwipes(); _resumeDraft(); });
+        });
+        listEl.querySelectorAll('[data-overview-exam]').forEach(el => {
+            el.addEventListener('click', () => { closeAllSwipes(); _openEditMode(el.dataset.overviewExam); });
+        });
+
+        // Side actions
+        listEl.querySelectorAll('[data-overview-edit-draft]').forEach(btn => {
+            btn.addEventListener('click', (e) => { e.stopPropagation(); closeAllSwipes(); _openMetaEditForDraft(); });
+        });
+        listEl.querySelectorAll('[data-overview-edit-exam]').forEach(btn => {
+            btn.addEventListener('click', (e) => { e.stopPropagation(); closeAllSwipes(); _openMetaEditForExam(btn.dataset.overviewEditExam); });
+        });
+        listEl.querySelectorAll('[data-overview-delete-draft]').forEach(btn => {
+            btn.addEventListener('click', (e) => { e.stopPropagation(); _confirmDeleteDraft(); });
+        });
+        listEl.querySelectorAll('[data-overview-delete-exam]').forEach(btn => {
+            btn.addEventListener('click', (e) => { e.stopPropagation(); _confirmDeleteExam(btn.dataset.overviewDeleteExam); });
+        });
+
+        // Mobile-only: wire swipe + hint
+        if (isMobile) {
+            listEl.querySelectorAll('.swipe-row').forEach(attachSwipe);
+            playSwipeHint(listEl, 'examOverview');
+        }
+    };
+
+    // ── Delete handlers ─────────────────────────────────────────────────────
+    const _confirmDeleteDraft = () => {
+        showConfirmDialog(
+            t('classExam.confirmDeleteDraft') || 'Entwurf wirklich löschen?',
+            () => { _clearDraft(); closeAllSwipes(); _renderOverview(); showToast(t('classExam.toastDraftDeleted') || 'Entwurf gelöscht.', 'success'); },
+            null, null,
+            { confirmText: t('classExam.delete') || 'Löschen', cancelText: t('dialog.cancel') || 'Abbrechen' }
+        );
+    };
+    const _confirmDeleteExam = (examId) => {
+        const cy = getCurrentYear();
+        if (!cy) return;
+        let count = 0;
+        (cy.students || []).forEach(st => (st.grades || []).forEach(g => { if (g.examId === examId) count++; }));
+        const msg = (t('classExam.confirmDeleteExam') || 'Diese Klassenarbeit ({n} Noten) wirklich löschen?').replace('{n}', count);
+        showConfirmDialog(
+            msg,
+            () => {
+                (cy.students || []).forEach(st => {
+                    if (Array.isArray(st.grades)) st.grades = st.grades.filter(g => g.examId !== examId);
+                });
+                saveData('');
+                renderStudents();
+                closeAllSwipes();
+                _renderOverview();
+                showToast(t('classExam.toastExamDeleted') || 'Klassenarbeit gelöscht.', 'success');
+            },
+            null,
+            t('classExam.deleteWarning') || 'Alle Noten dieser Klassenarbeit werden entfernt.',
+            { confirmText: t('classExam.delete') || 'Löschen', cancelText: t('dialog.cancel') || 'Abbrechen' }
+        );
+    };
+
+    // ── Meta-Edit (change name/category/date without touching grades) ───────
+    const _openMetaEditForExam = (examId) => {
+        const cy = getCurrentYear();
+        if (!cy) return;
+        let proto = null;
+        for (const s of (cy.students || [])) {
+            const g = (s.grades || []).find(gr => gr.examId === examId);
+            if (g) { proto = g; break; }
+        }
+        if (!proto) {
+            showAlertDialog(t('classExam.errorNotFound') || 'Klassenarbeit nicht gefunden.');
+            return;
+        }
+        examState = {
+            mode: 'metaEdit',
+            metaTarget: { kind: 'exam', examId },
+            name: proto.name || '',
+            categoryId: proto.categoryId,
+            subjectId: proto.subjectId,
+            date: new Date(proto.createdAt).toISOString().split('T')[0],
+            students: [],
+            results: [],
+            currentIdx: 0
+        };
+        _populateSetupForm(examState);
+        showStep(stepSetup);
+    };
+    const _openMetaEditForDraft = () => {
+        const draft = _loadDraft();
+        if (!draft) return;
+        const cy = getCurrentYear();
+        examState = {
+            mode: 'metaEdit',
+            metaTarget: { kind: 'draft' },
+            name: draft.name || '',
+            categoryId: draft.categoryId,
+            subjectId: draft.subjectId || (cy && cy.currentSubjectId) || '',
+            date: draft.date,
+            students: [],
+            results: [],
+            currentIdx: 0
+        };
+        _populateSetupForm(examState);
+        showStep(stepSetup);
+    };
+    const _populateSetupForm = (st) => {
+        const catSel = document.getElementById('class-exam-category');
+        catSel.innerHTML = appData.categories.map(cat =>
+            `<option value="${safeAttr(cat.id)}" ${cat.id === st.categoryId ? 'selected' : ''}>${escapeHtml(cat.name)} (${(cat.weight*100).toFixed(0)}%)</option>`
+        ).join('');
+        _populateSubjectSelect(st.subjectId);
+        document.getElementById('class-exam-name').value = st.name || '';
+        document.getElementById('class-exam-date').value = st.date || new Date().toISOString().split('T')[0];
+        document.getElementById('class-exam-setup-error').classList.add('hidden');
+        const startBtn = document.getElementById('class-exam-start');
+        if (startBtn) startBtn.textContent = (t('classExam.saveMeta') || 'Speichern');
+    };
+
+    const _resumeDraft = () => {
+        const cy = getCurrentYear();
+        if (!cy) return;
+        const draft = _loadDraft();
+        if (!draft) return;
+        const sortedAll = _sortStudents(cy.students || []);
+        const resolved = (draft.studentIds || []).map(id => sortedAll.find(s => s.id === id)).filter(Boolean);
+        if (resolved.length !== (draft.studentIds || []).length) {
+            // Stale (student set changed) — offer discard
+            showConfirmDialog(
+                t('classExam.draftStale') || 'Schülerliste hat sich geändert. Entwurf verwerfen?',
+                () => { _clearDraft(); _renderOverview(); },
+                null, null,
+                { confirmText: t('classExam.resumeDiscard') || 'Verwerfen', cancelText: t('dialog.cancel') || 'Abbrechen' }
+            );
+            return;
+        }
+        examState = {
+            mode: 'create',
+            examId: null,
+            name: draft.name || '',
+            categoryId: draft.categoryId,
+            subjectId: draft.subjectId || (cy.currentSubjectId) || '',
+            date: draft.date,
+            students: resolved,
+            results: draft.results || [],
+            currentIdx: Math.min(draft.currentIdx || 0, resolved.length)
+        };
+        if (examState.currentIdx >= resolved.length) {
+            _renderExamSummary();
+            showStep(stepSum);
+        } else {
+            _renderExamEntry();
+            showStep(stepEntry);
+        }
+    };
+
+    // ── Edit existing exam ──────────────────────────────────────────────────
+    const _sortStudents = (arr) => [...arr].sort((a, b) =>
+        (a.lastName || '').localeCompare(b.lastName || '', 'de') ||
+        (a.firstName || '').localeCompare(b.firstName || '', 'de')
+    );
+
+    const _openEditMode = (examId) => {
+        const cy = getCurrentYear();
+        if (!cy) return;
+        const students = _sortStudents(cy.students || []);
+        let proto = null;
+        const results = students.map(s => {
+            const g = (s.grades || []).find(gr => gr.examId === examId);
+            if (!g) return { type: 'absent', note: '' };
+            if (!proto) proto = g;
+            return { type: 'grade', value: g.value, note: g.note || '', gradeId: g.id };
+        });
+        if (!proto) {
+            // try any student in case sort missed
+            for (const s of students) {
+                const g = (s.grades || []).find(gr => gr.examId === examId);
+                if (g) { proto = g; break; }
+            }
+        }
+        if (!proto) {
+            showAlertDialog(t('classExam.errorNotFound') || 'Klassenarbeit nicht gefunden.');
+            return;
+        }
+        const dateStr = new Date(proto.createdAt).toISOString().split('T')[0];
+        examState = {
+            mode: 'edit',
+            examId,
+            name: proto.name || '',
+            categoryId: proto.categoryId,
+            subjectId: proto.subjectId,
+            date: dateStr,
+            students,
+            results,
+            currentIdx: 0
+        };
+        _renderExamSummary();
+        showStep(stepSum);
+    };
+
+    const _populateSubjectSelect = (selectedId) => {
+        const subSel = document.getElementById('class-exam-subject');
+        if (!subSel) return;
+        const cy = getCurrentYear();
+        const subjects = (cy && Array.isArray(cy.subjects)) ? cy.subjects : [];
+        const pick = selectedId || (cy && cy.currentSubjectId) || (subjects[0] && subjects[0].id) || '';
+        subSel.innerHTML = subjects.map(s =>
+            `<option value="${safeAttr(s.id)}" ${s.id === pick ? 'selected' : ''}>${escapeHtml(s.name)}</option>`
+        ).join('');
+    };
+
+    const _resetSetupForm = () => {
+        const catSel = document.getElementById('class-exam-category');
+        catSel.innerHTML = appData.categories.map(cat =>
+            `<option value="${safeAttr(cat.id)}">${escapeHtml(cat.name)} (${(cat.weight*100).toFixed(0)}%)</option>`
+        ).join('');
+        _populateSubjectSelect(null);
+        document.getElementById('class-exam-date').value = new Date().toISOString().split('T')[0];
+        const nameEl = document.getElementById('class-exam-name');
+        nameEl.value = '';
+        nameEl.removeAttribute('aria-invalid');
+        document.getElementById('class-exam-date').removeAttribute('aria-invalid');
+        document.getElementById('class-exam-setup-error').classList.add('hidden');
+        const startBtn = document.getElementById('class-exam-start');
+        if (startBtn) startBtn.textContent = (t('classExam.start') || 'Noten eintragen →');
+    };
 
     // ── Open / Close ────────────────────────────────────────────────────────
     const openExam = () => {
@@ -5558,23 +5992,17 @@ const initClassExamMode = () => {
             return;
         }
 
-        // Populate category select
-        const catSel = document.getElementById('class-exam-category');
-        catSel.innerHTML = appData.categories.map(cat =>
-            `<option value="${safeAttr(cat.id)}">${escapeHtml(cat.name)} (${(cat.weight*100).toFixed(0)}%)</option>`
-        ).join('');
-
-        // Set today's date
-        document.getElementById('class-exam-date').value = new Date().toISOString().split('T')[0];
-        const _nameEl = document.getElementById('class-exam-name');
-        _nameEl.value = '';
-        _nameEl.removeAttribute('aria-invalid');
-        document.getElementById('class-exam-date').removeAttribute('aria-invalid');
-        document.getElementById('class-exam-setup-error').classList.add('hidden');
-
-        showStep(stepSetup);
+        if (stepOverview) {
+            _migrateLegacyDrafts();
+            _renderOverview();
+            showStep(stepOverview);
+        } else {
+            // Fallback: HTML noch alt geladen — gehe direkt zum Setup
+            _resetSetupForm();
+            showStep(stepSetup);
+            setTimeout(() => document.getElementById('class-exam-name')?.focus(), 50);
+        }
         overlay.classList.add('active');
-        setTimeout(() => document.getElementById('class-exam-name').focus(), 50);
     };
 
     const closeExam = () => {
@@ -5586,6 +6014,7 @@ const initClassExamMode = () => {
     document.getElementById('class-exam-start').addEventListener('click', () => {
         const name = document.getElementById('class-exam-name').value.trim();
         const categoryId = document.getElementById('class-exam-category').value;
+        const subjectId = document.getElementById('class-exam-subject')?.value || (getCurrentYear()?.currentSubjectId) || '';
         const date = document.getElementById('class-exam-date').value;
         const errEl = document.getElementById('class-exam-setup-error');
 
@@ -5607,14 +6036,54 @@ const initClassExamMode = () => {
         }
         errEl.classList.add('hidden');
 
-        const currentYear = getCurrentYear();
-        // Sort students same as table (lastName asc)
-        const students = [...currentYear.students].sort((a, b) =>
-            (a.lastName || '').localeCompare(b.lastName || '', 'de') ||
-            (a.firstName || '').localeCompare(b.firstName || '', 'de')
-        );
+        // metaEdit: update meta on existing exam grades or draft, then back to overview
+        if (examState && examState.mode === 'metaEdit') {
+            const tgt = examState.metaTarget || {};
+            const cy = getCurrentYear();
+            const catObj = (appData.categories || []).find(c => c.id === categoryId);
+            const newTimestamp = new Date(date).getTime() || Date.now();
 
-        examState = { name, categoryId, date, students, results: [], currentIdx: 0 };
+            if (tgt.kind === 'exam' && tgt.examId && cy) {
+                (cy.students || []).forEach(st => {
+                    (st.grades || []).forEach(g => {
+                        if (g.examId === tgt.examId) {
+                            g.name = name;
+                            g.categoryId = categoryId;
+                            g.subjectId = subjectId;
+                            if (catObj) {
+                                g.categoryName = catObj.name;
+                                g.weight = catObj.weight;
+                            }
+                            g.createdAt = newTimestamp;
+                        }
+                    });
+                });
+                saveData('');
+                renderStudents();
+                showToast(t('classExam.toastMetaUpdated') || 'Klassenarbeit aktualisiert.', 'success');
+            } else if (tgt.kind === 'draft') {
+                const draft = _loadDraft();
+                if (draft) {
+                    draft.name = name;
+                    draft.categoryId = categoryId;
+                    draft.subjectId = subjectId;
+                    draft.date = date;
+                    _getDraftsStore()[_draftKey()] = draft;
+                    saveData('');
+                    showToast(t('classExam.toastMetaUpdated') || 'Klassenarbeit aktualisiert.', 'success');
+                }
+            }
+            examState = null;
+            _renderOverview();
+            showStep(stepOverview);
+            return;
+        }
+
+        const currentYear = getCurrentYear();
+        const students = _sortStudents(currentYear.students || []);
+
+        examState = { mode: 'create', examId: null, name, categoryId, subjectId, date, students, results: [], currentIdx: 0 };
+        _saveDraft();
         _renderExamEntry();
         showStep(stepEntry);
     });
@@ -5650,6 +6119,7 @@ const initClassExamMode = () => {
             const note = document.getElementById('class-exam-note').value.trim();
             examState.results[examState.currentIdx] = { type: 'grade', value: grade, note };
             examState.currentIdx++;
+            _saveDraft();
             _renderExamEntry();
         });
     });
@@ -5660,6 +6130,7 @@ const initClassExamMode = () => {
         const note = document.getElementById('class-exam-note').value.trim();
         examState.results[examState.currentIdx] = { type: 'absent', note };
         examState.currentIdx++;
+        _saveDraft();
         _renderExamEntry();
     });
 
@@ -5668,12 +6139,18 @@ const initClassExamMode = () => {
         if (!examState || examState.currentIdx === 0) return;
         examState.currentIdx--;
         examState.results[examState.currentIdx] = undefined;
+        _saveDraft();
         _renderExamEntry();
     });
 
-    // Back to setup from entry
+    // Back to overview from entry (auto-saves draft in create mode)
     document.getElementById('class-exam-back-to-setup').addEventListener('click', () => {
-        showStep(stepSetup);
+        if (examState && examState.mode === 'create') {
+            _saveDraft();
+        }
+        examState = null;
+        _renderOverview();
+        showStep(stepOverview);
     });
 
     // ── Summary ──────────────────────────────────────────────────────────────
@@ -5685,7 +6162,7 @@ const initClassExamMode = () => {
 
     const _renderExamSummary = () => {
         if (!examState) return;
-        const { students, results } = examState;
+        const { students, results, mode } = examState;
         const listEl = document.getElementById('class-exam-summary-list');
         listEl.innerHTML = students.map((s, i) => {
             const r = results[i];
@@ -5698,8 +6175,71 @@ const initClassExamMode = () => {
                 right = `<span class="exam-grade-badge grade-${r.value}" style="background:${color}20;color:${color};">${r.value}</span>`;
             }
             const noteHtml = r?.note ? `<span class="exam-summary-note">${escapeHtml(r.note)}</span>` : '';
-            return `<div class="class-exam-summary-row"><span>${name}${noteHtml}</span>${right}</div>`;
+            return `<div class="class-exam-summary-row" data-row-idx="${i}" style="cursor:pointer;"><span>${name}${noteHtml}</span>${right}</div>
+                <div class="class-exam-inline-edit" data-edit-for="${i}" style="display:none;padding:0.5rem 0.75rem;border-top:1px solid var(--border-color,#374151);background:rgba(255,255,255,0.02);">
+                    <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.4rem;">
+                        ${[1,2,3,4,5].map(g => `<button type="button" class="class-exam-grade-btn g${g}" data-inline-grade="${g}" data-row="${i}" style="flex:1;min-width:2.5rem;padding:0.4rem;">${g}</button>`).join('')}
+                        <button type="button" class="class-exam-absent-btn" data-inline-absent="${i}" style="flex:2;padding:0.4rem;font-size:0.85rem;">${escapeHtml(t('classExam.absent') || 'Abwesend')}</button>
+                    </div>
+                    <input type="text" class="input w-full" data-inline-note="${i}" placeholder="${escapeHtml(t('grade.note') || 'Notiz...')}" value="${escapeHtml(r?.note || '')}" style="margin-bottom:0.4rem;">
+                    <div style="display:flex;gap:0.4rem;justify-content:flex-end;">
+                        <button type="button" class="btn-outline" data-inline-cancel="${i}" style="padding:0.3rem 0.7rem;">${escapeHtml(t('dialog.cancel') || 'Abbrechen')}</button>
+                    </div>
+                </div>`;
         }).join('');
+
+        // Update save button label based on mode
+        const saveBtn = document.getElementById('class-exam-save');
+        if (saveBtn) {
+            saveBtn.textContent = (mode === 'edit')
+                ? (t('classExam.saveEdit') || 'Änderungen speichern')
+                : (t('classExam.save') || 'Alle Noten speichern');
+        }
+
+        // Wire row clicks (toggle inline edit)
+        listEl.querySelectorAll('.class-exam-summary-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const idx = row.dataset.rowIdx;
+                const editEl = listEl.querySelector(`.class-exam-inline-edit[data-edit-for="${idx}"]`);
+                if (!editEl) return;
+                // close all others
+                listEl.querySelectorAll('.class-exam-inline-edit').forEach(e => { if (e !== editEl) e.style.display = 'none'; });
+                editEl.style.display = (editEl.style.display === 'none') ? 'block' : 'none';
+            });
+        });
+
+        // Wire inline grade buttons
+        listEl.querySelectorAll('[data-inline-grade]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const i = parseInt(btn.dataset.row, 10);
+                const grade = parseInt(btn.dataset.inlineGrade, 10);
+                const noteInput = listEl.querySelector(`[data-inline-note="${i}"]`);
+                examState.results[i] = { type: 'grade', value: grade, note: (noteInput?.value || '').trim() };
+                _renderExamSummary();
+            });
+        });
+        listEl.querySelectorAll('[data-inline-absent]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const i = parseInt(btn.dataset.inlineAbsent, 10);
+                const noteInput = listEl.querySelector(`[data-inline-note="${i}"]`);
+                examState.results[i] = { type: 'absent', note: (noteInput?.value || '').trim() };
+                _renderExamSummary();
+            });
+        });
+        listEl.querySelectorAll('[data-inline-cancel]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const i = btn.dataset.inlineCancel;
+                const editEl = listEl.querySelector(`.class-exam-inline-edit[data-edit-for="${i}"]`);
+                if (editEl) editEl.style.display = 'none';
+            });
+        });
+        // prevent inline-edit clicks from bubbling and toggling row
+        listEl.querySelectorAll('.class-exam-inline-edit').forEach(el => {
+            el.addEventListener('click', (e) => e.stopPropagation());
+        });
     };
 
     // Back to entry from summary
@@ -5717,32 +6257,87 @@ const initClassExamMode = () => {
     // Save all grades
     document.getElementById('class-exam-save').addEventListener('click', () => {
         if (!examState) return;
-        const { name, categoryId, date, students, results } = examState;
+        const { mode, name, categoryId, date, students, results } = examState;
         const currentYear = getCurrentYear();
         if (!currentYear) return;
 
-        const subjectId = currentYear.currentSubjectId;
+        const subjectId = examState.subjectId || currentYear.currentSubjectId;
         const gradeTimestamp = new Date(date).getTime() || Date.now();
-        let saved = 0;
+        const examId = (mode === 'edit' && examState.examId)
+            ? examState.examId
+            : `exam_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
+        // Edit mode: remove all prior grades belonging to this examId across all students
+        if (mode === 'edit') {
+            (currentYear.students || []).forEach(st => {
+                if (Array.isArray(st.grades)) {
+                    st.grades = st.grades.filter(g => g.examId !== examState.examId);
+                }
+            });
+        }
+
+        let saved = 0;
         students.forEach((student, i) => {
             const r = results[i];
             if (!r || r.type === 'absent') return;
-            addGrade(student.id, categoryId, r.value, name, subjectId, gradeTimestamp, false, r.note || '');
+            addGrade(student.id, categoryId, r.value, name, subjectId, gradeTimestamp, false, r.note || '', examId);
             saved++;
         });
 
         saveData();
+        _clearDraft();
         closeExam();
         renderStudents();
-        showToast(`${saved} Note${saved !== 1 ? 'n' : ''} gespeichert.`, 'success');
+        const msg = (mode === 'edit')
+            ? (t('classExam.toastUpdated') || '{n} Noten aktualisiert.').replace('{n}', saved)
+            : `${saved} Note${saved !== 1 ? 'n' : ''} gespeichert.`;
+        showToast(msg, 'success');
     });
 
     // Cancel from summary
-    document.getElementById('class-exam-cancel-summary').addEventListener('click', closeExam);
+    document.getElementById('class-exam-cancel-summary').addEventListener('click', () => {
+        _clearDraft();
+        closeExam();
+    });
 
-    // Close button
+    // Overview close → close overlay completely
     document.getElementById('class-exam-close').addEventListener('click', closeExam);
+    // Setup close → back to overview (not full close)
+    const closeSetupBtn = document.getElementById('class-exam-close-setup');
+    if (closeSetupBtn) closeSetupBtn.addEventListener('click', () => {
+        examState = null;
+        _renderOverview();
+        showStep(stepOverview);
+    });
+
+    // Overview → Setup (new exam) — both buttons (compact + empty-state)
+    const _gotoNew = () => {
+        _resetSetupForm();
+        showStep(stepSetup);
+        setTimeout(() => document.getElementById('class-exam-name')?.focus(), 50);
+    };
+    const newBtn      = document.getElementById('class-exam-new-btn');
+    const newBtnEmpty = document.getElementById('class-exam-new-btn-empty');
+    if (newBtn)      newBtn.addEventListener('click', _gotoNew);
+    if (newBtnEmpty) newBtnEmpty.addEventListener('click', _gotoNew);
+
+    // Continue Later → save draft (already auto-saved), close overlay
+    const continueLaterBtn = document.getElementById('class-exam-continue-later');
+    if (continueLaterBtn) continueLaterBtn.addEventListener('click', () => {
+        if (examState && examState.mode === 'create') {
+            _saveDraft();
+            showToast(t('classExam.toastDraftSaved') || 'Entwurf gespeichert.', 'success');
+        }
+        closeExam();
+    });
+
+    // Setup → Overview (back arrow): discard metaEdit / new state, return
+    const backToOverviewBtn = document.getElementById('class-exam-back-to-overview');
+    if (backToOverviewBtn) backToOverviewBtn.addEventListener('click', () => {
+        examState = null;
+        _renderOverview();
+        showStep(stepOverview);
+    });
 
     // Escape key
     document.addEventListener('keydown', (e) => {

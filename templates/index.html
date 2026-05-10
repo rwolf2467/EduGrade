@@ -5,9 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self';">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; connect-src 'self' https://cdn.jsdelivr.net;">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>EduGrade</title>
     <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
@@ -16,11 +15,11 @@
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#9333ea">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="EduGrade">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"
-        integrity="sha384-yNSZBFvuOWcmww494a9+1zNuvgUGEXoWkein7cxP8wHUTi3iXCU4vJ7hr3tzBCml"
         crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/basecoat.cdn.min.css"
         integrity="sha384-6dC3cDSMqy9z8ebhUdgkcvps0xEecjrA8dH320F43+mp8jEVgjsCiWRAjGTeLK6v"
@@ -28,9 +27,6 @@
     <script src="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/js/all.min.js"
         integrity="sha384-4km2iBe4ctopbIOD4zwPsKKoMQsTsYGXAnxBpgIalcQgzegu7w4e+JZMt/BbzScI"
         crossorigin="anonymous" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/lib/browser.min.js"
-        integrity="sha384-QRo0pvvTW8YezGeKFzTse1LRx2RL5Gj727EmbEJlxcVL37Yuf493KQjOO8BmrLTc"
-        crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"
         integrity="sha384-Sse/HDqcypGpyTDpvZOJNnG0TT3feGQUkF9H+mnRvic+LjR+K1NhTt8f51KIQ3v3"
         crossorigin="anonymous"></script>
@@ -1214,7 +1210,7 @@
                                         <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
                                     </svg>
                                     <span class="hidden sm:inline" data-i18n="classExam.title">Klassenarbeit</span>
-                                    <span class="sm:hidden" data-i18n="classExam.titleShort">Arbeit</span>
+                                    <span class="sm:hidden" data-i18n="classExam.titleShort">Test</span>
                                 </button>
                                 <button id="add-attendance-btn" class="btn-primary flex items-center gap-2">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2929,11 +2925,36 @@ Anna,,Schmidt</code></pre>
 
     <!-- Class Exam Mode Overlay -->
     <div id="class-exam-overlay" role="dialog" aria-modal="true" aria-labelledby="class-exam-title">
-        <!-- Step 1: Setup -->
-        <div id="class-exam-step-setup">
+        <!-- Step 0: Overview (entry point) -->
+        <div id="class-exam-step-overview">
             <div class="class-exam-header">
                 <h2 id="class-exam-title" class="text-lg font-semibold" data-i18n="classExam.title">Klassenarbeit</h2>
                 <button id="class-exam-close" class="btn-icon btn-secondary" aria-label="Schließen">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="class-exam-body">
+                <div class="class-exam-setup-inner">
+                    <div id="class-exam-overview-empty" class="class-exam-empty-state" style="display:none;">
+                        <div class="class-exam-empty-plus">+</div>
+                        <div style="font-weight:600;color:var(--foreground);" data-i18n="classExam.overviewEmpty">Noch keine Klassenarbeiten in diesem Fach.</div>
+                        <div style="font-size:0.85rem;" data-i18n="classExam.overviewEmptyHint">Lege jetzt deine erste Klassenarbeit an.</div>
+                        <button id="class-exam-new-btn-empty" class="btn-primary is-cta" style="padding:0.75rem 1.25rem;margin-top:0.75rem;" data-i18n="classExam.newExam">+ Neue Klassenarbeit</button>
+                    </div>
+                    <div id="class-exam-overview-nonempty" style="display:none;">
+                        <button id="class-exam-new-btn" class="btn-primary is-cta w-full" style="padding: 0.875rem; font-size: 1.05rem;" data-i18n="classExam.newExam">+ Neue Klassenarbeit</button>
+                        <div id="class-exam-overview-list" class="space-y-1 w-full" style="margin-top:0.75rem;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: Setup -->
+        <div id="class-exam-step-setup" class="hidden" style="display:none;flex-direction:column;height:100%;">
+            <div class="class-exam-header">
+                <div style="width:2.5rem;"></div>
+                <h2 class="text-lg font-semibold" data-i18n="classExam.newExam">Neue Klassenarbeit</h2>
+                <button id="class-exam-close-setup" class="btn-icon btn-secondary" aria-label="Zurück zur Übersicht">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
@@ -2943,6 +2964,10 @@ Anna,,Schmidt</code></pre>
                     <div class="grid gap-2">
                         <label class="block mb-1 font-medium" data-i18n="classExam.examName">Bezeichnung</label>
                         <input type="text" id="class-exam-name" class="input w-full" placeholder="z.B. Schularbeit 1, Test 2..." required>
+                    </div>
+                    <div class="grid gap-2">
+                        <label class="block mb-1 font-medium" data-i18n="classExam.subject">Fach</label>
+                        <select id="class-exam-subject" class="select w-full" required></select>
                     </div>
                     <div class="grid gap-2">
                         <label class="block mb-1 font-medium" data-i18n="grade.category">Kategorie</label>
@@ -2961,8 +2986,8 @@ Anna,,Schmidt</code></pre>
         <!-- Step 2: Grade Entry -->
         <div id="class-exam-step-entry" class="hidden" style="display:none;flex-direction:column;height:100%;">
             <div class="class-exam-header">
-                <button id="class-exam-back-to-setup" class="btn-icon btn-secondary" aria-label="Zurück zur Einrichtung">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                <button id="class-exam-back-to-setup" class="btn-icon btn-secondary" aria-label="Zurück zur Übersicht">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
                 <div class="flex items-center gap-3 flex-1 mx-3">
                     <div class="class-exam-progress-bar">
@@ -2986,6 +3011,7 @@ Anna,,Schmidt</code></pre>
                 <div class="class-exam-entry-controls">
                     <button class="class-exam-absent-btn" id="class-exam-absent-btn" data-i18n="classExam.absent">Abwesend – überspringen</button>
                     <textarea id="class-exam-note" class="class-exam-note-field" rows="2" placeholder="Notiz zur Note (optional)..."></textarea>
+                    <button id="class-exam-continue-later" class="btn-outline w-full" style="margin-top:0.5rem;padding:0.6rem;" data-i18n="classExam.continueLater">Später fortsetzen (Entwurf speichern)</button>
                 </div>
             </div>
         </div>

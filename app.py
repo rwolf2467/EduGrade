@@ -1835,7 +1835,9 @@ async def set_cache_control_headers(response):
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
-    
+
+    response.headers.setdefault('X-Frame-Options', 'DENY')
+
     return response
 
 # ============ Startup ============

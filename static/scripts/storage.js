@@ -287,9 +287,12 @@ const flushPendingSave = async () => {
 };
 
 const saveData = (message = "Data saved!", type = "success") => {
-    const teacherName = appData.teacherName || "there";
-    const personalizedMessage = message.replace("successfully", `successfully, ${teacherName}`);
-    showToast(personalizedMessage, type);
+    // Silent save: pass empty message to skip the toast (used for autosave/draft flows)
+    if (message) {
+        const teacherName = appData.teacherName || "there";
+        const personalizedMessage = message.replace("successfully", `successfully, ${teacherName}`);
+        showToast(personalizedMessage, type);
+    }
 
     if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
 

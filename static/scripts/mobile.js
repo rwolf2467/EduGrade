@@ -89,23 +89,21 @@
         toast(tr("mobile.pickClass", "Bitte zuerst eine Klasse öffnen."));
     }
 
+    function _openExamAfterClassReady() {
+        // Wait briefly for class view to render, then trigger the exam button.
+        setTimeout(() => {
+            const btn = document.getElementById("class-exam-btn");
+            if (btn) btn.click();
+        }, 220);
+    }
+
     function actClassExam() {
         if (isClassViewVisible()) {
             const btn = document.getElementById("class-exam-btn");
             if (btn) { btn.click(); return; }
         }
-        // Need a class first.
-        if (window.appData && window.appData.currentClassId && typeof showClassView === "function") {
-            showClassView();
-            // Defer click until view transition settles (showClassView animates ~150ms).
-            setTimeout(() => {
-                const btn = document.getElementById("class-exam-btn");
-                if (btn) btn.click();
-            }, 220);
-            return;
-        }
-        actClasses();
-        toast(tr("mobile.pickClass", "Bitte zuerst eine Klasse öffnen."));
+        // Not in class view → show picker, then open exam after selection.
+        openClassPickerSheet(() => _openExamAfterClassReady());
     }
 
     function actMenu() {
@@ -148,7 +146,7 @@
                         <line x1="9" y1="13" x2="15" y2="13"/>
                         <line x1="9" y1="17" x2="13" y2="17"/>
                     </svg>
-                    <span>${tr("mobile.exam", "Test")}</span>
+                    <span>${tr("mobile.exam", "Exam")}</span>
                 </button>
                 <button type="button" class="mnav-btn" data-mnav="menu" aria-label="${tr("nav.menu", "Menü")}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -169,6 +167,13 @@
         const btn = ev.target.closest("[data-mnav]");
         if (!btn) return;
         const action = btn.dataset.mnav;
+        // Close exam overlay if navigating away to another section
+        if (action !== "class-exam") {
+            const examOverlay = document.getElementById("class-exam-overlay");
+            if (examOverlay && examOverlay.classList.contains("active")) {
+                examOverlay.classList.remove("active");
+            }
+        }
         switch (action) {
             case "home": actHome(); break;
             case "classes": actClasses(); break;
@@ -176,7 +181,6 @@
             case "class-exam": actClassExam(); break;
             case "menu": actMenu(); break;
         }
-        // Defer state update so the click has already advanced the view.
         setTimeout(updateActiveState, 50);
     }
 
@@ -184,7 +188,10 @@
         const nav = document.getElementById("mobile-bottom-nav");
         if (!nav) return;
         let current = "home";
-        if (isViewVisible("class-view") || isViewVisible("student-detail-view") || isViewVisible("attendance-view")) {
+        const examOverlay = document.getElementById("class-exam-overlay");
+        if (examOverlay && examOverlay.classList.contains("active")) {
+            current = "class-exam";
+        } else if (isViewVisible("class-view") || isViewVisible("student-detail-view") || isViewVisible("attendance-view")) {
             current = "classes";
         } else if (isViewVisible("settings-view")) {
             current = "menu";
@@ -196,6 +203,13 @@
             else btn.removeAttribute("aria-current");
         });
     }
+    // Refresh active state when exam overlay opens/closes
+    window.addEventListener("DOMContentLoaded", () => {
+        const overlay = document.getElementById("class-exam-overlay");
+        if (!overlay) return;
+        const obs = new MutationObserver(() => updateActiveState());
+        obs.observe(overlay, { attributes: true, attributeFilter: ["class"] });
+    });
 
     /* ---------- Shared sheet gestures: body-lock + swipe-down close ---------- */
     function attachSheetGestures(sheet, backdrop, onClose, dragZone) {
@@ -523,7 +537,7 @@
     }
 
     /* ---------- Class picker (bottom-nav "Klassen") ---------- */
-    function openClassPickerSheet() {
+    function openClassPickerSheet(onPickOverride) {
         if (typeof appData === "undefined" || !appData || !Array.isArray(appData.classes) || appData.classes.length === 0) {
             const addBtn = document.getElementById("add-class");
             if (addBtn) addBtn.click();
@@ -542,6 +556,7 @@
             onPick: (classId) => {
                 appData.currentClassId = classId;
                 if (typeof showClassView === "function") showClassView();
+                if (typeof onPickOverride === "function") onPickOverride(classId);
             },
         });
     }

@@ -359,7 +359,7 @@ const addCategory = (name, weight, allowPlusMinus = false, onlyPlusMinus = false
  * @param {string} subjectId - ID des Fachs
  * @param {number} gradeDate - Optionales Datum als Timestamp (default: jetzt)
  */
-const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null, gradeDate = null, isPending = false, note = "") => {
+const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null, gradeDate = null, isPending = false, note = "", examId = "") => {
     const currentYear = getCurrentYear();
     if (!currentYear) {
         console.error("No current year found!");
@@ -404,7 +404,8 @@ const addGrade = (studentId, categoryId, value, gradeName = "", subjectId = null
             createdAt: timestamp,           // Zeitstempel für zeitlichen Graph (vom Benutzer wählbar)
             subjectId: subjectId,           // Zugehöriges Fach (null = kein Fach)
             isPending: isPending,           // Marker für ausstehende Noten
-            semester: getCurrentYear()?.currentSemester || "WS"
+            semester: getCurrentYear()?.currentSemester || "WS",
+            examId: examId || ""            // Group identifier for class exam batch (empty for single grades)
         };
 
         // If grade is pending, skip validation and set placeholder value

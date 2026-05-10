@@ -1,5 +1,5 @@
 // EduGrade Service Worker
-const CACHE_NAME = 'edugrade-v2';
+const CACHE_NAME = 'edugrade-v21';
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -18,6 +18,9 @@ self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
 
     event.respondWith(
-        fetch(event.request).catch(() => caches.match(event.request))
+        fetch(event.request).catch(async () => {
+            const cached = await caches.match(event.request);
+            return cached || Response.error();
+        })
     );
 });

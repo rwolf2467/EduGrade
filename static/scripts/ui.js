@@ -761,3 +761,153 @@ const showUndoNotification = (message, undoCallback, durationMs = 5000) => {
 
     _undoTimer = setTimeout(hide, durationMs);
 };
+
+
+/**
+ * SWIPE-ROW (iOS Mail style)
+ *
+ * Build a swipeable list row with up to two actions:
+ *   - Drag right (positive dx)  → reveals left-side action  (typically EDIT, blue)
+ *   - Drag left  (negative dx)  → reveals right-side action (typically DELETE, red)
+ *
+ * Usage:
+ *   const html = swipeRowHtml({
+ *       contentHtml,                // the visible row content (your card)
+ *       leftAction:  { label, iconSvg, attr },   // edit (optional)
+ *       rightAction: { label, iconSvg, attr },   // delete (optional)
+ *       contentAttr: 'role="button" data-id="123"',
+ *   });
+ *   // After inserting into the DOM, call attachSwipe on every .swipe-row
+ *   document.querySelectorAll('.swipe-row').forEach(attachSwipe);
+ */
+const SWIPE_ICONS = {
+    edit:   `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>`,
+    trash:  `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>`
+};
+
+const swipeRowHtml = ({ contentHtml, leftAction, rightAction, contentAttr = '' }) => {
+    const left = leftAction
+        ? `<button type="button" class="swipe-action swipe-action-left" ${leftAction.attr || ''} aria-label="${escapeHtml(leftAction.label || '')}">${leftAction.iconSvg || ''}<span>${escapeHtml(leftAction.label || '')}</span></button>`
+        : '';
+    const right = rightAction
+        ? `<button type="button" class="swipe-action swipe-action-right" ${rightAction.attr || ''} aria-label="${escapeHtml(rightAction.label || '')}">${rightAction.iconSvg || ''}<span>${escapeHtml(rightAction.label || '')}</span></button>`
+        : '';
+    return `<div class="swipe-row" data-has-left="${leftAction ? '1' : '0'}" data-has-right="${rightAction ? '1' : '0'}">
+        ${left}${right}
+        <div class="swipe-content" ${contentAttr}>${contentHtml}</div>
+    </div>`;
+};
+
+const SWIPE_OPEN_PX = 88;
+const SWIPE_THRESHOLD = 35;
+
+const closeAllSwipes = (except = null) => {
+    document.querySelectorAll('.swipe-row .swipe-content').forEach(c => {
+        if (c !== except) c.style.transform = 'translateX(0)';
+    });
+};
+
+/**
+ * Briefly animate the first swipeable row to hint that it can be swiped.
+ * Runs at most once per scope per session (using sessionStorage key).
+ * scopeKey: unique string identifying the list (e.g. "examOverview", "classList").
+ */
+const playSwipeHint = (rootEl, scopeKey) => {
+    if (!rootEl) return;
+    try {
+        const k = `swipeHint:${scopeKey}`;
+        if (sessionStorage.getItem(k)) return;
+        const row = rootEl.querySelector('.swipe-row');
+        if (!row) return;
+        const content = row.querySelector('.swipe-content');
+        if (!content) return;
+        if (row.dataset.hasRight !== '1' && row.dataset.hasLeft !== '1') return;
+        sessionStorage.setItem(k, '1');
+
+        const peek = (row.dataset.hasRight === '1') ? -44 : 44;
+        setTimeout(() => {
+            content.style.transition = 'transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)';
+            content.style.transform  = `translateX(${peek}px)`;
+            setTimeout(() => {
+                content.style.transform = 'translateX(0)';
+                setTimeout(() => { content.style.transition = ''; }, 500);
+            }, 650);
+        }, 350);
+    } catch { /* ignore */ }
+};
+
+const attachSwipe = (row) => {
+    const content = row.querySelector('.swipe-content');
+    if (!content || content.dataset.swipeBound) return;
+    content.dataset.swipeBound = '1';
+    const hasLeft  = row.dataset.hasLeft === '1';
+    const hasRight = row.dataset.hasRight === '1';
+
+    let startX = 0, startY = 0, startTx = 0;
+    let dragging = false, locked = null;
+    const getTx = () => {
+        const m = /translateX\((-?\d+(?:\.\d+)?)px\)/.exec(content.style.transform || '');
+        return m ? parseFloat(m[1]) : 0;
+    };
+    const setTx = (tx) => { content.style.transform = `translateX(${tx}px)`; };
+
+    const onStart = (x, y) => {
+        startX = x; startY = y;
+        startTx = getTx();
+        dragging = true; locked = null;
+        content._didDrag = false;
+        content.classList.add('dragging');
+    };
+    const onMove = (x, y) => {
+        if (!dragging) return false;
+        const dx = x - startX, dy = y - startY;
+        if (locked === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+            locked = (Math.abs(dx) > Math.abs(dy)) ? 'x' : 'y';
+        }
+        if (locked !== 'x') return false;
+        let tx = startTx + dx;
+        const min = hasRight ? -SWIPE_OPEN_PX : 0;
+        const max = hasLeft  ?  SWIPE_OPEN_PX : 0;
+        tx = Math.max(min, Math.min(max, tx));
+        setTx(tx);
+        if (Math.abs(dx) > 4) content._didDrag = true;
+        return true;
+    };
+    const onEnd = () => {
+        if (!dragging) return;
+        dragging = false;
+        content.classList.remove('dragging');
+        const tx = getTx();
+        let target = 0;
+        if (tx <= -SWIPE_THRESHOLD && hasRight) target = -SWIPE_OPEN_PX;
+        else if (tx >= SWIPE_THRESHOLD && hasLeft) target = SWIPE_OPEN_PX;
+        closeAllSwipes(content);
+        setTx(target);
+    };
+
+    content.addEventListener('touchstart', (e) => onStart(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    content.addEventListener('touchmove',  (e) => {
+        const consumed = onMove(e.touches[0].clientX, e.touches[0].clientY);
+        if (consumed && e.cancelable) e.preventDefault();
+    }, { passive: false });
+    content.addEventListener('touchend', onEnd);
+    content.addEventListener('touchcancel', onEnd);
+
+    content.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        onStart(e.clientX, e.clientY);
+        const mm = (ev) => onMove(ev.clientX, ev.clientY);
+        const mu = () => { onEnd(); document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu); };
+        document.addEventListener('mousemove', mm);
+        document.addEventListener('mouseup', mu);
+    });
+
+    // Click-through suppression after drag
+    content.addEventListener('click', (e) => {
+        if (content._didDrag) {
+            content._didDrag = false;
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, true);
+};
