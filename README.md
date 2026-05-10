@@ -7,11 +7,18 @@
 A secure web application for teachers to manage student grades, classes, and performance tracking. Built with Python (Quart) and JavaScript.
 
 ## Screenshots
-<img width="2556" height="1491" alt="image" src="https://github.com/user-attachments/assets/95ecb0df-45ba-4666-847b-b938bc24e60e" />
-<img width="2556" height="1491" alt="image" src="https://github.com/user-attachments/assets/14049f86-8ba5-429d-8532-b2011fd444d7" />
-<img width="2556" height="1491" alt="image" src="https://github.com/user-attachments/assets/f7df65a1-f00f-4578-bd92-072f1edc59cd" />
-<img width="2556" height="1491" alt="image" src="https://github.com/user-attachments/assets/e35699bb-782a-4f71-af2b-441f17849872" />
-<img width="2556" height="1491" alt="image" src="https://github.com/user-attachments/assets/956cf027-04b8-4083-83f1-d0af8136ec63" />
+### Desktop
+<img width="2560" height="1485" alt="image" src="https://github.com/user-attachments/assets/e034c086-a47c-45e6-831f-159aa705f2d6" />
+<img width="2560" height="1485" alt="image" src="https://github.com/user-attachments/assets/6b1e1e72-a04e-4214-af0e-9163e10e7dbd" />
+<img width="2560" height="1485" alt="image" src="https://github.com/user-attachments/assets/61a75740-ecb7-41ca-bca7-6deffde63f15" />
+<img width="2560" height="1485" alt="image" src="https://github.com/user-attachments/assets/72cc2931-e04b-4083-b01f-9f2c9143a0cd" />
+
+### Mobile
+<img width="391" height="844" alt="image" src="https://github.com/user-attachments/assets/9ad02cb3-a65c-4cac-9bff-8522759f2010" />
+<img width="391" height="844" alt="image" src="https://github.com/user-attachments/assets/7fd7f65f-0a74-4a0f-b548-81e89360ab79" />
+<img width="391" height="844" alt="image" src="https://github.com/user-attachments/assets/94ab0cd8-f65f-453a-b51b-8265103d2a68" />
+<img width="391" height="844" alt="image" src="https://github.com/user-attachments/assets/134af75a-887b-4297-ac23-1b2f90113d7b" />
+<img width="391" height="844" alt="image" src="https://github.com/user-attachments/assets/74d0f382-71f7-4bf3-aac0-100400229219" />
 
 
 
