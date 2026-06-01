@@ -1870,16 +1870,16 @@ async def login_page():
     if user and get_encryption_key_for_session(token):
         return redirect(url_for('index'))
 
-    return await render_template('login.html')
+    return await render_template('login.html', app_version=APP_VERSION)
 
 
 @app.route('/terms')
 async def terms():
-    return await render_template('terms.html')
+    return await render_template('terms.html', app_version=APP_VERSION)
 
 @app.route('/privacy')
 async def privacy():
-    return await render_template('privacy.html')
+    return await render_template('privacy.html', app_version=APP_VERSION)
 
 @app.route('/service-worker.js')
 async def service_worker():

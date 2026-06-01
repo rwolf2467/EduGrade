@@ -4,7 +4,7 @@
 // Both applied before paint to avoid FOUC.
 (() => {
     const ACCENT_PRESETS = {
-        'slate-teal': { h: 200, s: 35, l: 45 },
+        'coral':      { h: 10,  s: 72, l: 45 },
         'red':        { h: 0,   s: 55, l: 50 },
         'orange':     { h: 25,  s: 65, l: 50 },
         'yellow':     { h: 45,  s: 60, l: 48 },
@@ -13,7 +13,7 @@
         'purple':     { h: 270, s: 40, l: 50 },
         'mono':       { h: 0,   s: 0,  l: 25 },
     };
-    const DEFAULT_ACCENT = 'slate-teal';
+    const DEFAULT_ACCENT = 'coral';
 
     function applyAccent(presetKey) {
         const preset = ACCENT_PRESETS[presetKey] || ACCENT_PRESETS[DEFAULT_ACCENT];

@@ -9,16 +9,17 @@
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title>EduGrade</title>
-    <link rel="icon" type="image/svg+xml" href="/static/logo.svg">
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/icon-512.png">
-    <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#9333ea">
+    <link rel="icon" href="/static/favicon.ico?v={{ app_version }}" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg?v={{ app_version }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/icon-192.png?v={{ app_version }}">
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/icon-512.png?v={{ app_version }}">
+    <link rel="manifest" href="/static/manifest.json?v={{ app_version }}">
+    <meta name="theme-color" content="#0B0B0B">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="EduGrade">
-    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png?v={{ app_version }}">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"
         crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@0.3.10-beta.2/dist/basecoat.cdn.min.css"
@@ -159,22 +160,23 @@
             align-items: center;
             justify-content: center;
             gap: 1.25rem;
-            background: #0b0a14;
-            color: #e8e4db;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0B0B0B;
+            color: #EDEDED;
+            font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             transition: opacity 0.4s ease;
         }
         #edu-boot-loader .edu-boot-spinner {
             width: 42px;
             height: 42px;
-            border: 3px solid rgba(232, 228, 219, 0.18);
-            border-top-color: #c084fc;
+            border: 3px solid rgba(237, 237, 237, 0.18);
+            border-top-color: #FF6B4A;
             border-radius: 50%;
             animation: edu-boot-spin 0.9s linear infinite;
         }
         #edu-boot-loader .edu-boot-title {
-            font-size: 0.95rem;
-            font-weight: 600;
+            font-family: 'Syne', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
             letter-spacing: 0.02em;
         }
         #edu-boot-loader .edu-boot-sub {
@@ -193,6 +195,11 @@
         }
     </style>
     <div id="edu-boot-loader" role="status" aria-live="polite">
+        <svg class="edu-boot-mark" width="56" height="56" viewBox="0 0 72 72" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 56 L33 16 L50 56" stroke="#EDEDED" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M23 44 L43 44" stroke="#EDEDED" stroke-width="5.5" stroke-linecap="round"/>
+            <path d="M59.5 25 L59.5 39 M52.5 32 L66.5 32" stroke="#FF6B4A" stroke-width="5" stroke-linecap="round"/>
+        </svg>
         <div class="edu-boot-spinner" aria-hidden="true"></div>
         <div class="edu-boot-title">Loading EduGrade…</div>
         <div class="edu-boot-sub">Service files are being loaded in a secure context. This may take a moment on slow connections.</div>
@@ -219,8 +226,9 @@
         <div class="avo-intro">
             <span class="avo-icon-slot">
                 <span class="avo-icon">
-                    <svg viewBox="0 0 100 75" fill="none" stroke="currentColor" stroke-width="8.5">
-                        <path class="avo-path" d="M 43 65 L 11 65 L 33 10 L 67 65 L 91 12" pathLength="200"/>
+                    <svg viewBox="0 0 72 72" fill="none" stroke="currentColor" stroke-width="5.5">
+                        <path class="avo-path" d="M22 18 L12 18 L12 54 L22 54 M50 18 L60 18 L60 54 L50 54 M26 30 L33 36 L26 42" pathLength="200"/>
+                        <rect x="40" y="28" width="4" height="16" rx="2" fill="#FF6B4A" stroke="none"/>
                     </svg>
                 </span>
                 <span class="avo-av">AV</span>
@@ -252,7 +260,11 @@
              eating screen real estate. -->
         <div id="mobile-header" class="md:hidden flex items-center justify-between gap-3 px-1 pt-1 pb-2 mb-2 border-b" style="border-color: var(--border);">
             <a href="/" class="flex items-center gap-2" aria-label="EduGrade home" style="text-decoration: none;">
-                <img src="/static/logo.svg" alt="" style="height: 28px; width: auto;" aria-hidden="true">
+                <svg height="28" viewBox="0 0 72 72" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" style="width: auto; color: var(--foreground);">
+                    <path d="M16 56 L33 16 L50 56" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M23 44 L43 44" stroke="currentColor" stroke-width="5.5" stroke-linecap="round"/>
+                    <path d="M59.5 25 L59.5 39 M52.5 32 L66.5 32" stroke="var(--primary)" stroke-width="5" stroke-linecap="round"/>
+                </svg>
                 <span class="text-base font-semibold tracking-tight">EduGrade</span>
             </a>
             <a href="https://edugrade.avocloud.net/docs" target="_blank" rel="noopener noreferrer"
@@ -271,8 +283,11 @@
             <dialog id="setup-dialog" class="dialog w-full sm:max-w-[425px]" open>
                 <div>
                     <header>
-                        <img src="/static/logo.svg" alt="EduGrade Logo" class="mx-auto mb-3"
-                            style="height: 48px; width: auto;">
+                        <svg height="48" viewBox="0 0 72 72" fill="none" class="mx-auto mb-3" aria-label="EduGrade Logo" role="img" xmlns="http://www.w3.org/2000/svg" style="width: auto; color: var(--foreground);">
+                            <path d="M16 56 L33 16 L50 56" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M23 44 L43 44" stroke="currentColor" stroke-width="5.5" stroke-linecap="round"/>
+                            <path d="M59.5 25 L59.5 39 M52.5 32 L66.5 32" stroke="var(--primary)" stroke-width="5" stroke-linecap="round"/>
+                        </svg>
                         <h2 data-i18n="setup.welcome">Welcome!</h2>
                         <p data-i18n="setup.welcomeText">Welcome to EduGrade! A tool to help you manage and track
                             student grades effectively.</p>
@@ -716,7 +731,7 @@
                             <div class="grid gap-2">
                                 <label class="text-sm font-medium" data-i18n="profile.accentColor">Akzentfarbe</label>
                                 <div class="grid grid-cols-4 gap-2" id="profile-accent-buttons">
-                                    <button type="button" data-accent="slate-teal" class="accent-swatch" style="--sw:hsl(200 35% 45%);" aria-label="Slate-Teal"></button>
+                                    <button type="button" data-accent="coral" class="accent-swatch" style="--sw:hsl(10 72% 45%);" aria-label="Coral"></button>
                                     <button type="button" data-accent="red" class="accent-swatch" style="--sw:hsl(0 55% 50%);" aria-label="Rot"></button>
                                     <button type="button" data-accent="orange" class="accent-swatch" style="--sw:hsl(25 65% 50%);" aria-label="Orange"></button>
                                     <button type="button" data-accent="yellow" class="accent-swatch" style="--sw:hsl(45 60% 48%);" aria-label="Gelb"></button>
@@ -2251,7 +2266,7 @@ Anna,,Schmidt</code></pre>
 
             // Accent color picker
             const updateAccentSwatchActive = () => {
-                const current = (window.EduGradeAccent && window.EduGradeAccent.getCurrent()) || 'slate-teal';
+                const current = (window.EduGradeAccent && window.EduGradeAccent.getCurrent()) || 'coral';
                 document.querySelectorAll('#profile-accent-buttons .accent-swatch').forEach(btn => {
                     btn.classList.toggle('is-active', btn.dataset.accent === current);
                 });
@@ -2784,8 +2799,9 @@ Anna,,Schmidt</code></pre>
         <p style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: center;">
             EduGrade &mdash; Powered by
             <a href="https://avocloud.net" target="_blank" rel="noopener" class="hover:text-gray-200 inline-flex items-center gap-1" style="font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.04em;">
-                <svg viewBox="0 0 100 75" fill="none" style="height: 0.8rem; width: auto;" stroke="currentColor" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M 43 65 L 11 65 L 33 10 L 67 65 L 91 12"/>
+                <svg viewBox="0 0 72 72" fill="none" style="height: 0.95rem; width: auto;" stroke="currentColor" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 18 L12 18 L12 54 L22 54 M50 18 L60 18 L60 54 L50 54 M26 30 L33 36 L26 42"/>
+                    <rect x="40" y="28" width="4" height="16" rx="2" fill="#FF6B4A" stroke="none"/>
                 </svg>
                 AVOCLOUD.NET
             </a>

@@ -453,7 +453,7 @@ const migrateData = () => {
 
     // MIGRATION: ensure accentColor exists
     if (!appData.accentColor) {
-        appData.accentColor = "slate-teal";
+        appData.accentColor = "coral";
     }
 
     // MIGRATION: defaultSubjects from string[] to object[]

@@ -11,9 +11,9 @@
     --foreground: #1c1917;
     --muted-foreground: #6b6357;
 
-    /* Accent — slate-teal default. User can pick: red/orange/yellow/green/blue/purple/mono. */
-    --accent-h: 200;
-    --accent-s: 35%;
+    /* Accent — avocloud coral default. User can pick: red/orange/yellow/green/blue/purple/mono. */
+    --accent-h: 10;
+    --accent-s: 72%;
     --accent-l: 45%;
     --primary: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
     --primary-foreground: #ffffff;
