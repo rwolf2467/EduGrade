@@ -185,7 +185,7 @@
                         <path d="M59.5 25 L59.5 39 M52.5 32 L66.5 32" stroke="var(--primary)" stroke-width="5" stroke-linecap="round"/>
                     </svg>
                     <h1 class="text-2xl font-bold">EduGrade</h1>
-                    <p class="text-sm mt-2" style="color: oklch(.708 0 0);" data-i18n="auth.tagline">Manage and track student grades with ease and confidence!</p>
+                    <p class="text-sm mt-2" style="color: var(--muted-foreground);" data-i18n="auth.tagline">Manage and track student grades with ease and confidence!</p>
                 </header>
 
                 <section class="px-6 pb-6">
@@ -232,7 +232,7 @@
                                     <div class="grid gap-2">
                                         <label for="register-username" data-i18n="auth.username">Username</label>
                                         <input type="text" id="register-username" name="username" class="input" required autocomplete="username" placeholder="YourUsername" data-i18n-placeholder="auth.usernamePlaceholder" pattern="[a-zA-Z0-9_]+" minlength="3" maxlength="50">
-                                        <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="auth.usernameHint">Letters, numbers and underscores only. 3-50 characters.</p>
+                                        <p class="text-xs" style="color: var(--muted-foreground);" data-i18n="auth.usernameHint">Letters, numbers and underscores only. 3-50 characters.</p>
                                     </div>
 
                                     <div class="grid gap-2">
@@ -252,7 +252,7 @@
 
                                     <div class="flex items-start gap-2 mt-2">
                                         <input type="checkbox" id="register-terms" name="terms" class="mt-1" required>
-                                        <label for="register-terms" class="text-sm" style="color: oklch(.708 0 0); overflow-wrap: break-word; word-break: break-word;">
+                                        <label for="register-terms" class="text-sm" style="color: var(--muted-foreground); overflow-wrap: break-word; word-break: break-word;">
                                             <span data-i18n="auth.termsAgree">I agree to the</span> <a href="/terms" target="_blank" class="text-blue-400 hover:underline" data-i18n="auth.termsOfService">Terms of Service</a> <span data-i18n="auth.and">and</span> <a href="/privacy" target="_blank" class="text-blue-400 hover:underline" data-i18n="auth.privacyPolicy">Privacy Policy</a>
                                         </label>
                                     </div>
@@ -275,7 +275,7 @@
                     <div id="panel-reset" hidden>
                         <!-- Sub-panel A: Reset with recovery key (default) -->
                         <div id="reset-subpanel-key" class="py-4">
-                            <p class="text-sm mb-4" style="color: oklch(.708 0 0);" data-i18n="auth.resetPasswordSubtitle">Enter your recovery key and new password to regain access without losing your data.</p>
+                            <p class="text-sm mb-4" style="color: var(--muted-foreground);" data-i18n="auth.resetPasswordSubtitle">Enter your recovery key and new password to regain access without losing your data.</p>
                             <form id="reset-form" class="form grid gap-4">
                                 <div class="grid gap-2">
                                     <label for="reset-email" data-i18n="auth.email">Email</label>
@@ -285,7 +285,7 @@
                                 <div class="grid gap-2">
                                     <label for="reset-recovery-key" data-i18n="auth.recoveryKey">Recovery Key</label>
                                     <input type="text" id="reset-recovery-key" name="recovery_key" class="input font-mono" required autocomplete="off" placeholder="XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX" data-i18n-placeholder="auth.recoveryKeyPlaceholder" spellcheck="false">
-                                    <p class="text-xs" style="color: oklch(.708 0 0);" data-i18n="auth.resetRecoveryKeyInfo">Enter the recovery key you saved when you registered. Your data will be preserved.</p>
+                                    <p class="text-xs" style="color: var(--muted-foreground);" data-i18n="auth.resetRecoveryKeyInfo">Enter the recovery key you saved when you registered. Your data will be preserved.</p>
                                 </div>
 
                                 <div class="grid gap-2">
@@ -309,9 +309,9 @@
 
                         <!-- Sub-panel B: Reset via email (no recovery key) -->
                         <div id="reset-subpanel-email" hidden class="py-4">
-                            <div class="rounded-md p-3 mb-4" style="background: oklch(0.35 0.1 40 / 0.2); border: 1px solid oklch(0.5 0.1 40);">
-                                <p class="text-sm font-medium mb-1" style="color: oklch(.85 0.1 40);" data-i18n="auth.emailResetWarningTitle">⚠ Data will be permanently deleted</p>
-                                <p class="text-xs" style="color: oklch(.75 0.08 40);" data-i18n="auth.emailResetWarning">Without a recovery key, your encrypted data cannot be decrypted. Resetting via email will permanently delete all your grades, classes and students.</p>
+                            <div class="recovery-warning-box mb-4">
+                                <p class="text-sm font-medium mb-1" data-i18n="auth.emailResetWarningTitle">⚠ Data will be permanently deleted</p>
+                                <p class="text-xs" data-i18n="auth.emailResetWarning">Without a recovery key, your encrypted data cannot be decrypted. Resetting via email will permanently delete all your grades, classes and students.</p>
                             </div>
                             <form id="email-reset-form" class="form grid gap-4">
                                 <div class="grid gap-2">
@@ -341,9 +341,9 @@
                     <!-- Token Reset Panel (shown when ?token= in URL) -->
                     <div id="panel-token-reset" hidden>
                         <div class="py-4">
-                            <div class="rounded-md p-3 mb-4" style="background: oklch(0.35 0.1 40 / 0.2); border: 1px solid oklch(0.5 0.1 40);">
-                                <p class="text-sm font-medium mb-1" style="color: oklch(.85 0.1 40);" data-i18n="auth.emailResetWarningTitle">⚠ Data will be permanently deleted</p>
-                                <p class="text-xs" style="color: oklch(.75 0.08 40);" data-i18n="auth.emailResetWarning">Without a recovery key, your encrypted data cannot be decrypted. Resetting via email will permanently delete all your grades, classes and students.</p>
+                            <div class="recovery-warning-box mb-4">
+                                <p class="text-sm font-medium mb-1" data-i18n="auth.emailResetWarningTitle">⚠ Data will be permanently deleted</p>
+                                <p class="text-xs" data-i18n="auth.emailResetWarning">Without a recovery key, your encrypted data cannot be decrypted. Resetting via email will permanently delete all your grades, classes and students.</p>
                             </div>
                             <form id="token-reset-form" class="form grid gap-4">
                                 <div class="grid gap-2">
@@ -386,13 +386,13 @@
                     </div>
                     <div>
                         <h2 class="text-lg font-semibold" data-i18n="auth.recoveryKeyTitle">Save Your Recovery Key</h2>
-                        <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="auth.recoveryKeySubtitle">Keep this safe — you'll need it to reset your password.</p>
+                        <p class="text-sm" style="color: var(--muted-foreground);" data-i18n="auth.recoveryKeySubtitle">Keep this safe — you'll need it to reset your password.</p>
                     </div>
                 </div>
             </header>
             <section class="py-4 grid gap-4">
-                <div class="rounded-md p-3" style="background: oklch(0.2 0 0 / 0.5); border: 1px solid oklch(0.4 0 0);">
-                    <p class="text-xs mb-2" style="color: oklch(.708 0 0);" data-i18n="auth.yourRecoveryKey">Your recovery key:</p>
+                <div class="recovery-key-box">
+                    <p class="text-xs mb-2" style="color: var(--muted-foreground);" data-i18n="auth.yourRecoveryKey">Your recovery key:</p>
                     <p id="recovery-key-display" class="font-mono text-lg font-bold tracking-widest text-center select-all" style="letter-spacing: 0.1em;"></p>
                 </div>
                 <button type="button" id="copy-recovery-key-btn" class="btn-outline w-full">
@@ -402,8 +402,8 @@
                     </svg>
                     <span data-i18n="dialog.copy">Copy</span>
                 </button>
-                <div class="rounded-md p-3" style="background: oklch(0.35 0.1 40 / 0.2); border: 1px solid oklch(0.5 0.1 40);">
-                    <p class="text-sm" style="color: oklch(.85 0.1 40);" data-i18n="auth.recoveryKeyWarning">This key is shown only once and cannot be recovered. Store it in a safe place.</p>
+                <div class="recovery-warning-box">
+                    <p class="text-sm" data-i18n="auth.recoveryKeyWarning">This key is shown only once and cannot be recovered. Store it in a safe place.</p>
                 </div>
                 <label class="flex items-start gap-2 cursor-pointer">
                     <input type="checkbox" id="recovery-key-confirm-checkbox" class="mt-1">

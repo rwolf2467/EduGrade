@@ -907,13 +907,13 @@
                                 </div>
                                 <div>
                                     <h2 class="text-lg font-semibold" data-i18n="auth.recoveryKeyTitle">Save Your Recovery Key</h2>
-                                    <p class="text-sm text-gray-400" data-i18n="auth.recoveryKeySubtitle">Keep this safe — you'll need it to reset your password.</p>
+                                    <p class="text-sm" style="color: var(--muted-foreground);" data-i18n="auth.recoveryKeySubtitle">Keep this safe — you'll need it to reset your password.</p>
                                 </div>
                             </div>
                         </header>
                         <section class="py-4 grid gap-4">
-                            <div class="rounded-md p-3" style="background: oklch(0.2 0 0 / 0.5); border: 1px solid oklch(0.4 0 0);">
-                                <p class="text-xs mb-2 text-gray-400" data-i18n="auth.yourRecoveryKey">Your recovery key:</p>
+                            <div class="recovery-key-box">
+                                <p class="text-xs mb-2" style="color: var(--muted-foreground);" data-i18n="auth.yourRecoveryKey">Your recovery key:</p>
                                 <p id="profile-recovery-key-display" class="font-mono text-lg font-bold tracking-widest text-center select-all"></p>
                             </div>
                             <button type="button" id="profile-copy-recovery-key-btn" class="btn-outline w-full">
@@ -922,11 +922,11 @@
                                 </svg>
                                 <span data-i18n="share.copyLink">Copy</span>
                             </button>
-                            <div class="rounded-md p-3" style="background: oklch(0.35 0.1 40 / 0.2); border: 1px solid oklch(0.5 0.1 40);">
-                                <p class="text-sm" style="color: oklch(.85 0.1 40);" data-i18n="auth.recoveryKeyWarning">This key is shown only once and cannot be recovered. Store it in a safe place.</p>
+                            <div class="recovery-warning-box">
+                                <p class="text-sm" data-i18n="auth.recoveryKeyWarning">This key is shown only once and cannot be recovered. Store it in a safe place.</p>
                             </div>
-                            <div class="rounded-md p-3" style="background: oklch(0.25 0.08 20 / 0.5); border: 1px solid oklch(0.55 0.15 20);">
-                                <p class="text-sm font-medium" style="color: oklch(.9 0.12 20);" data-i18n="auth.recoveryKeySecurityWarning">⚠ This recovery key is extremely important. Due to the high security standards and strong encryption, your account cannot be restored without this code — not even by support.</p>
+                            <div class="recovery-danger-box">
+                                <p class="text-sm font-medium" data-i18n="auth.recoveryKeySecurityWarning">⚠ This recovery key is extremely important. Due to the high security standards and strong encryption, your account cannot be restored without this code — not even by support.</p>
                             </div>
                             <label class="flex items-start gap-2 cursor-pointer">
                                 <input type="checkbox" id="profile-recovery-key-confirm" class="mt-1">
@@ -959,13 +959,13 @@
                                 </div>
                                 <div>
                                     <h2 class="text-lg font-semibold" data-i18n="auth.sendRecoveryKeyEmail">Send Recovery Key via Email</h2>
-                                    <p class="text-sm text-gray-400" data-i18n="auth.recoveryKeyEmailInfo">We'll send your recovery key as a PDF attachment to your registered email address.</p>
+                                    <p class="text-sm" style="color: var(--muted-foreground);" data-i18n="auth.recoveryKeyEmailInfo">We'll send your recovery key as a PDF attachment to your registered email address.</p>
                                 </div>
                             </div>
                         </header>
                         <section class="py-4 grid gap-4">
-                            <div class="rounded-md p-3" style="background: oklch(0.2 0 0 / 0.5); border: 1px solid oklch(0.4 0 0);">
-                                <p class="text-xs mb-2 text-gray-400" data-i18n="auth.email">Email</p>
+                            <div class="recovery-key-box">
+                                <p class="text-xs mb-2" style="color: var(--muted-foreground);" data-i18n="auth.email">Email</p>
                                 <p id="profile-recovery-key-email-display" class="font-mono text-lg font-bold tracking-widest text-center"></p>
                             </div>
                             <button type="button" class="btn-primary w-full" id="profile-recovery-key-email-send-btn">
@@ -2813,7 +2813,7 @@ Anna,,Schmidt</code></pre>
                 </svg>
                 AVOCLOUD.NET
             </a>
-            <span style="margin-left: 0.75rem; padding: 2px 8px; background: oklch(.2 0 0); border-radius: 4px; font-weight: 600; color: oklch(.9 0 0);">
+            <span style="margin-left: 0.75rem; padding: 2px 8px; background: var(--secondary); border: 1px solid var(--border); border-radius: 4px; font-weight: 600; color: var(--muted-foreground);">
                 {{ version_string }}
             </span>
         </p>

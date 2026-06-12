@@ -1,8 +1,8 @@
-quart==0.19.6
-werkzeug==3.0.4
-python-dotenv==1.0.1
-cryptography==43.0.3
-qrcode==7.4.2
-Pillow==10.4.0
-reportlab==4.2.5
-hypercorn==0.17.3
+quart==0.20.0
+werkzeug==3.1.8
+python-dotenv==1.2.2
+cryptography==48.0.1
+qrcode==8.2
+Pillow==12.2.0
+reportlab==4.5.1
+hypercorn==0.18.0
