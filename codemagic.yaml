@@ -1,0 +1,70 @@
+workflows:
+  # ---------------------------------------------------------------------------
+  # Quick compile check — no Apple account / signing needed.
+  # Builds for the iOS Simulator to prove the project compiles in the cloud.
+  # ---------------------------------------------------------------------------
+  ios-simulator-build:
+    name: iOS simulator build (no signing)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      xcode: latest
+      vars:
+        XCODE_PROJECT: "mobile-apps/ios/EduGrade.xcodeproj"
+        XCODE_SCHEME: "EduGrade"
+    scripts:
+      - name: Build for simulator
+        script: |
+          xcodebuild build \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
+
+  # ---------------------------------------------------------------------------
+  # Signed release → TestFlight.
+  # Requires:
+  #   * Apple Developer account ($99/yr)
+  #   * Codemagic "App Store Connect" integration (API key) configured in UI
+  #   * Set APP_STORE_APPLE_ID below after creating the app record
+  # ---------------------------------------------------------------------------
+  ios-release:
+    name: iOS release to TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 120
+    integrations:
+      app_store_connect: codemagic_asc   # name of the API key set in Codemagic UI
+    environment:
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: net.avocloud.edugrade
+      vars:
+        XCODE_PROJECT: "mobile-apps/ios/EduGrade.xcodeproj"
+        XCODE_SCHEME: "EduGrade"
+        BUNDLE_ID: "net.avocloud.edugrade"
+        APP_STORE_APPLE_ID: 0000000000   # <-- replace with App Store Connect app id
+    scripts:
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+      - name: Increment build number
+        script: |
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          cd mobile-apps/ios
+          agvtool new-version -all $(($LATEST + 1))
+      - name: Build & archive ipa
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME" \
+            --config Release
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

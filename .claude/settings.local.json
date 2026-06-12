@@ -36,7 +36,25 @@
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('/home/murauer/Nextcloud/avocloud/Code/EduGrade/static/i18n/de.json'\\)\\)\")",
       "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('/home/murauer/Nextcloud/avocloud/Code/EduGrade/static/i18n/en.json'\\)\\)\")",
       "Bash(node --check /home/murauer/Nextcloud/avocloud/Code/EduGrade/static/scripts/ui.js)",
-      "Bash(node --check /home/murauer/Nextcloud/avocloud/Code/EduGrade/static/scripts/mobile.js)"
+      "Bash(node --check /home/murauer/Nextcloud/avocloud/Code/EduGrade/static/scripts/mobile.js)",
+      "Bash(xargs php -l)",
+      "Bash(php *)",
+      "Bash(curl *)",
+      "Bash(python -c \"import db; db.init_schema\\(\\); print\\('ok'\\)\")",
+      "Bash(npx @claude-flow/cli@latest hooks post-edit --file \"/home/murauer/Nextcloud/avocloud/Code/EduGrade/db.py\" --success true)",
+      "Bash(npx @claude-flow/cli@latest memory store --key \"pattern-sqlite-sync-layer\" --value \"Synchronous SQLite storage layer for async Quart app: module-level connection with check_same_thread=False, WAL+NORMAL pragmas, threading.Lock for writes, INSERT OR REPLACE for upserts, row_factory=sqlite3.Row, separate indexed columns extracted from JSON doc column, init_schema\\(\\) idempotent via IF NOT EXISTS.\" --namespace patterns)",
+      "Bash(python -c \"import db; print\\('import ok'\\)\")",
+      "Bash(npx @claude-flow/cli@latest hooks pre-edit --file \"app.py\")",
+      "Bash(python -m py_compile app.py db.py migrate_json_to_db.py)",
+      "Bash(python -c ' *)",
+      "Bash(npx @claude-flow/cli@latest hooks post-edit --file \"app.py\" --success true)",
+      "Bash(npx @claude-flow/cli@latest memory store --key \"pattern-sqlite-migration\" --value \"JSON-to-SQLite one-shot migration: guard with count_users\\(\\)==0 AND json file exists; rename json->json.bak on success; idempotent; callable from before_serving AND standalone __main__\" --namespace patterns)",
+      "Bash(git -C /home/murauer/Nextcloud/avocloud/Code/EduGrade diff app.py)",
+      "Bash(npx @claude-flow/cli@latest hooks pre-edit --file \"db.py\")",
+      "Bash(npx @claude-flow/cli@latest memory store --key \"pattern-sqlite-json-atomic-update\" --value \"Use SQLite json_set/json_extract in a single UPDATE under a write lock to atomically increment counters stored inside JSON doc columns, avoiding lost-update races without a separate counter column\" --namespace patterns)",
+      "Bash(npx @claude-flow/cli@latest memory store --key \"pattern-zk-plaintext-migration\" --value \"Zero-knowledge backends must carry an encrypted=False flag on legacy plaintext records during JSON→DB migration; decrypt must branch on this flag; v2 migration encrypts the plaintext only after the user key is available in memory at login\" --namespace patterns)",
+      "Bash(python -c \"import app\")",
+      "Bash(python -c \"import sqlite3,db; db.init_schema\\(\\); c=sqlite3.connect\\('data/edugrade.db'\\); print\\([r[0] for r in c.execute\\(\\\\\"select name from sqlite_master where type='table'\\\\\"\\)]\\); print\\('users:', c.execute\\('select count\\(*\\) from users'\\).fetchone\\(\\)[0]\\)\")"
     ]
   }
 }

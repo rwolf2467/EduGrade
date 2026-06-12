@@ -27,11 +27,11 @@ import secrets
 import functools
 import base64
 import os
-import tempfile
 import time
 import smtplib
 import asyncio
 import logging
+import db as db_layer
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -171,7 +171,6 @@ def rate_limit(endpoint_type: str = 'default'):
 
 # Database path
 DATA_DIR = Path(__file__).parent / "data"
-DB_PATH = DATA_DIR / "edugrade.json"
 CONFIG_PATH = DATA_DIR / "config.json"
 
 # Ensure data directory exists
@@ -401,32 +400,13 @@ def decrypt_bytes(encrypted: str, key: bytes) -> bytes:
     aesgcm = AESGCM(key)
     return aesgcm.decrypt(nonce, ciphertext, None)
 
-def _recovery_wrap_key(email: str) -> bytes:
-    """Derive the wrap-key for the stored recovery-key copy.
-
-    Uses HMAC-SHA256(MASTER_SHARE_KEY, email) so an attacker with read access
-    to the user DB *alone* cannot recover the plaintext recovery key — they
-    additionally need the server-side master key (config.json). Previously the
-    key was sha256(email), which made the encrypted recovery key trivially
-    reversible from the DB row alone.
-    """
-    msg = email.lower().strip().encode('utf-8')
-    return hashlib.sha256(MASTER_SHARE_KEY + b'|recovery|' + msg).digest()
-
-def decrypt_recovery_key(encrypted_recovery_key: str, email: str) -> str:
-    """Decrypt the encrypted recovery key copy."""
-    try:
-        decrypted = decrypt_bytes(encrypted_recovery_key, _recovery_wrap_key(email))
-        return decrypted.decode('utf-8')
-    except Exception:
-        # Backward compatibility: legacy entries were wrapped with sha256(email)
-        legacy_key = hashlib.sha256(email.lower().strip().encode()).digest()
-        decrypted = decrypt_bytes(encrypted_recovery_key, legacy_key)
-        return decrypted.decode('utf-8')
-
-def encrypt_recovery_key(recovery_key: str, email: str) -> str:
-    """Encrypt the recovery key with a server-master-key-derived wrap key."""
-    return encrypt_bytes(recovery_key.encode('utf-8'), _recovery_wrap_key(email))
+# NOTE: The server deliberately keeps NO decryptable copy of the recovery key.
+# Earlier versions stored one (wrapped with a server-side master key), which
+# meant anyone with DB + config.json access could decrypt every user's data —
+# breaking the zero-knowledge promise — and let an attacker who controlled a
+# user's mailbox request the plaintext key and take over the account.
+# Only the PBKDF2 hash (for verification) and the recovery-key-wrapped DEK
+# (for password reset) are stored; neither is reversible by the server.
 
 # ============ EMAIL / SMTP FUNCTIONS ============
 
@@ -859,6 +839,94 @@ def get_student_display_name(student: dict) -> str:
         return ' '.join(parts)
     return student.get('name', '')
 
+def _percent_to_grade(percentage: float) -> int:
+    """Map a percentage to a grade (mirrors studentView.js fallback thresholds)."""
+    if percentage >= 85:
+        return 1
+    if percentage >= 70:
+        return 2
+    if percentage >= 55:
+        return 3
+    if percentage >= 40:
+        return 4
+    return 5
+
+
+def compute_weighted_average(grades: list, pm_settings: dict | None) -> float:
+    """Python port of studentView.js calculateWeightedAverage.
+
+    Per category: average numeric grades; convert +/~/- counts to a percentage
+    (plus=100, neutral=50, minus=0 by default) and fold the resulting grade in
+    as one extra grade. Category averages are then weighted by category weight.
+    Returns 0.0 when there is nothing to average.
+    """
+    pm_settings = pm_settings or {}
+    pct_plus = pm_settings.get('plus', 100)
+    pct_neutral = pm_settings.get('neutral', 50)
+    pct_minus = pm_settings.get('minus', 0)
+
+    by_category: dict = {}
+    for g in grades:
+        if not isinstance(g, dict):
+            continue
+        cat = by_category.setdefault(g.get('categoryId'), {
+            'weight': g.get('weight') or 0,
+            'numeric': [], 'plus': 0, 'neutral': 0, 'minus': 0
+        })
+        if g.get('isPlusMinus'):
+            v = g.get('value')
+            if v == '+':
+                cat['plus'] += 1
+            elif v == '~':
+                cat['neutral'] += 1
+            elif v == '-':
+                cat['minus'] += 1
+        else:
+            v = g.get('value')
+            if v is not None:
+                try:
+                    cat['numeric'].append(float(v))
+                except (TypeError, ValueError):
+                    pass
+
+    weighted_sum = 0.0
+    total_weight = 0.0
+    for cat in by_category.values():
+        avg = None
+        if cat['numeric']:
+            avg = sum(cat['numeric']) / len(cat['numeric'])
+        pm_total = cat['plus'] + cat['neutral'] + cat['minus']
+        if pm_total > 0:
+            points = cat['plus'] * pct_plus + cat['neutral'] * pct_neutral + cat['minus'] * pct_minus
+            pm_grade = _percent_to_grade(points / pm_total)
+            if avg is None:
+                avg = float(pm_grade)
+            else:
+                avg = (avg * len(cat['numeric']) + pm_grade) / (len(cat['numeric']) + 1)
+        if avg is not None:
+            weighted_sum += avg * cat['weight']
+            total_weight += cat['weight']
+
+    if total_weight == 0:
+        return 0.0
+    return max(1.0, min(5.0, weighted_sum / total_weight))
+
+
+def final_grade_label(average: float) -> str:
+    """Python port of studentView.js calculateFinalGrade."""
+    if not average:
+        return '-'
+    if average <= 1.5:
+        return '1'
+    if average <= 2.5:
+        return '2'
+    if average <= 3.5:
+        return '3'
+    if average <= 4.5:
+        return '4'
+    return '5'
+
+
 def build_share_snapshot(user_data: dict, class_id: str) -> dict | None:
     """Extract class + students + grades + categories for a share snapshot"""
     cls = None
@@ -892,9 +960,7 @@ def build_share_snapshot(user_data: dict, class_id: str) -> dict | None:
 
 def user_has_active_share(user_id: str, class_id=None) -> bool:
     """Cheap check: does this user have any active class share (optionally for a specific class)?"""
-    db = load_db()
-    shares = db.get('class_shares') or {}
-    for share in shares.values():
+    for _, share in db_layer.iter_shares():
         if share.get('user_id') != user_id or not share.get('active', False):
             continue
         if class_id is not None and str(share.get('class_id')) != str(class_id):
@@ -905,122 +971,67 @@ def user_has_active_share(user_id: str, class_id=None) -> bool:
 
 def update_active_shares_for_user(user_id: str, user_data: dict):
     """Update all active share snapshots for a user"""
-    db = load_db()
-    if 'class_shares' not in db:
-        return
-
-    updated = False
-    for token, share in db['class_shares'].items():
+    for token, share in db_layer.iter_shares():
         if share.get('user_id') != user_id or not share.get('active', False):
             continue
-        # Check if share has expired
         expires_at = share.get('expires_at')
         if expires_at and datetime.fromisoformat(expires_at) < datetime.now():
             share['active'] = False
-            updated = True
+            db_layer.put_share(token, share)
             continue
-        # Update snapshot
         snapshot = build_share_snapshot(user_data, share['class_id'])
         if snapshot:
-            # Encrypt the updated snapshot
             encrypted_snapshot = encrypt_share_data(snapshot, MASTER_SHARE_KEY)
             share['encrypted_data'] = encrypted_snapshot
-            # Update class name in case it changed
             for c in user_data.get('classes', []):
                 if c.get('id') == share['class_id']:
                     share['class_name'] = c.get('name', share.get('class_name', ''))
                     break
-            updated = True
-
-    if updated:
-        save_db(db)
+            db_layer.put_share(token, share)
 
 def init_db():
-    """Initialize database with default structure"""
-    if not DB_PATH.exists():
-        default_data = {
-            "users": {},
-            "sessions": {},
-            "user_data": {},
-            "class_shares": {}
-        }
-        save_db(default_data)
-
-def load_db():
-    """Load database from JSON file"""
-    try:
-        with open(DB_PATH, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        # Ensure optional keys exist
-        if 'class_shares' not in data:
-            data['class_shares'] = {}
-        if 'password_reset_tokens' not in data:
-            data['password_reset_tokens'] = {}
-        return data
-    except (FileNotFoundError, json.JSONDecodeError):
-        init_db()
-        return load_db()
+    """Initialize SQLite schema via db.py."""
+    db_layer.init_schema()
 
 
 def migrate_plaintext_shares():
     """Migrate any existing plaintext shares to encrypted format"""
-    db = load_db()
-    updated = False
-    
-    for token, share in db.get('class_shares', {}).items():
-        # Check if this share has plaintext data (old format)
+    for token, share in db_layer.iter_shares():
         if 'data' in share and 'encrypted_data' not in share:
-            # Encrypt the existing data
             snapshot = share['data']
             encrypted_snapshot = encrypt_share_data(snapshot, MASTER_SHARE_KEY)
-            
-            # Replace plaintext data with encrypted data
             del share['data']
             share['encrypted_data'] = encrypted_snapshot
-            updated = True
-            
+            db_layer.put_share(token, share)
             print(f"Migrated share {token[:8]} to encrypted format")
-    
-    if updated:
-        save_db(db)
-        print("Completed migration of plaintext shares to encrypted format")
 
-def save_db(data):
-    """Atomically save database to JSON file.
 
-    Writes to a temp file in the same directory, fsyncs, and renames over the
-    target. This prevents partial writes from corrupting the DB if the process
-    crashes, the disk fills up, or the host loses power mid-write.
+def purge_stored_recovery_key_copies():
+    """One-time hygiene: delete legacy server-decryptable recovery key copies.
+
+    Older versions stored each user's recovery key encrypted with a key the
+    server itself could derive (master key + email), which broke the
+    zero-knowledge model. The field is no longer written anywhere; this sweep
+    removes existing copies. Password reset via recovery key keeps working —
+    it only needs recovery_key_hash + encrypted_dek, which stay untouched.
     """
-    db_dir = DB_PATH.parent
-    fd, tmp_path = tempfile.mkstemp(prefix='.db.', suffix='.tmp', dir=str(db_dir))
-    try:
-        with os.fdopen(fd, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp_path, DB_PATH)
-    except Exception:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        raise
+    removed = 0
+    for email, user in db_layer.iter_users():
+        if 'encrypted_recovery_key' in user:
+            user.pop('encrypted_recovery_key', None)
+            db_layer.put_user(email, user)
+            removed += 1
+    if removed:
+        logger.info("Purged server-decryptable recovery key copies for %d user(s)", removed)
+
 
 async def cleanup_expired_sessions():
     """Remove expired sessions and their caches"""
-    db = load_db()
     now = datetime.now()
-    expired = []
+    now_iso = now.isoformat()
 
-    for token, session in db["sessions"].items():
-        expires_at = datetime.fromisoformat(session["expires_at"])
-        if expires_at < now:
-            expired.append(token)
-
-    for token in expired:
-        del db["sessions"][token]
-        # Clear session cache
+    expired_tokens = db_layer.delete_expired_sessions(now_iso)
+    for token in expired_tokens:
         clear_session_cache(token)
 
     # Also clean up stale caches (no heartbeat for too long)
@@ -1034,47 +1045,39 @@ async def cleanup_expired_sessions():
         clear_session_cache(token)
 
     # Clean up expired/inactive shares
-    if 'class_shares' in db:
-        shares_to_delete = []
-        for token, share in db['class_shares'].items():
-            # Check if share is marked as inactive or expired
-            if not share.get('active', True):
-                # Always delete inactive shares (not just mark as inactive)
-                shares_to_delete.append(token)
-            else:
-                # Check if share has expired
-                expires_at = share.get('expires_at')
-                if expires_at:
-                    exp = datetime.fromisoformat(expires_at)
-                    if exp < now:
-                        # Mark as inactive first, then delete if older than 1 day
-                        share['active'] = False
-                        if exp + timedelta(days=1) < now:
-                            shares_to_delete.append(token)
-                    # Delete shares that expired more than 30 days ago
-                    elif exp + timedelta(days=30) < now:
+    shares_to_delete = []
+    for token, share in db_layer.iter_shares():
+        if not share.get('active', True):
+            shares_to_delete.append(token)
+        else:
+            expires_at = share.get('expires_at')
+            if expires_at:
+                exp = datetime.fromisoformat(expires_at)
+                if exp < now:
+                    share['active'] = False
+                    db_layer.put_share(token, share)
+                    if exp + timedelta(days=1) < now:
                         shares_to_delete.append(token)
-        for token in shares_to_delete:
-            del db['class_shares'][token]
+                elif exp + timedelta(days=30) < now:
+                    shares_to_delete.append(token)
+    for token in shares_to_delete:
+        db_layer.delete_share(token)
 
     # Clean up expired password reset tokens
-    if 'password_reset_tokens' in db:
-        expired_tokens = [
-            t for t, v in db['password_reset_tokens'].items()
-            if datetime.fromisoformat(v['expires_at']) < now
-        ]
-        for t in expired_tokens:
-            del db['password_reset_tokens'][t]
+    db_layer.delete_expired_reset_tokens(now_iso)
 
-    save_db(db)
     return None
 
 # ============ V2 SCHEMA HELPERS ============
-# v2 layout in db["user_data"][user_id]:
+# v2 layout stored in SQLite (db.py):
+#   user_meta row  — version=2, meta_ct = ciphertext of meta dict
+#                    (everything except 'classes', plus 'classOrder')
+#   user_classes rows — one row per class_id: ct = ciphertext
+# Logical equivalent of the old in-memory dict shape:
 # {
 #   "version": 2,
 #   "encrypted": True,
-#   "meta":    <ciphertext of meta dict>,         # everything except 'classes', plus 'classOrder'
+#   "meta":    <meta_ct>,
 #   "classes": { "<class_id>": <ciphertext>, ... } # one ciphertext per class (students/grades/etc.)
 # }
 
@@ -1119,9 +1122,6 @@ def _assemble_blob_from_v2(meta: dict, classes_dict: dict) -> dict:
     return meta
 
 
-def _is_v2_record(stored) -> bool:
-    return isinstance(stored, dict) and stored.get('version') == 2
-
 
 def migrate_user_to_v2(user_id: str, encryption_key: bytes) -> bool:
     """One-shot migration of a legacy single-blob record to v2 split format.
@@ -1133,38 +1133,52 @@ def migrate_user_to_v2(user_id: str, encryption_key: bytes) -> bool:
     """
     if not encryption_key:
         return False
-    db = load_db()
-    stored = db.get('user_data', {}).get(user_id, {})
-    if not stored or _is_v2_record(stored):
+    meta_rec = db_layer.get_meta_record(user_id)
+    if meta_rec is None:
+        return False
+    if meta_rec.get('version') == 2:
         return False
 
-    if isinstance(stored, dict) and stored.get('encrypted'):
-        try:
-            full = decrypt_user_data_strict(stored.get('data', ''), encryption_key)
-        except Exception as e:
-            logger.error(
-                "Refusing v2 migration for user %s: decrypt failed (%s). "
-                "Original v1 record kept intact.",
-                user_id, type(e).__name__
-            )
-            raise
-        if not isinstance(full, dict):
-            raise ValueError("Decrypted v1 payload is not a JSON object")
+    legacy_ct = meta_rec.get('legacy_ct')
+    is_encrypted = meta_rec.get('encrypted', True)
+    if legacy_ct:
+        if is_encrypted:
+            try:
+                full = decrypt_user_data_strict(legacy_ct, encryption_key)
+            except Exception as e:
+                logger.error(
+                    "Refusing v2 migration for user %s: decrypt failed (%s). "
+                    "Original v1 record kept intact.",
+                    user_id, type(e).__name__
+                )
+                raise
+            if not isinstance(full, dict):
+                raise ValueError("Decrypted v1 payload is not a JSON object")
+        else:
+            # Plaintext legacy record: encryption_key is now available (called
+            # post-login), so we parse the JSON and encrypt into v2 directly.
+            if not encryption_key:
+                logger.warning(
+                    "Skipping v2 migration for plaintext user %s: no key available", user_id
+                )
+                return False
+            try:
+                full = json.loads(legacy_ct)
+            except Exception as e:
+                logger.error(
+                    "Refusing v2 migration for plaintext user %s: JSON parse failed (%s).",
+                    user_id, type(e).__name__
+                )
+                raise
+            if not isinstance(full, dict):
+                raise ValueError("Plaintext v1 payload is not a JSON object")
     else:
-        full = stored if isinstance(stored, dict) else {}
+        full = {}
 
     meta, classes_dict = _split_blob_for_v2(full)
-    new_record = {
-        'version': 2,
-        'encrypted': True,
-        'meta': encrypt_user_data(meta, encryption_key),
-        'classes': {
-            cid: encrypt_user_data(cobj, encryption_key)
-            for cid, cobj in classes_dict.items()
-        }
-    }
-    db['user_data'][user_id] = new_record
-    save_db(db)
+    db_layer.put_meta_ct(user_id, encrypt_user_data(meta, encryption_key))
+    for cid, cobj in classes_dict.items():
+        db_layer.put_class_ct(user_id, cid, encrypt_user_data(cobj, encryption_key))
     logger.info("Migrated user %s to v2 schema (%d classes)", user_id, len(classes_dict))
     return True
 
@@ -1173,9 +1187,8 @@ def _ensure_v2(user_id: str, encryption_key: bytes):
     """Migrate the user's record to v2 if it isn't already (no-op otherwise)."""
     if not encryption_key:
         return
-    db = load_db()
-    stored = db.get('user_data', {}).get(user_id, {})
-    if not stored or _is_v2_record(stored):
+    meta_rec = db_layer.get_meta_record(user_id)
+    if meta_rec is None or meta_rec.get('version') == 2:
         return
     migrate_user_to_v2(user_id, encryption_key)
 
@@ -1186,18 +1199,15 @@ def save_user_data(user_id: str, data, encryption_key: bytes = None, session_tok
         raise ValueError("Encryption key is required to save user data securely")
 
     meta, classes_dict = _split_blob_for_v2(data or {})
-    db = load_db()
-    record = {
-        'version': 2,
-        'encrypted': True,
-        'meta': encrypt_user_data(meta, encryption_key),
-        'classes': {
-            cid: encrypt_user_data(cobj, encryption_key)
-            for cid, cobj in classes_dict.items()
-        }
-    }
-    db.setdefault('user_data', {})[user_id] = record
-    save_db(db)
+    db_layer.put_meta_ct(user_id, encrypt_user_data(meta, encryption_key))
+
+    # Write all current classes; remove any classes that are no longer present
+    existing_ids = set(db_layer.list_class_ids(user_id))
+    new_ids = set(classes_dict.keys())
+    for cid, cobj in classes_dict.items():
+        db_layer.put_class_ct(user_id, cid, encrypt_user_data(cobj, encryption_key))
+    for cid in existing_ids - new_ids:
+        db_layer.delete_class(user_id, cid)
 
     if session_token and session_token in user_data_cache:
         user_data_cache[session_token]["data"] = data
@@ -1222,36 +1232,49 @@ def _decrypt_v2_record(stored: dict, encryption_key: bytes) -> dict:
 
 def get_user_data(user_id: str, encryption_key: bytes = None):
     """Get full user data, transparently handling v2 + legacy v1 records."""
-    db = load_db()
-    stored = db.get("user_data", {}).get(user_id, {})
-
-    if not stored:
+    meta_rec = db_layer.get_meta_record(user_id)
+    if meta_rec is None:
         return {}
 
-    if _is_v2_record(stored):
+    if meta_rec.get('version') == 2:
         if not encryption_key:
             logger.warning("v2 data for user %s but no key provided", user_id)
             return {}
+        # Build a v2 dict and reuse the existing decrypt helper
+        class_ids = db_layer.list_class_ids(user_id)
+        stored = {
+            'version': 2,
+            'encrypted': True,
+            'meta': meta_rec.get('meta_ct', ''),
+            'classes': {cid: db_layer.get_class_ct(user_id, cid) for cid in class_ids}
+        }
         return _decrypt_v2_record(stored, encryption_key)
 
-    if isinstance(stored, dict) and stored.get("encrypted"):
+    # Legacy v1 single-blob
+    legacy_ct = meta_rec.get('legacy_ct')
+    if legacy_ct:
+        if not meta_rec.get('encrypted'):
+            # Plaintext record stored during migration — return as-is, no key needed.
+            try:
+                return json.loads(legacy_ct)
+            except Exception:
+                logger.warning("Failed to parse plaintext legacy record for user %s", user_id)
+                return {}
         if encryption_key:
-            return decrypt_user_data(stored["data"], encryption_key)
+            return decrypt_user_data(legacy_ct, encryption_key)
         logger.warning("Encrypted data for user %s but no key provided", user_id)
         return {}
 
-    # Plaintext legacy
-    return stored if isinstance(stored, dict) else {}
+    return {}
 
 
 def get_user_meta(user_id: str, encryption_key: bytes) -> dict:
     """Get just the meta block (small payload, fast)."""
     _ensure_v2(user_id, encryption_key)
-    db = load_db()
-    stored = db.get('user_data', {}).get(user_id, {})
-    if not _is_v2_record(stored):
+    meta_rec = db_layer.get_meta_record(user_id)
+    if meta_rec is None or meta_rec.get('version') != 2:
         return {}
-    enc_meta = stored.get('meta')
+    enc_meta = meta_rec.get('meta_ct')
     if not enc_meta:
         return {}
     return decrypt_user_data(enc_meta, encryption_key)
@@ -1262,27 +1285,18 @@ def save_user_meta(user_id: str, meta: dict, encryption_key: bytes):
     if not encryption_key:
         raise ValueError("Encryption key is required to save user data securely")
     _ensure_v2(user_id, encryption_key)
-    db = load_db()
-    rec = db.setdefault('user_data', {}).get(user_id)
-    if not _is_v2_record(rec):
-        rec = {'version': 2, 'encrypted': True, 'meta': '', 'classes': {}}
-        db['user_data'][user_id] = rec
     # Defensive: meta must not contain a 'classes' field
     clean = {k: v for k, v in (meta or {}).items() if k != 'classes'}
-    rec['meta'] = encrypt_user_data(clean, encryption_key)
-    rec['version'] = 2
-    rec['encrypted'] = True
-    save_db(db)
+    db_layer.put_meta_ct(user_id, encrypt_user_data(clean, encryption_key))
 
 
 def get_user_class(user_id: str, class_id: str, encryption_key: bytes):
     """Get one decrypted class object. Returns None if not found."""
     _ensure_v2(user_id, encryption_key)
-    db = load_db()
-    stored = db.get('user_data', {}).get(user_id, {})
-    if not _is_v2_record(stored):
+    meta_rec = db_layer.get_meta_record(user_id)
+    if meta_rec is None or meta_rec.get('version') != 2:
         return None
-    enc = (stored.get('classes') or {}).get(str(class_id))
+    enc = db_layer.get_class_ct(user_id, str(class_id))
     if not enc:
         return None
     return decrypt_user_data(enc, encryption_key)
@@ -1293,37 +1307,18 @@ def save_user_class(user_id: str, class_id: str, class_obj: dict, encryption_key
     if not encryption_key:
         raise ValueError("Encryption key is required to save user data securely")
     _ensure_v2(user_id, encryption_key)
-    db = load_db()
-    rec = db.setdefault('user_data', {}).get(user_id)
-    if not _is_v2_record(rec):
-        rec = {
-            'version': 2,
-            'encrypted': True,
-            'meta': encrypt_user_data({'classOrder': []}, encryption_key),
-            'classes': {}
-        }
-        db['user_data'][user_id] = rec
-    if not isinstance(rec.get('classes'), dict):
-        rec['classes'] = {}
-    rec['classes'][str(class_id)] = encrypt_user_data(class_obj, encryption_key)
-    rec['version'] = 2
-    rec['encrypted'] = True
-    save_db(db)
+    meta_rec = db_layer.get_meta_record(user_id)
+    if meta_rec is None or meta_rec.get('version') != 2:
+        db_layer.put_meta_ct(user_id, encrypt_user_data({'classOrder': []}, encryption_key))
+    db_layer.put_class_ct(user_id, str(class_id), encrypt_user_data(class_obj, encryption_key))
 
 
 def delete_user_class(user_id: str, class_id: str) -> bool:
     """Delete a single class blob. Returns True if it existed."""
-    db = load_db()
-    rec = db.get('user_data', {}).get(user_id)
-    if not _is_v2_record(rec):
+    meta_rec = db_layer.get_meta_record(user_id)
+    if meta_rec is None or meta_rec.get('version') != 2:
         return False
-    classes = rec.get('classes') or {}
-    cid = str(class_id)
-    if cid not in classes:
-        return False
-    del classes[cid]
-    save_db(db)
-    return True
+    return db_layer.delete_class(user_id, str(class_id))
 
 def get_user_data_cached(user_id: str, session_token: str, encryption_key: bytes = None):
     """Get user data from cache or decrypt and cache it"""
@@ -1401,36 +1396,25 @@ def register_user(username: str, email: str, password: str) -> dict:
             'user_id': None
         }
 
-    db = load_db()
-
     # Check if user already exists
-    if email in db["users"]:
+    if db_layer.get_user_by_email(email) is not None:
         return {
             'success': False,
             'message': 'backend.userExists',
             'user_id': None
         }
 
-    # Create user with unique ID
-    # Collect all existing user IDs to ensure uniqueness
-    existing_ids = set()
-    for user_data in db["users"].values():
-        existing_ids.add(user_data.get("id"))
-    for user_id_key in db.get("user_data", {}).keys():
-        existing_ids.add(user_id_key)
-
     # Generate unique ID using UUID to prevent collisions
     import uuid
-    user_id = str(uuid.uuid4())[:8]  # Use first 8 chars of UUID
+    user_id = str(uuid.uuid4())[:8]
 
-    # Double-check uniqueness (should never happen with UUID, but safety first)
     max_attempts = 100
     attempts = 0
-    while user_id in existing_ids and attempts < max_attempts:
+    while db_layer.get_user_by_id(user_id) is not None and attempts < max_attempts:
         user_id = str(uuid.uuid4())[:8]
         attempts += 1
 
-    if user_id in existing_ids:
+    if db_layer.get_user_by_id(user_id) is not None:
         return {
             'success': False,
             'message': 'backend.error',
@@ -1450,11 +1434,8 @@ def register_user(username: str, email: str, password: str) -> dict:
     recovery_salt = secrets.token_bytes(32)
     recovery_derived_key = derive_key_from_recovery(recovery_key, recovery_salt)
     encrypted_dek = encrypt_bytes(encryption_key, recovery_derived_key)
-    
-    # Also store the recovery key encrypted (so it can be sent via email later)
-    encrypted_recovery_key = encrypt_recovery_key(recovery_key, email)
 
-    db["users"][email] = {
+    db_layer.put_user(email, {
         "id": user_id,
         "username": username,
         "email": email,
@@ -1463,9 +1444,8 @@ def register_user(username: str, email: str, password: str) -> dict:
         "recovery_key_hash": hash_recovery_key(recovery_key),
         "recovery_salt": recovery_salt.hex(),
         "encrypted_dek": encrypted_dek,
-        "encrypted_recovery_key": encrypted_recovery_key,
         "created_at": datetime.now().isoformat()
-    }
+    })
 
     # Initialize user data (will be encrypted)
     initial_data = {
@@ -1486,11 +1466,9 @@ def register_user(username: str, email: str, password: str) -> dict:
         ]
     }
 
-    # Encrypt and store initial data
     encrypted_data = encrypt_user_data(initial_data, encryption_key)
-    db["user_data"][user_id] = {"encrypted": True, "data": encrypted_data}
+    db_layer.put_legacy_record(user_id, encrypted_data)
 
-    save_db(db)
     return {
         'success': True,
         'message': 'backend.registrationSuccess',
@@ -1498,11 +1476,11 @@ def register_user(username: str, email: str, password: str) -> dict:
         'recovery_key': recovery_key
     }
 
-def _list_active_sessions_for_user(db: dict, user_id: str) -> list[str]:
+def _list_active_sessions_for_user(user_id: str) -> list[str]:
     """Return all non-expired session tokens belonging to this user."""
     now = datetime.now()
     active = []
-    for tok, sess in db.get('sessions', {}).items():
+    for tok, sess in db_layer.iter_sessions():
         if sess.get('user_id') != user_id:
             continue
         try:
@@ -1514,23 +1492,27 @@ def _list_active_sessions_for_user(db: dict, user_id: str) -> list[str]:
     return active
 
 
-def _terminate_user_sessions(db: dict, user_id: str) -> int:
+def _terminate_user_sessions(user_id: str) -> int:
     """Delete all sessions for a user and clear in-memory caches/keys.
-    Returns the number of sessions removed. Caller must save_db afterwards.
+    Returns the number of sessions removed.
     """
-    tokens = [t for t, s in db.get('sessions', {}).items() if s.get('user_id') == user_id]
+    tokens = [t for t, s in db_layer.iter_sessions() if s.get('user_id') == user_id]
     for tok in tokens:
-        db['sessions'].pop(tok, None)
+        db_layer.delete_session(tok)
         clear_session_cache(tok)
     return len(tokens)
 
 
-def login_user(email: str, password: str, force: bool = False) -> dict:
-    """Log in a user"""
+def login_user(email: str, password: str, force: bool = False, long_session: bool = False) -> dict:
+    """Log in a user.
+
+    `long_session=True` (native app clients) issues a 6-month session instead of
+    the default 1-hour web session, so app users don't have to re-authenticate
+    constantly. Web sessions stay short-lived.
+    """
     email = email.strip().lower()
 
-    db = load_db()
-    user = db["users"].get(email)
+    user = db_layer.get_user_by_email(email)
 
     # Per-account lockout: independent of per-IP rate limiting, so distributed
     # brute-force across many IPs still hits an account-level wall.
@@ -1562,13 +1544,13 @@ def login_user(email: str, password: str, force: bool = False) -> dict:
             'user': None
         }
     if not verify_password(user["password_hash"], password):
-        # Increment fail counter; lock after threshold.
-        fails = int(user.get('failed_login_count', 0)) + 1
-        db["users"][email]['failed_login_count'] = fails
+        # Atomically increment the failure counter to prevent lost updates under
+        # concurrency (two concurrent wrong-password attempts could both read the
+        # same count, increment to the same value, and both write back, counting
+        # as only one failure). The DB helper issues a single UPDATE+json_set.
+        fails = db_layer.increment_failed_login(email)
         if fails >= LOCKOUT_THRESHOLD:
-            db["users"][email]['locked_until_ts'] = int(time.time()) + LOCKOUT_DURATION_SECONDS
-            db["users"][email]['failed_login_count'] = 0
-            save_db(db)
+            db_layer.set_lockout(email, int(time.time()) + LOCKOUT_DURATION_SECONDS)
             return {
                 'success': False,
                 'message': 'backend.accountLocked',
@@ -1576,7 +1558,6 @@ def login_user(email: str, password: str, force: bool = False) -> dict:
                 'token': None,
                 'user': None
             }
-        save_db(db)
         return {
             'success': False,
             'message': 'backend.invalidCredentials',
@@ -1584,17 +1565,15 @@ def login_user(email: str, password: str, force: bool = False) -> dict:
             'user': None
         }
 
-    # Successful auth: clear fail counter + lockout state.
-    if user.get('failed_login_count') or user.get('locked_until_ts'):
-        db["users"][email]['failed_login_count'] = 0
-        db["users"][email]['locked_until_ts'] = 0
+    # Successful auth: atomically reset fail counter + lockout state.
+    db_layer.reset_failed_login(email)
 
     # Single-session enforcement: only one active session per user. If another
     # one already exists, refuse the login unless the caller explicitly opts
     # in to take over (`force=True`), in which case the old sessions are
     # invalidated first.
     user_id = user["id"]
-    existing_tokens = _list_active_sessions_for_user(db, user_id)
+    existing_tokens = _list_active_sessions_for_user(user_id)
     if existing_tokens and not force:
         return {
             'success': False,
@@ -1604,20 +1583,20 @@ def login_user(email: str, password: str, force: bool = False) -> dict:
             'user': None
         }
     if existing_tokens and force:
-        removed = _terminate_user_sessions(db, user_id)
+        removed = _terminate_user_sessions(user_id)
         logger.info("Force-login for user %s terminated %d existing session(s)", user_id, removed)
 
-    # Create session
+    # Create session. App clients get a long-lived (6-month) session; web stays at 1h.
     token = generate_session_token()
-    expires_at = (datetime.now() + timedelta(hours=1)).isoformat()
+    session_ttl = timedelta(days=180) if long_session else timedelta(hours=1)
+    expires_at = (datetime.now() + session_ttl).isoformat()
 
-    db["sessions"][token] = {
+    db_layer.put_session(token, {
         "user_id": user["id"],
         "created_at": datetime.now().isoformat(),
-        "expires_at": expires_at
-    }
-
-    save_db(db)
+        "expires_at": expires_at,
+        "long_session": long_session
+    })
 
     # Handle encryption key
     user_id = user["id"]
@@ -1627,8 +1606,8 @@ def login_user(email: str, password: str, force: bool = False) -> dict:
         # Legacy user without encryption - create encryption salt now
         print(f"Creating encryption salt for legacy user {user_id}")
         encryption_salt = secrets.token_bytes(32)
-        db["users"][email]["encryption_salt"] = encryption_salt.hex()
-        save_db(db)
+        user["encryption_salt"] = encryption_salt.hex()
+        db_layer.put_user(email, user)
         encryption_salt_hex = encryption_salt.hex()
 
     # Derive encryption key
@@ -1636,23 +1615,16 @@ def login_user(email: str, password: str, force: bool = False) -> dict:
     encryption_key = derive_encryption_key(password, encryption_salt)
     encryption_keys[token] = encryption_key
 
-    # Check if data needs migration (unencrypted -> encrypted)
-    db = load_db()  # Reload to get fresh state
-    stored = db["user_data"].get(user_id, {})
-    if stored and not (isinstance(stored, dict) and stored.get("encrypted")):
-        # Data is not encrypted yet, encrypt it now
-        print(f"Migrating unencrypted data for user {user_id}")
-        save_user_data(user_id, stored, encryption_key)
-
     # Migrate to v2 split layout if still on legacy single-blob v1
+    # (handles both encrypted and plaintext v1 records; migrate_user_to_v2
+    # correctly branches on meta_rec['encrypted'] now that the key is available)
     try:
         migrate_user_to_v2(user_id, encryption_key)
     except Exception as e:
         logger.warning("v2 migration failed for user %s: %s", user_id, type(e).__name__)
 
-    # Reload user to get any updates (e.g. legacy migration above)
-    db = load_db()
-    user = db["users"].get(email, user)
+    # Reload user to get any updates
+    user = db_layer.get_user_by_email(email) or user
     needs_recovery_key = not user.get('recovery_key_hash')
 
     return {
@@ -1669,14 +1641,8 @@ def login_user(email: str, password: str, force: bool = False) -> dict:
 
 def logout_user(token: str) -> bool:
     """Log out a user by invalidating their session"""
-    db = load_db()
-    if token in db["sessions"]:
-        del db["sessions"][token]
-        save_db(db)
-
-    # Clear session cache (encryption key + data cache)
+    db_layer.delete_session(token)
     clear_session_cache(token)
-
     return True
 
 def get_user_from_token(token: str) -> dict | None:
@@ -1684,9 +1650,7 @@ def get_user_from_token(token: str) -> dict | None:
     if not token:
         return None
 
-    db = load_db()
-    session = db["sessions"].get(token)
-    
+    session = db_layer.get_session(token)
     if not session:
         return None
 
@@ -1695,15 +1659,8 @@ def get_user_from_token(token: str) -> dict | None:
     if expires_at < datetime.now():
         return None
 
-    # Find user by email (users are stored with email as key)
     user_id = session['user_id']
-    user_info = None
-    
-    for email, user_data in db["users"].items():
-        if user_data["id"] == user_id:
-            user_info = user_data
-            break
-    
+    user_info = db_layer.get_user_by_id(user_id)
     if user_info:
         return {
             'id': user_info['id'],
@@ -1772,10 +1729,27 @@ app.secret_key = APP_CONFIG['secret_key']
 
 @app.before_serving
 async def startup():
-    """Initialize database on startup"""
-    print("Initializing JSON database...")
+    """Initialize SQLite database and run JSON migration if needed."""
+    print("Initializing SQLite database...")
     init_db()
-    migrate_plaintext_shares()  # Migrate any existing plaintext shares
+    # Legacy JSON→SQLite migration. Module may be absent on deployments that
+    # never ran the JSON backend — only fatal if a legacy edugrade.json
+    # actually needs migrating.
+    try:
+        from migrate_json_to_db import migrate_json_to_db
+        migrate_json_to_db()
+    except ImportError:
+        legacy_json = DATA_DIR / "edugrade.json"
+        if legacy_json.exists():
+            logger.error(
+                "migrate_json_to_db.py missing but %s exists — deploy the "
+                "migration module, otherwise legacy data stays unmigrated!",
+                legacy_json
+            )
+            raise
+        logger.info("migrate_json_to_db.py not deployed; no legacy JSON found, skipping.")
+    migrate_plaintext_shares()
+    purge_stored_recovery_key_copies()
     await cleanup_expired_sessions()
     print("Database initialized successfully")
 
@@ -1789,7 +1763,8 @@ _CSRF_EXEMPT_PREFIXES = (
     '/api/register',
     '/api/logout',
     '/api/password-reset',
-    '/api/recovery-key',
+    # NOTE: /api/recovery-key/* is intentionally NOT exempt anymore — both
+    # endpoints are session-authenticated and state-changing (key rotation).
     '/api/share/verify',  # public share PIN verification, no cookie auth
     '/api/share/access',  # public share access, no cookie auth
     '/api/grades/',       # public class-share grade view (token-based)
@@ -1923,6 +1898,54 @@ async def api_version():
     })
 
 
+# ============ Native Android app distribution ============
+# The native APK is distributed by sideload (beta). The manifest lives in the
+# repo (version-controlled); the binary itself sits in EDUGRADE_APK_DIR on the
+# server (a mounted volume in prod), so the heavy file never lands in git.
+
+APK_MANIFEST_PATH = Path(__file__).parent / 'mobile-apps' / 'release' / 'apk-manifest.json'
+APK_DIR = os.environ.get('EDUGRADE_APK_DIR', str(Path(__file__).parent / 'mobile-apps' / 'release'))
+
+
+def load_apk_manifest():
+    """Read the APK release manifest, or None if not published yet."""
+    try:
+        with open(APK_MANIFEST_PATH, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+@app.route('/api/app/latest')
+async def api_app_latest():
+    """Latest native Android APK metadata — used by the web download modal and
+    the in-app update banner."""
+    manifest = load_apk_manifest()
+    if not manifest:
+        return jsonify({'available': False}), 404
+    data = dict(manifest)
+    data['available'] = True
+    data['downloadUrl'] = '/download/edugrade.apk'
+    return jsonify(data)
+
+
+@app.route('/download/edugrade.apk')
+async def download_apk():
+    """Serve the published APK as a download."""
+    manifest = load_apk_manifest()
+    fname = (manifest or {}).get('fileName')
+    if not fname:
+        return ('APK not published yet.', 404)
+    path = os.path.join(APK_DIR, fname)
+    if not os.path.exists(path):
+        return ('APK file missing on server.', 404)
+    response = await make_response(
+        await send_file(path, mimetype='application/vnd.android.package-archive')
+    )
+    response.headers['Content-Disposition'] = f'attachment; filename="{fname}"'
+    return response
+
+
 # ============ Auth API ============
 
 @app.route('/api/register', methods=['POST'])
@@ -1963,11 +1986,13 @@ async def api_login():
     email = data.get('email', '')
     password = data.get('password', '')
     force = bool(data.get('force', False))
+    # Native app clients identify themselves to get a long-lived session.
+    long_session = str(data.get('client', '')).lower() in ('app', 'android', 'mobile')
 
     if not email or not password:
         return jsonify({'success': False, 'message': 'backend.fillAllFields'}), 400
 
-    result = login_user(email, password, force=force)
+    result = login_user(email, password, force=force, long_session=long_session)
 
     if result.get('code') == 'session_exists':
         # 409 Conflict: client must confirm before we kill the other session.
@@ -1975,13 +2000,15 @@ async def api_login():
 
     if result['success']:
         response = await make_response(jsonify(result))
+        # Match the cookie lifetime to the session TTL (6 months for the app, 1h for web).
+        max_age = (180 * 24 * 60 * 60) if long_session else (1 * 60 * 60)
         response.set_cookie(
             'session_token',
             result['token'],
             httponly=True,
             secure=COOKIE_SECURE,
             samesite='Lax',
-            max_age=1 * 60 * 60
+            max_age=max_age
         )
         return response
 
@@ -2020,8 +2047,7 @@ async def api_password_reset():
     if len(new_password) < 8:
         return jsonify({'success': False, 'message': 'backend.passwordLength'}), 400
 
-    db = load_db()
-    user = db["users"].get(email)
+    user = db_layer.get_user_by_email(email)
 
     # Always return the same error to prevent user enumeration
     if not user:
@@ -2043,19 +2069,16 @@ async def api_password_reset():
 
         # Load and decrypt the user's data with the recovered DEK
         user_id = user['id']
-        user_data_entry = db["user_data"].get(user_id, {})
-        if user_data_entry.get('encrypted'):
-            user_data = decrypt_user_data(user_data_entry['data'], dek)
-        else:
-            user_data = user_data_entry  # legacy plaintext (should not occur)
+        user_data = get_user_data(user_id, dek)
 
         # Derive a new DEK from the new password
         new_encryption_salt = secrets.token_bytes(32)
         new_dek = derive_encryption_key(new_password, new_encryption_salt)
 
-        # Re-encrypt the user data with the new DEK
+        # Re-encrypt the user data with the new DEK (stored as legacy v1 blob;
+        # next login will migrate it to v2)
         encrypted_data = encrypt_user_data(user_data, new_dek)
-        db["user_data"][user_id] = {"encrypted": True, "data": encrypted_data}
+        db_layer.put_legacy_record(user_id, encrypted_data)
 
         # Encrypt the new DEK with the same recovery key (so recovery still works)
         new_recovery_salt = secrets.token_bytes(32)
@@ -2067,18 +2090,15 @@ async def api_password_reset():
         user['encryption_salt'] = new_encryption_salt.hex()
         user['recovery_salt'] = new_recovery_salt.hex()
         user['encrypted_dek'] = new_encrypted_dek
-        db["users"][email] = user
+        db_layer.put_user(email, user)
 
         # Invalidate all existing sessions for this user
-        sessions_to_delete = [
-            t for t, s in db["sessions"].items() if s["user_id"] == user_id
-        ]
-        for t in sessions_to_delete:
-            del db["sessions"][t]
-            encryption_keys.pop(t, None)
-            user_data_cache.pop(t, None)
+        for t, s in db_layer.iter_sessions():
+            if s.get("user_id") == user_id:
+                db_layer.delete_session(t)
+                encryption_keys.pop(t, None)
+                user_data_cache.pop(t, None)
 
-        save_db(db)
         return jsonify({'success': True, 'message': 'backend.passwordResetSuccess'})
 
     except Exception as e:
@@ -2105,8 +2125,7 @@ async def api_password_reset_email_request():
     # Always respond the same way regardless of whether email exists
     generic_ok = jsonify({'success': True, 'message': 'backend.resetEmailSent'})
 
-    db = load_db()
-    user = db["users"].get(email)
+    user = db_layer.get_user_by_email(email)
     if not user:
         return generic_ok
 
@@ -2119,12 +2138,11 @@ async def api_password_reset_email_request():
     reset_token = secrets.token_urlsafe(32)
     expires_at = (datetime.now() + timedelta(hours=1)).isoformat()
 
-    db['password_reset_tokens'][reset_token] = {
+    db_layer.put_reset_token(reset_token, {
         'user_email': email,
         'expires_at': expires_at,
         'used': False
-    }
-    save_db(db)
+    })
 
     try:
         await send_password_reset_email(email, user.get('username', email), reset_token)
@@ -2137,63 +2155,67 @@ async def api_password_reset_email_request():
 
 @app.route('/api/recovery-key/email-request', methods=['POST'])
 @rate_limit('password_reset')
+@login_required
 async def api_recovery_key_email_request():
-    """Request the recovery key to be sent via email as a PDF attachment."""
-    data = await request.get_json()
-    if not data:
-        return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
+    """Email the recovery kit (PDF) to the logged-in user's own address.
 
-    email = data.get('email', '').strip().lower()
-    if not email:
-        return jsonify({'success': False, 'message': 'backend.fillAllFields'}), 400
+    SECURITY: This endpoint requires an authenticated session. The server keeps
+    no decryptable copy of the recovery key, so the key is ROTATED here: a new
+    recovery key is generated from the session DEK, emailed, and returned in
+    the response (so the UI can show the now-valid key). Any previously issued
+    recovery key becomes invalid. The old unauthenticated flow (decrypt stored
+    key, mail to any requested address) allowed full account takeover for
+    anyone with access to the user's mailbox.
+    """
+    token = get_token_from_request()
+    user_id = request.user['id']  # type: ignore
+    user_email = request.user['email']  # type: ignore
 
     if not smtp_is_configured():
         return jsonify({'success': False, 'message': 'backend.smtpNotConfigured'}), 400
 
-    db = load_db()
-    user = db["users"].get(email)
+    dek = encryption_keys.get(token)
+    if not dek:
+        return jsonify({'success': False, 'message': 'backend.sessionExpired', 'requireRelogin': True}), 401
 
+    user = db_layer.get_user_by_email(user_email)
     if not user:
-        # Return success even if user doesn't exist (prevent enumeration)
-        return jsonify({'success': True, 'message': 'backend.recoveryKeyEmailSent'})
-
-    # Check if user has encrypted recovery key (new format) or only hash (old format)
-    encrypted_recovery_key = user.get('encrypted_recovery_key')
-    if not encrypted_recovery_key:
-        return jsonify({'success': False, 'message': 'backend.noRecoveryKey'}), 404
-
-    # Decrypt and get the recovery key
-    try:
-        recovery_key = decrypt_recovery_key(encrypted_recovery_key, email)
-    except Exception as e:
-        logger.warning("Failed to decrypt recovery key for %s: %s", _scrub_email(email), e)
         return jsonify({'success': False, 'message': 'backend.error'}), 500
 
-    # Get user's language preference from encrypted user data
-    language = 'de'  # Default to German
-    try:
-        user_data_entry = db.get('user_data', {}).get(user['id'])
-        if user_data_entry and user_data_entry.get('encrypted'):
-            # Try to get DEK from session (works if user is logged in)
-            dek = encryption_keys.get(get_token_from_request())
-            if dek:
-                user_data = decrypt_user_data(user_data_entry['data'], dek)
-                language = user_data.get('language', 'de')
-            else:
-                # No session - user requested from login page
-                # Try to derive DEK from recovery key (since they're using recovery key flow)
-                # For now, just use German as default
-                logger.info("No active session for %s, using default language de", _scrub_email(email))
-    except Exception as e:
-        print(f"Could not determine user language preference: {e}")
+    # Generate the new recovery key wrapping the current DEK.
+    new_recovery_key = generate_recovery_key()
+    new_recovery_salt = secrets.token_bytes(32)
+    new_recovery_derived_key = derive_key_from_recovery(new_recovery_key, new_recovery_salt)
+    new_encrypted_dek = encrypt_bytes(dek, new_recovery_derived_key)
 
+    # Language preference from the user's (already decrypted) data
+    language = 'de'
     try:
-        await send_recovery_key_email(email, user.get('username', email), recovery_key, language)
+        user_data = get_user_data_cached(user_id, token, dek)
+        if isinstance(user_data, dict):
+            language = user_data.get('language', 'de')
     except Exception as e:
-        logger.warning("Failed to send recovery key email to %s: %s", _scrub_email(email), e)
+        logger.info("Could not determine language preference: %s", type(e).__name__)
+
+    # Send first, persist only on success — a failed send must not invalidate
+    # the user's existing (printed/saved) recovery key.
+    try:
+        await send_recovery_key_email(user_email, user.get('username', user_email), new_recovery_key, language)
+    except Exception as e:
+        logger.warning("Failed to send recovery key email to %s: %s", _scrub_email(user_email), e)
         return jsonify({'success': False, 'message': 'backend.error'}), 500
 
-    return jsonify({'success': True, 'message': 'backend.recoveryKeyEmailSent'})
+    user['recovery_key_hash'] = hash_recovery_key(new_recovery_key)
+    user['recovery_salt'] = new_recovery_salt.hex()
+    user['encrypted_dek'] = new_encrypted_dek
+    user.pop('encrypted_recovery_key', None)
+    db_layer.put_user(user_email, user)
+
+    return jsonify({
+        'success': True,
+        'message': 'backend.recoveryKeyEmailSent',
+        'recovery_key': new_recovery_key
+    })
 
 
 @app.route('/api/password-reset/confirm-token', methods=['POST'])
@@ -2213,8 +2235,7 @@ async def api_password_reset_confirm_token():
     if len(new_password) < 8:
         return jsonify({'success': False, 'message': 'backend.passwordLength'}), 400
 
-    db = load_db()
-    token_entry = db.get('password_reset_tokens', {}).get(token)
+    token_entry = db_layer.get_reset_token(token)
 
     if not token_entry:
         return jsonify({'success': False, 'message': 'backend.resetTokenInvalid'}), 400
@@ -2226,7 +2247,7 @@ async def api_password_reset_confirm_token():
         return jsonify({'success': False, 'message': 'backend.resetTokenExpired'}), 400
 
     email = token_entry['user_email']
-    user = db["users"].get(email)
+    user = db_layer.get_user_by_email(email)
     if not user:
         return jsonify({'success': False, 'message': 'backend.resetTokenInvalid'}), 400
 
@@ -2256,7 +2277,7 @@ async def api_password_reset_confirm_token():
             ]
         }
         encrypted_data = encrypt_user_data(initial_data, new_dek)
-        db["user_data"][user_id] = {"encrypted": True, "data": encrypted_data}
+        db_layer.put_legacy_record(user_id, encrypted_data)
 
         # Generate a new recovery key so the account is protected going forward
         new_recovery_key = generate_recovery_key()
@@ -2269,19 +2290,19 @@ async def api_password_reset_confirm_token():
         user['recovery_key_hash'] = hash_recovery_key(new_recovery_key)
         user['recovery_salt'] = new_recovery_salt.hex()
         user['encrypted_dek'] = new_encrypted_dek
-        db["users"][email] = user
+        db_layer.put_user(email, user)
 
         # Invalidate all existing sessions
-        sessions_to_delete = [t for t, s in db["sessions"].items() if s["user_id"] == user_id]
-        for t in sessions_to_delete:
-            del db["sessions"][t]
-            encryption_keys.pop(t, None)
-            user_data_cache.pop(t, None)
+        for t, s in db_layer.iter_sessions():
+            if s.get("user_id") == user_id:
+                db_layer.delete_session(t)
+                encryption_keys.pop(t, None)
+                user_data_cache.pop(t, None)
 
         # Mark token as used
-        db['password_reset_tokens'][token]['used'] = True
+        token_entry['used'] = True
+        db_layer.put_reset_token(token, token_entry)
 
-        save_db(db)
         return jsonify({
             'success': True,
             'message': 'backend.passwordResetSuccess',
@@ -2308,8 +2329,7 @@ async def api_generate_recovery_key():
         return jsonify({'success': False, 'message': 'backend.sessionExpired'}), 401
 
     try:
-        db = load_db()
-        user = db["users"].get(user_email)
+        user = db_layer.get_user_by_email(user_email)
         if not user:
             return jsonify({'success': False, 'message': 'backend.error'}), 500
 
@@ -2318,17 +2338,14 @@ async def api_generate_recovery_key():
         new_recovery_salt = secrets.token_bytes(32)
         new_recovery_derived_key = derive_key_from_recovery(new_recovery_key, new_recovery_salt)
         new_encrypted_dek = encrypt_bytes(dek, new_recovery_derived_key)
-        
-        # Also encrypt the recovery key itself for email delivery
-        new_encrypted_recovery_key = encrypt_recovery_key(new_recovery_key, user_email)
 
         user['recovery_key_hash'] = hash_recovery_key(new_recovery_key)
         user['recovery_salt'] = new_recovery_salt.hex()
         user['encrypted_dek'] = new_encrypted_dek
-        user['encrypted_recovery_key'] = new_encrypted_recovery_key
-        db["users"][user_email] = user
+        # Drop any legacy server-decryptable recovery key copy
+        user.pop('encrypted_recovery_key', None)
+        db_layer.put_user(user_email, user)
 
-        save_db(db)
         return jsonify({'success': True, 'recovery_key': new_recovery_key})
 
     except Exception as e:
@@ -2342,29 +2359,13 @@ async def api_delete_account():
     """Delete user account and all associated data"""
     user_id = request.user['id'] # type: ignore
     user_email = request.user['email'] # type: ignore
-    token = get_token_from_request()
 
     try:
-        db = load_db()
-
-        # Delete user data
-        if user_id in db["user_data"]:
-            del db["user_data"][user_id]
-
-        # Delete all sessions for this user
-        sessions_to_delete = []
-        for session_token, session in db["sessions"].items():
-            if session["user_id"] == user_id:
-                sessions_to_delete.append(session_token)
-
-        for session_token in sessions_to_delete:
-            del db["sessions"][session_token]
-
-        # Delete user account
-        if user_email in db["users"]:
-            del db["users"][user_email]
-
-        save_db(db)
+        db_layer.delete_user_data(user_id)
+        # Purge every session for this user from DB and in-memory caches so no
+        # other active session retains stale encryption keys or data.
+        _terminate_user_sessions(user_id)
+        db_layer.delete_user(user_email)
 
         response = await make_response(jsonify({'success': True, 'message': 'backend.accountDeleted'}))
         response.delete_cookie('session_token')
@@ -2710,8 +2711,7 @@ async def api_create_share():
         return jsonify({'success': False, 'message': 'backend.classNotFound'}), 404
 
     # Check if a share already exists for this class
-    db = load_db()
-    for existing_token, existing_share in db.get('class_shares', {}).items():
+    for _, existing_share in db_layer.iter_shares():
         if existing_share.get('user_id') == user_id and existing_share.get('class_id') == class_id and existing_share.get('active'):
             return jsonify({'success': False, 'message': 'backend.shareExists'}), 409
 
@@ -2770,8 +2770,7 @@ async def api_create_share():
         'encrypted_data': encrypted_snapshot  # Store encrypted data
     }
 
-    db['class_shares'][share_token] = share_data
-    save_db(db)
+    db_layer.put_share(share_token, share_data)
 
     # Return share info with cleartext PINs (shown once to teacher)
     pin_list = []
@@ -2801,8 +2800,7 @@ async def api_update_share(share_token):
     if not data:
         return jsonify({'success': False, 'message': 'backend.invalidRequest'}), 400
 
-    db = load_db()
-    share = db.get('class_shares', {}).get(share_token)
+    share = db_layer.get_share(share_token)
 
     if not share or share.get('user_id') != user_id:
         return jsonify({'success': False, 'message': 'backend.shareNotFound'}), 404
@@ -2817,7 +2815,7 @@ async def api_update_share(share_token):
         share['expires_at'] = (datetime.now() + timedelta(hours=expires_hours)).isoformat()
         share['active'] = True  # Re-activate if was expired
 
-    save_db(db)
+    db_layer.put_share(share_token, share)
     return jsonify({'success': True, 'message': 'backend.shareUpdated'})
 
 
@@ -2828,15 +2826,12 @@ async def api_revoke_share(share_token):
     """Revoke (delete) a share"""
     user_id = request.user['id']  # type: ignore
 
-    db = load_db()
-    share = db.get('class_shares', {}).get(share_token)
+    share = db_layer.get_share(share_token)
 
     if not share or share.get('user_id') != user_id:
         return jsonify({'success': False, 'message': 'backend.shareNotFound'}), 404
 
-    # Completely remove the share instead of just deactivating
-    del db['class_shares'][share_token]
-    save_db(db)
+    db_layer.delete_share(share_token)
     return jsonify({'success': True, 'message': 'backend.shareRevoked'})
 
 
@@ -2847,8 +2842,7 @@ async def api_regenerate_pins(share_token):
     """Regenerate all PINs for a share"""
     user_id = request.user['id']  # type: ignore
 
-    db = load_db()
-    share = db.get('class_shares', {}).get(share_token)
+    share = db_layer.get_share(share_token)
 
     if not share or share.get('user_id') != user_id:
         return jsonify({'success': False, 'message': 'backend.shareNotFound'}), 404
@@ -2872,7 +2866,7 @@ async def api_regenerate_pins(share_token):
             'pin': pin
         })
 
-    save_db(db)
+    db_layer.put_share(share_token, share)
     return jsonify({'success': True, 'pins': pin_list})
 
 
@@ -2883,18 +2877,14 @@ async def api_get_share_status(class_id):
     """Get the share status for a class"""
     user_id = request.user['id']  # type: ignore
 
-    db = load_db()
-    for token, share in db.get('class_shares', {}).items():
+    for token, share in db_layer.iter_shares():
         if share.get('user_id') == user_id and share.get('class_id') == class_id:
-            # Check if share is active and not expired
             if share.get('active'):
                 expires_at = share.get('expires_at')
                 if expires_at and datetime.fromisoformat(expires_at) < datetime.now():
-                    # Share has expired, remove it completely
-                    del db['class_shares'][token]
-                    save_db(db)
+                    db_layer.delete_share(token)
                     return jsonify({'success': True, 'has_share': False})
-                
+
                 return jsonify({
                     'success': True,
                     'has_share': True,
@@ -2914,8 +2904,7 @@ async def api_get_share_status(class_id):
 @app.route('/grades/<share_token>')
 async def student_grades_page(share_token):
     """Student-facing page for viewing grades"""
-    db = load_db()
-    share = db.get('class_shares', {}).get(share_token)
+    share = db_layer.get_share(share_token)
 
     error = None
     if not share:
@@ -2947,8 +2936,7 @@ async def api_verify_pin(share_token):
     if not pin or len(pin) != 6 or not pin.isdigit():
         return jsonify({'success': False, 'message': 'backend.invalidPin'}), 400
 
-    db = load_db()
-    share = db.get('class_shares', {}).get(share_token)
+    share = db_layer.get_share(share_token)
 
     if not share:
         return jsonify({'success': False, 'message': 'backend.invalidAccessLink'}), 404
@@ -2987,18 +2975,54 @@ async def api_verify_pin(share_token):
     if not student_data:
         return jsonify({'success': False, 'message': 'backend.studentNotFound'}), 404
 
+    # SECURITY: enforce the share's visibility settings server-side. Raw grades
+    # are only sent when at least one visible view actually needs them
+    # (grades table, chart, category breakdown). When only average/finalGrade
+    # are visible, those are computed here and the raw grades stay private —
+    # previously the full grade list was always returned and filtering was
+    # left to the client, so anyone with a PIN could read hidden grades via
+    # the API directly.
+    visibility = share.get('visibility') or {}
+    grades_visible = bool(visibility.get('grades', True))
+    average_visible = bool(visibility.get('average', True))
+    final_visible = bool(visibility.get('finalGrade', True))
+    chart_visible = bool(visibility.get('chart', False))
+    breakdown_visible = bool(visibility.get('categoryBreakdown', False))
+    raw_needed = grades_visible or chart_visible or breakdown_visible
+
+    all_grades = student_data.get('grades', [])
+    pm_settings = snapshot.get('plusMinusGradeSettings', {})
+
+    # Per-subject stats (server-computed), so the client can show average /
+    # final grade even when raw grades are withheld.
+    stats = {}
+    if average_visible or final_visible:
+        for subject in snapshot.get('subjects', []):
+            if not isinstance(subject, dict) or subject.get('id') is None:
+                continue
+            sid = subject['id']
+            subject_grades = [g for g in all_grades if isinstance(g, dict) and g.get('subjectId') == sid]
+            avg = compute_weighted_average(subject_grades, pm_settings)
+            entry = {}
+            if average_visible:
+                entry['average'] = round(avg, 2)
+            if final_visible:
+                entry['finalGrade'] = final_grade_label(avg)
+            stats[str(sid)] = entry
+
     return jsonify({
         'success': True,
         'student': {
             'name': get_student_display_name(student_data),
-            'grades': student_data.get('grades', [])
+            'grades': all_grades if raw_needed else []
         },
         'class_name': share.get('class_name', ''),
         'teacher_name': share.get('teacher_name', ''),
-        'categories': snapshot.get('categories', []),
+        'categories': snapshot.get('categories', []) if raw_needed else [],
         'subjects': snapshot.get('subjects', []),
-        'plusMinusGradeSettings': snapshot.get('plusMinusGradeSettings', {}),
-        'visibility': share.get('visibility', {})
+        'plusMinusGradeSettings': pm_settings,
+        'visibility': visibility,
+        'stats': stats
     })
 
 

@@ -330,7 +330,10 @@
 
                             <div class="text-center mt-3 flex flex-col gap-2">
                                 <button type="button" id="switch-to-key-reset-btn" class="text-sm text-blue-400 hover:underline" data-i18n="auth.haveRecoveryKey">I have a recovery key</button>
-                                <button type="button" id="send-recovery-key-email-btn" class="text-sm text-blue-400 hover:underline" data-i18n="auth.sendRecoveryKeyEmail">Send Recovery Key via Email</button>
+                                <!-- SECURITY: the logged-out "Send Recovery Key via Email" flow was removed.
+                                     It let anyone controlling a user's mailbox obtain the plaintext recovery
+                                     key and take over the account including all encrypted data. Logged-in
+                                     users can still email themselves a (rotated) recovery kit from Settings. -->
                             </div>
                         </div>
                     </div>
@@ -399,13 +402,6 @@
                     </svg>
                     <span data-i18n="dialog.copy">Copy</span>
                 </button>
-                <button type="button" id="send-recovery-key-email-from-dialog-btn" class="btn-outline w-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="20" height="16" x="2" y="4" rx="2"/>
-                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                    </svg>
-                    <span data-i18n="auth.sendRecoveryKeyEmail">Send Recovery Key via Email</span>
-                </button>
                 <div class="rounded-md p-3" style="background: oklch(0.35 0.1 40 / 0.2); border: 1px solid oklch(0.5 0.1 40);">
                     <p class="text-sm" style="color: oklch(.85 0.1 40);" data-i18n="auth.recoveryKeyWarning">This key is shown only once and cannot be recovered. Store it in a safe place.</p>
                 </div>
@@ -416,42 +412,6 @@
             </section>
             <footer class="flex justify-end">
                 <button type="button" id="recovery-key-continue-btn" class="btn-primary" disabled data-i18n="auth.continueToApp">Continue</button>
-            </footer>
-        </div>
-    </dialog>
-
-    <!-- Recovery Key Email Dialog -->
-    <dialog id="recovery-key-email-dialog" class="dialog w-full sm:max-w-[480px]">
-        <div>
-            <header>
-                <div class="flex items-center gap-3">
-                    <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-500/15">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
-                            <rect width="20" height="16" x="2" y="4" rx="2"/>
-                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-semibold" data-i18n="auth.sendRecoveryKeyEmail">Send Recovery Key via Email</h2>
-                        <p class="text-sm" style="color: oklch(.708 0 0);" data-i18n="auth.recoveryKeyEmailInfo">We'll send your recovery key as a PDF attachment to your registered email address.</p>
-                    </div>
-                </div>
-            </header>
-            <section class="py-4 grid gap-4">
-                <div class="rounded-md p-3" style="background: oklch(0.2 0 0 / 0.5); border: 1px solid oklch(0.4 0 0);">
-                    <p class="text-xs mb-2" style="color: oklch(.708 0 0);" data-i18n="auth.email">Email</p>
-                    <p id="recovery-key-email-display" class="font-mono text-lg font-bold tracking-widest text-center"></p>
-                </div>
-                <button type="button" class="btn-primary w-full" id="recovery-key-email-send-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect width="20" height="16" x="2" y="4" rx="2"/>
-                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                    </svg>
-                    <span id="recovery-key-email-btn-text" data-i18n="auth.sendRecoveryKeyEmail">Send Recovery Key via Email</span>
-                </button>
-            </section>
-            <footer class="flex justify-end">
-                <button type="button" id="recovery-key-email-cancel-btn" class="btn-outline" data-i18n="dialog.cancel">Cancel</button>
             </footer>
         </div>
     </dialog>
@@ -861,16 +821,6 @@
             });
         });
 
-        document.getElementById('send-recovery-key-email-from-dialog-btn').addEventListener('click', () => {
-            const email = document.getElementById('recovery-key-dialog').dataset.email || '';
-            if (email) {
-                recoveryKeyEmailDisplay.textContent = email;
-                recoveryKeyEmailDialog.showModal();
-            } else {
-                showToast(t('backend.fillAllFields'));
-            }
-        });
-
         document.getElementById('recovery-key-continue-btn').addEventListener('click', () => {
             document.getElementById('recovery-key-dialog').close();
             showToast(t('auth.accountCreated'), 'success');
@@ -1015,56 +965,6 @@
             }
         });
 
-        // Recovery Key Email Dialog
-        const recoveryKeyEmailDialog = document.getElementById('recovery-key-email-dialog');
-        const recoveryKeyEmailDisplay = document.getElementById('recovery-key-email-display');
-        const recoveryKeyEmailSendBtn = document.getElementById('recovery-key-email-send-btn');
-        const recoveryKeyEmailCancelBtn = document.getElementById('recovery-key-email-cancel-btn');
-
-        document.getElementById('send-recovery-key-email-btn').addEventListener('click', () => {
-            // Get email from the reset-email field (already populated)
-            const email = document.getElementById('reset-email')?.value || '';
-            if (email) {
-                recoveryKeyEmailDisplay.textContent = email;
-                recoveryKeyEmailDialog.showModal();
-            } else {
-                showToast(t('backend.fillAllFields'));
-            }
-        });
-
-        recoveryKeyEmailCancelBtn.addEventListener('click', () => {
-            recoveryKeyEmailDialog.close();
-        });
-
-        recoveryKeyEmailSendBtn.addEventListener('click', async () => {
-            const originalHtml = recoveryKeyEmailSendBtn.innerHTML;
-            recoveryKeyEmailSendBtn.disabled = true;
-            recoveryKeyEmailSendBtn.innerHTML = `${SPINNER_SVG}<span>${t('auth.sending')}</span>`;
-
-            const email = recoveryKeyEmailDisplay.textContent;
-
-            try {
-                const response = await fetch('/api/recovery-key/email-request', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-                const data = await response.json();
-
-                if (data.success) {
-                    showToast(t('backend.recoveryKeyEmailSent'), 'success');
-                    recoveryKeyEmailDialog.close();
-                } else {
-                    showToast(data.message || t('error.somethingWrong'));
-                }
-            } catch (error) {
-                showToast(t('error.somethingWrong'));
-            }
-
-            recoveryKeyEmailSendBtn.disabled = false;
-            recoveryKeyEmailSendBtn.innerHTML = originalHtml;
-        });
-
         // Recovery key continue button re-enable checkbox on open
         document.getElementById('recovery-key-continue-btn')._defaultDisabled = true;
     </script>
@@ -1088,6 +988,7 @@
     });
     </script>
     <script src="/static/scripts/avocloud-logo.js"></script>
+    <script src="/static/scripts/app-promo.js?v={{ app_version }}"></script>
     <script>
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/service-worker.js', { scope: '/' });

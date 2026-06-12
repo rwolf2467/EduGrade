@@ -228,7 +228,7 @@
     };
 
     const renderContent = () => {
-        const grades = filterGradesBySubject(studentData.grades, currentSubjectId);
+        const grades = filterGradesBySubject(studentData.grades || [], currentSubjectId);
         const visibility = allData.visibility || {};
         const settings = allData.plusMinusGradeSettings || {};
 
@@ -246,8 +246,15 @@
 
     const renderStatCards = (grades, visibility, settings) => {
         const container = document.getElementById('student-stat-cards');
-        const weightedAvg = calculateWeightedAverage(grades, settings);
-        const finalGrade = calculateFinalGrade(weightedAvg);
+        // Prefer server-computed stats: when grades are hidden the raw list is
+        // empty and only the server knows the real average/final grade.
+        const serverStats = (allData.stats || {})[String(currentSubjectId)] || null;
+        const weightedAvg = (serverStats && typeof serverStats.average === 'number')
+            ? serverStats.average
+            : calculateWeightedAverage(grades, settings);
+        const finalGrade = (serverStats && serverStats.finalGrade !== undefined)
+            ? serverStats.finalGrade
+            : calculateFinalGrade(weightedAvg);
 
         let html = '';
 

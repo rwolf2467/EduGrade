@@ -517,6 +517,16 @@ const showConfirmDialog = (message, onConfirm, details = null, warning = null, o
         }, { once: true });
     }
 
+    // Optionaler Button-Stil: Default ist der rote "Delete"-Stil; nicht-destruktive
+    // Aktionen (z.B. Recovery Key generieren) übergeben confirmClass: 'btn-primary'.
+    if (options.confirmClass) {
+        const origConfirmClass = confirmBtn.className;
+        confirmBtn.className = options.confirmClass;
+        dialog.addEventListener('close', () => {
+            confirmBtn.className = origConfirmClass;
+        }, { once: true });
+    }
+
     // Dialog öffnen
     dialog.showModal();
 

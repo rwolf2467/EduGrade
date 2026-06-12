@@ -2118,6 +2118,7 @@ Anna,,Schmidt</code></pre>
     <script src="/static/scripts/tutorial.js?v={{ app_version }}"></script>
     <script src="/static/scripts/eventListeners.js?v={{ app_version }}"></script>
     <script src="/static/scripts/mobile.js?v={{ app_version }}"></script>
+    <script src="/static/scripts/app-promo.js?v={{ app_version }}"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -2722,7 +2723,10 @@ Anna,,Schmidt</code></pre>
                         setButtonLoading(btn, false);
                     },
                     null,
-                    t('auth.generateRecoveryKeyConfirmWarning')
+                    t('auth.generateRecoveryKeyConfirmWarning'),
+                    // Non-destructive action: data is NOT deleted (the DEK is just
+                    // re-wrapped), so don't show the default red "Delete" button.
+                    { confirmText: t('auth.generateRecoveryKeyConfirmButton'), confirmClass: 'btn-primary' }
                 );
             });
 
@@ -2768,17 +2772,21 @@ Anna,,Schmidt</code></pre>
                 profileRecoveryKeyEmailSendBtn.disabled = true;
                 profileRecoveryKeyEmailSendBtn.innerHTML = `${SPINNER_SVG}<span>${t('auth.sending')}</span>`;
 
-                const email = profileRecoveryKeyEmailDisplay.textContent;
-
                 try {
+                    // Server rotates the recovery key (it keeps no decryptable
+                    // copy), emails the new kit and returns the new key.
                     const response = await fetch('/api/recovery-key/email-request', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email })
+                        body: JSON.stringify({})
                     });
                     const data = await response.json();
 
                     if (data.success) {
+                        if (data.recovery_key) {
+                            // Update the displayed key — the previously shown one is now invalid.
+                            document.getElementById('profile-recovery-key-display').textContent = data.recovery_key;
+                        }
                         showToast(t('backend.recoveryKeyEmailSent'), 'success');
                         profileRecoveryKeyEmailDialog.close();
                         profileRecoveryKeyDialog.showModal();
